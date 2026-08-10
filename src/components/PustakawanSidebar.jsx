@@ -38,7 +38,7 @@ export default function PustakawanSidebar({ isOpen, onClose }) {
     
 <div className="flex flex-col gap-2 mt-6 px-6">
   <Link
-    to="/dashboard-pustakawan"
+    to="/pustakawan-dashboard"
     onClick={onClose}
     className="flex items-center gap-4 text-white text-lg font-medium py-3 hover:bg-[#2f3a96] px-4 rounded-lg transition-colors"
   >
