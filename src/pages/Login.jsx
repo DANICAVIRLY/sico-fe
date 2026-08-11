@@ -1,24 +1,64 @@
 import { Button, Label, TextInput } from "flowbite-react";
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; //
+import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    // logic dummy
-    if (email === "atasan@ipb.ac.id" && password === "123456") {
-      navigate("/dashboard-atasan");
-    } else if (email === "pustakawan@ipb.ac.id" && password === "123456") {
-      navigate("/pustakawan-dashboard");
-    } else {
-      setError("Email atau Password salah! Coba lagi.");
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/auth/login",
+        {
+          login: email,
+          password: password,
+        }
+      );
+
+      const data = response.data.data;
+      const user = data.user;
+      const token = data.token;
+
+      // Simpan token dan data user
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // Ambil role user
+      const roles = user.roles || [];
+
+      // Arahkan sesuai role
+      if (roles.includes("atasan")) {
+        navigate("/dashboard-atasan");
+      } else if (roles.includes("pustakawan")) {
+        navigate("/dashboard-pustakawan");
+      } else if (roles.includes("admin")) {
+        navigate("/dashboard-admin");
+      } else if (roles.includes("mahasiswa")) {
+        navigate("/dashboard-mahasiswa");
+      } else {
+        setError("Role akun tidak dikenali.");
+      }
+    } catch (err) {
+      console.error(err);
+
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Login gagal. Periksa email/NIM dan password.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -32,17 +72,28 @@ export default function Login() {
               className="h-16 mx-auto mb-4 object-contain"
               alt="Logo IPB University"
             />
-            <h1 className="text-2xl font-bold text-gray-900">IPB University</h1>
+
+            <h1 className="text-2xl font-bold text-gray-900">
+              IPB University
+            </h1>
+
             <h2 className="text-xl font-bold text-gray-800 mt-1">
               Sistem Informasi
             </h2>
-            <h2 className="text-xl font-bold text-gray-800">Clearing Online</h2>
+
+            <h2 className="text-xl font-bold text-gray-800">
+              Clearing Online
+            </h2>
+
             <p className="text-xs text-gray-500 mt-3">
               Silahkan masuk dan melaporkan
             </p>
           </div>
 
-          <form className="flex max-w-md flex-col gap-4" onSubmit={handleLogin}>
+          <form
+            className="flex max-w-md flex-col gap-4"
+            onSubmit={handleLogin}
+          >
             {error && (
               <div className="text-red-500 text-sm bg-red-100 p-2 rounded text-center">
                 {error}
@@ -51,22 +102,25 @@ export default function Login() {
 
             <div>
               <div className="mb-2 block">
-                <Label htmlFor="email" value="Email" />
+                <Label htmlFor="email" value="Email / NIM" />
               </div>
+
               <TextInput
                 id="email"
-                type="email"
-                placeholder="Masukan username"
+                type="text"
+                placeholder="Masukkan Email atau NIM"
                 required
                 shadow
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+
             <div>
               <div className="mb-2 block">
                 <Label htmlFor="password" value="Password" />
               </div>
+
               <TextInput
                 id="password"
                 type="password"
@@ -89,9 +143,10 @@ export default function Login() {
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full mt-2 bg-blue-800 hover:bg-blue-900"
             >
-              Login
+              {loading ? "Sedang Login..." : "Login"}
             </Button>
           </form>
         </div>
@@ -103,6 +158,7 @@ export default function Login() {
           alt="Gerbang IPB University"
           className="absolute inset-0 w-full h-full object-cover"
         />
+
         <div className="absolute inset-0 bg-black/10"></div>
       </div>
     </div>

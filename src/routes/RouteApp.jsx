@@ -1,13 +1,20 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// Halaman mahasiswa
+// ================= MAHASISWA =================
 import Signup from "../pages/Signup";
 import Login from "../pages/Login";
 import DashboardMahasiswa from "../pages/DashboardMahasiswa";
 import PengajuanPerpustakaan from "../pages/PengajuanPerpustakaan";
 import PengajuanSaya from "../pages/PengajuanSaya";
 
-// Halaman pustakawan
+// ================= ADMIN =================
+import DashboardAdmin from "../pages/DashboardAdmin";
+import DataMahasiswa from "../pages/DataMahasiswa";
+import VerifikasiMahasiswa from "../pages/VerifikasiMahasiswa";
+import Selesai from "../pages/Selesai";
+import DetailSelesai from "../pages/DetailSelesai";
+
+// ================= PUSTAKAWAN =================
 import PustakawanDashboard from "../pages/PustakawanDashboard";
 import DataPengajuan from "../pages/DataPengajuan";
 import DetailVerifikasi from "../pages/DetailVerifikasi";
@@ -16,7 +23,7 @@ import VerifikasiBerhasil from "../pages/VerifikasiBerhasil";
 // Layout pustakawan
 import PustakawanLayout from "../layouts/PustakawanLayout";
 
-// Halaman atasan
+// ================= ATASAN =================
 import AtasanDashboard from "../pages/AtasanDashboard";
 import DataMahasiswaAtasan from "../pages/DataMahasiswaAtasan";
 import TandaTanganAtasan from "../pages/TandaTanganAtasan";
@@ -51,10 +58,37 @@ export default function RouteApp() {
           element={<PengajuanSaya />}
         />
 
+        {/* ================= ADMIN ================= */}
+
+        <Route
+          path="/dashboard-admin"
+          element={<DashboardAdmin />}
+        />
+
+        <Route
+          path="/data-mahasiswa"
+          element={<DataMahasiswa />}
+        />
+
+        <Route
+          path="/verifikasi-mahasiswa/:id"
+          element={<VerifikasiMahasiswa />}
+        />
+
+        <Route
+          path="/selesai"
+          element={<Selesai />}
+        />
+
+        <Route
+          path="/detail-selesai/:id"
+          element={<DetailSelesai />}
+        />
 
         {/* ================= PUSTAKAWAN ================= */}
 
         <Route element={<PustakawanLayout />}>
+
           <Route
             path="/pustakawan-dashboard"
             element={<PustakawanDashboard />}
@@ -74,12 +108,13 @@ export default function RouteApp() {
             path="/verifikasi-berhasil"
             element={<VerifikasiBerhasil />}
           />
-        </Route>
 
+        </Route>
 
         {/* ================= ATASAN ================= */}
 
         <Route element={<AtasanLayout />}>
+
           <Route
             path="/dashboard-atasan"
             element={<AtasanDashboard />}
@@ -99,6 +134,7 @@ export default function RouteApp() {
             path="/verifikasi-qr/:id"
             element={<VerifikasiQR />}
           />
+
         </Route>
 
       </Routes>

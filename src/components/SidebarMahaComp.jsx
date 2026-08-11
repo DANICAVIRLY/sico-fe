@@ -24,7 +24,7 @@ export default function SidebarMahaComp() {
             </Link>
         </div>
         <div className="mt-auto pb-10 px-6">
-            <Link to="/signup" className="flex items-center gap-3 p-3 rounded-lg font-medium hover:bg-[#2f3a96] transition-colors" >
+            <Link to="/" className="flex items-center gap-3 p-3 rounded-lg font-medium hover:bg-[#2f3a96] transition-colors" >
                 <HiLogout className="w-6 h-6" />
                 Logout
             </Link>
