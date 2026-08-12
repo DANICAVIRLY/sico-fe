@@ -12,53 +12,79 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    setError("");
-    setLoading(true);
+  setError("");
+  setLoading(true);
 
-    try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/login",
-        {
-          login: email,
-          password: password,
-        }
+  try {
+    const payload = {
+      login: email.trim(),
+      password: password,
+    };
+
+    console.log("DATA YANG DIKIRIM:", payload);
+
+    const response = await axios.post(
+      "http://127.0.0.1:8000/api/auth/login",
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+
+    console.log("LOGIN BERHASIL:", response.data);
+
+    const data = response.data.data;
+    const user = data.user;
+    const token = data.token;
+
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    const roles = user.roles || [];
+
+    if (roles.includes("atasan")) {
+      navigate("/dashboard-atasan");
+    } else if (roles.includes("pustakawan")) {
+      navigate("/pustakawan-dashboard");
+    } else if (roles.includes("admin")) {
+      navigate("/dashboard-admin");
+    } else if (roles.includes("mahasiswa")) {
+      navigate("/dashboard-mahasiswa");
+    } else {
+      setError("Role akun tidak dikenali.");
+    }
+
+  } catch (error) {
+    console.log("STATUS:", error.response?.status);
+    console.log("RESPONSE ERROR:", error.response?.data);
+    console.log("VALIDATION ERROR:", error.response?.data?.errors);
+
+    const errors = error.response?.data?.errors;
+
+    if (errors?.login) {
+      setError(errors.login[0]);
+    } else {
+      setError(
+        error.response?.data?.message ||
+        "Email atau password salah."
       );
+    }
 
-      const data = response.data.data;
-      const user = data.user;
-      const token = data.token;
+  } finally {
+    setLoading(false);
+  
 
-      // Simpan token dan data user
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
 
-      // Ambil role user
-      const roles = user.roles || [];
+  setError(
+    error.response?.data?.message ||
+    "Validasi gagal."
+  );
 
-      // Arahkan sesuai role
-      if (roles.includes("atasan")) {
-        navigate("/dashboard-atasan");
-      } else if (roles.includes("pustakawan")) {
-        navigate("/dashboard-pustakawan");
-      } else if (roles.includes("admin")) {
-        navigate("/dashboard-admin");
-      } else if (roles.includes("mahasiswa")) {
-        navigate("/dashboard-mahasiswa");
-      } else {
-        setError("Role akun tidak dikenali.");
-      }
-    } catch (err) {
-      console.error(err);
-
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Login gagal. Periksa email/NIM dan password.");
-      }
-    } finally {
-      setLoading(false);
     }
   };
 
