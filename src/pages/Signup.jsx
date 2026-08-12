@@ -1,8 +1,9 @@
 import { Button, Label, TextInput } from "flowbite-react";
 import logo from "../assets/logo_ipb.png";
 import ipb from "../assets/ipb.jpeg";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
+import axios from "axios";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Cek password
@@ -28,25 +29,50 @@ export default function Signup() {
       return;
     }
 
-    // Simpan data mahasiswa
-    localStorage.setItem("nama", nama);
-    localStorage.setItem("nim", nim);
-    localStorage.setItem("email", email);
-    localStorage.setItem("password", password);
-    localStorage.setItem("role", "mahasiswa");
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/auth/register",
+        {
+          nama: nama,
+          nim: nim,
+          email: email,
+          password: password,
+          password_confirmation: confirmPassword,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        },
+      );
 
-    // Arahkan ke halaman login
-    navigate("/login-admin");
+      console.log("REGISTER BERHASIL:", response.data);
+
+      alert("Registrasi berhasil! Silakan login.");
+
+      navigate("/login-admin");
+    } catch (error) {
+      console.log("STATUS:", error.response?.status);
+      console.log("ERROR:", error.response?.data);
+
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        const firstError = Object.values(errors)[0][0];
+
+        alert(firstError);
+      } else {
+        alert(error.response?.data?.message || "Registrasi gagal.");
+      }
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#b8b1b1]">
       <div className="min-h-screen w-full bg-white grid md:grid-cols-2">
-
         {/* ================= BAGIAN FORM ================= */}
         <div className="min-h-screen overflow-y-auto flex items-center justify-center p-8 md:p-12">
           <div className="w-full max-w-md">
-
             {/* Logo */}
             <div className="flex justify-center mb-3">
               <img
@@ -74,16 +100,16 @@ export default function Signup() {
                 Silahkan daftar untuk melanjutkan
               </p>
             </div>
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-            >
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label
                   htmlFor="nama"
                   value="Nama Lengkap"
                   className="text-sm font-semibold"
-                >Nama Lengkap</Label>
+                >
+                  Nama Lengkap
+                </Label>
 
                 <TextInput
                   id="nama"
@@ -96,12 +122,15 @@ export default function Signup() {
                   className="mt-1"
                 />
               </div>
+
               <div>
                 <Label
                   htmlFor="email"
                   value="Email"
                   className="text-sm font-semibold"
-                > Email</Label>
+                >
+                  Email
+                </Label>
 
                 <TextInput
                   id="email"
@@ -114,12 +143,15 @@ export default function Signup() {
                   className="mt-1"
                 />
               </div>
+
               <div>
                 <Label
                   htmlFor="nim"
                   value="NIM"
                   className="text-sm font-semibold"
-                >NIM</Label>
+                >
+                  NIM
+                </Label>
 
                 <TextInput
                   id="nim"
@@ -132,12 +164,15 @@ export default function Signup() {
                   className="mt-1"
                 />
               </div>
+
               <div>
                 <Label
                   htmlFor="password"
                   value="Password"
                   className="text-sm font-semibold"
-                >Password</Label>
+                >
+                  Password
+                </Label>
 
                 <TextInput
                   id="password"
@@ -150,12 +185,15 @@ export default function Signup() {
                   className="mt-1"
                 />
               </div>
+
               <div>
                 <Label
                   htmlFor="confirmPassword"
                   value="Confirm Password"
                   className="text-sm font-semibold"
-                >Confirm Password</Label>
+                >
+                  Confirm Password
+                </Label>
 
                 <TextInput
                   id="confirmPassword"
@@ -169,14 +207,20 @@ export default function Signup() {
                 />
               </div>
 
-              {/* Button */}
               <Button
                 type="submit"
                 className="w-full bg-indigo-600 hover:bg-indigo-700 mt-6"
               >
                 Sign Up
               </Button>
-
+              <div className="text-center mt-5">
+                <Link
+                  to="/login-admin"
+                  className="text-sm text-blue-600 hover:underline font-medium"
+                >
+                  Login sebagai Admin / Atasan / Pustakawan
+                </Link>
+              </div>
             </form>
           </div>
         </div>
@@ -189,7 +233,6 @@ export default function Signup() {
             className="h-full w-full object-cover"
           />
         </div>
-
       </div>
     </div>
   );
