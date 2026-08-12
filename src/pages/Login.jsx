@@ -1,3 +1,4 @@
+
 import { Button, Label, TextInput } from "flowbite-react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -10,8 +11,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-
-  const handleLogin = async (e) => {
+const handleLogin = async (e) => {
   e.preventDefault();
 
   setError("");
@@ -42,11 +42,14 @@ export default function Login() {
     const user = data.user;
     const token = data.token;
 
+    // Simpan token dan data user
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
 
+    // Ambil role user
     const roles = user.roles || [];
 
+    // Arahkan sesuai role
     if (roles.includes("atasan")) {
       navigate("/dashboard-atasan");
     } else if (roles.includes("pustakawan")) {
@@ -77,16 +80,8 @@ export default function Login() {
 
   } finally {
     setLoading(false);
-  
-
-
-  setError(
-    error.response?.data?.message ||
-    "Validasi gagal."
-  );
-
-    }
-  };
+  }
+};
 
   return (
     <div className="flex min-h-screen w-full bg-white">
@@ -128,7 +123,9 @@ export default function Login() {
 
             <div>
               <div className="mb-2 block">
-                <Label htmlFor="email" value="email" > Email</Label>
+                <Label htmlFor="email" value="email">
+                  Email
+                </Label>
               </div>
 
               <TextInput
@@ -144,7 +141,9 @@ export default function Login() {
 
             <div>
               <div className="mb-2 block">
-                <Label htmlFor="password" value="Password" >Password </Label>
+                <Label htmlFor="password" value="Password">
+                  Password
+                </Label>
               </div>
 
               <TextInput
@@ -190,3 +189,4 @@ export default function Login() {
     </div>
   );
 }
+
