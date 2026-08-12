@@ -102,13 +102,13 @@ export default function Login() {
 
             <div>
               <div className="mb-2 block">
-                <Label htmlFor="name" value="name" > Nama </Label>
+                <Label htmlFor="email" value="email" > Email</Label>
               </div>
 
               <TextInput
-                id="name"
-                type="text"
-                placeholder="Masukkan Nama"
+                id="email"
+                type="email"
+                placeholder="Masukkan email"
                 required
                 shadow
                 value={email}
