@@ -65,13 +65,10 @@ export default function DashboardMahasiswa() {
                     <h3 className="text-2xl font-bold">Clearing Perpustakaan</h3>
                     <p className="text-gray-500 mt-6">Selesai pada 15 Mei 2026</p>
                     <div className="flex gap-3 mt-8">
-                      <Button color="light" outline> Lihat PDF</Button>
-                      <Button color="light" outline> Download </Button>
+                      <Button outline ={{ color: "#6c757d", borderColor: "#d1d5db", borderWidth: "1px", }} > Lihat PDF </Button>
+                      <Button outline ={{ color: "#6c757d", borderColor: "#d1d5db", borderWidth: "1px", }} > Download </Button>
                     </div>
                   </div>
-                  {/* <div className="flex justify-center">
-                    <img src={qr}  alt="QR Code"  className="w-40 h-40" />
-                  </div> */}
                   <div>
                     <h3 className="text-xl font-semibold">Scan untuk verifikasi dokumen ini</h3>
                     <p className="text-gray-500 mt-3">QR Code ini digunakan untuk memverifikasi keaslian surat clearing.</p>

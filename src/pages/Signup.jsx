@@ -17,13 +17,11 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Cek password
     if (password !== confirmPassword) {
       alert("Password dan Confirm Password tidak sama!");
       return;
     }
 
-    // Cek semua data
     if (!nama || !nim || !email || !password || !confirmPassword) {
       alert("Semua data harus diisi!");
       return;
@@ -44,7 +42,7 @@ export default function Signup() {
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-        },
+        }
       );
 
       console.log("REGISTER BERHASIL:", response.data);
@@ -62,7 +60,9 @@ export default function Signup() {
 
         alert(firstError);
       } else {
-        alert(error.response?.data?.message || "Registrasi gagal.");
+        alert(
+          error.response?.data?.message || "Registrasi gagal."
+        );
       }
     }
   };
@@ -101,15 +101,18 @@ export default function Signup() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Form */}
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
+              {/* Nama */}
               <div>
                 <Label
                   htmlFor="nama"
                   value="Nama Lengkap"
                   className="text-sm font-semibold"
-                >
-                  Nama Lengkap
-                </Label>
+                />
 
                 <TextInput
                   id="nama"
@@ -123,14 +126,13 @@ export default function Signup() {
                 />
               </div>
 
+              {/* Email */}
               <div>
                 <Label
                   htmlFor="email"
                   value="Email"
                   className="text-sm font-semibold"
-                >
-                  Email
-                </Label>
+                />
 
                 <TextInput
                   id="email"
@@ -144,14 +146,13 @@ export default function Signup() {
                 />
               </div>
 
+              {/* NIM */}
               <div>
                 <Label
                   htmlFor="nim"
                   value="NIM"
                   className="text-sm font-semibold"
-                >
-                  NIM
-                </Label>
+                />
 
                 <TextInput
                   id="nim"
@@ -165,14 +166,13 @@ export default function Signup() {
                 />
               </div>
 
+              {/* Password */}
               <div>
                 <Label
                   htmlFor="password"
                   value="Password"
                   className="text-sm font-semibold"
-                >
-                  Password
-                </Label>
+                />
 
                 <TextInput
                   id="password"
@@ -186,33 +186,37 @@ export default function Signup() {
                 />
               </div>
 
+              {/* Confirm Password */}
               <div>
                 <Label
                   htmlFor="confirmPassword"
                   value="Confirm Password"
                   className="text-sm font-semibold"
-                >
-                  Confirm Password
-                </Label>
+                />
 
                 <TextInput
                   id="confirmPassword"
                   type="password"
                   placeholder="Ulangi Password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) =>
+                    setConfirmPassword(e.target.value)
+                  }
                   required
                   shadow
                   className="mt-1"
                 />
               </div>
 
+              {/* Button */}
               <Button
                 type="submit"
                 className="w-full bg-indigo-600 hover:bg-indigo-700 mt-6"
               >
                 Sign Up
               </Button>
+
+              {/* Login */}
               <div className="text-center mt-5">
                 <Link
                   to="/login-admin"
