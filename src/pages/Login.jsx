@@ -1,3 +1,4 @@
+
 import { Button, Label, TextInput } from "flowbite-react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
@@ -19,7 +20,7 @@ export default function Login() {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/login",
+        "http://localhost:8000/api/auth/login",
         {
           login: email,
           password: password,
@@ -55,7 +56,7 @@ export default function Login() {
       if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else {
-        setError("Login gagal. Periksa email/NIM dan password.");
+        setError("Login gagal. Periksa Email dan password.");
       }
     } finally {
       setLoading(false);
@@ -102,7 +103,9 @@ export default function Login() {
 
             <div>
               <div className="mb-2 block">
-                <Label htmlFor="email" value="email" > Email</Label>
+                <Label htmlFor="email" value="email">
+                  Email
+                </Label>
               </div>
 
               <TextInput
@@ -118,7 +121,9 @@ export default function Login() {
 
             <div>
               <div className="mb-2 block">
-                <Label htmlFor="password" value="Password" >Password </Label>
+                <Label htmlFor="password" value="Password">
+                  Password
+                </Label>
               </div>
 
               <TextInput
@@ -164,3 +169,4 @@ export default function Login() {
     </div>
   );
 }
+
