@@ -31,7 +31,7 @@ export default function Signup() {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/register",
+        "http://10.59.92.251:8000/api/auth/register",
         {
           nama: nama,
           nim: nim,
@@ -221,6 +221,13 @@ export default function Signup() {
                   Login sebagai Admin / Atasan / Pustakawan
                 </Link>
               </div>
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Sudah punya akun?{" "}
+                <Link to="/login-admin"
+                 className="text-indigo-600 hover:underline">
+                  Login di sini
+                </Link>
+              </p>
             </form>
           </div>
         </div>

@@ -26,7 +26,7 @@ const handleLogin = async (e) => {
     console.log("DATA YANG DIKIRIM:", payload);
 
     const response = await axios.post(
-      "http://127.0.0.1:8000/api/auth/login",
+      "http://10.59.92.251:8000/api/auth/login",
       payload,
       {
         headers: {
