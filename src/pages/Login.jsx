@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
-const API_URL = "http://127.0.0.1:8000/api";
 
 export default function Login() {
   const [login, setLogin] = useState("");
@@ -28,7 +27,7 @@ export default function Login() {
       console.log("DATA YANG DIKIRIM:", payload);
 
       const response = await axios.post(
-        `${API_URL}/auth/login`,
+       "http://10.59.92.251:8000/api/auth/login",
         payload,
         {
           headers: {

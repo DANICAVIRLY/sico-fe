@@ -13,7 +13,6 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -29,7 +28,7 @@ export default function Signup() {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/auth/register",
+        "http://10.59.92.251:8000/api/auth/register",
         {
           nama: nama,
           nim: nim,
@@ -47,7 +46,8 @@ export default function Signup() {
 
       console.log("REGISTER BERHASIL:", response.data);
 
-      alert("Registrasi berhasil! Silakan login.");
+      localStorage.setItem("nama", nama);
+      localStorage.setItem("nim", nim);
 
       navigate("/login-admin");
     } catch (error) {
@@ -70,7 +70,6 @@ export default function Signup() {
   return (
     <div className="min-h-screen bg-[#b8b1b1]">
       <div className="min-h-screen w-full bg-white grid md:grid-cols-2">
-        {/* ================= BAGIAN FORM ================= */}
         <div className="min-h-screen overflow-y-auto flex items-center justify-center p-8 md:p-12">
           <div className="w-full max-w-md">
             {/* Logo */}
@@ -100,19 +99,16 @@ export default function Signup() {
                 Silahkan daftar untuk melanjutkan
               </p>
             </div>
-
-            {/* Form */}
             <form
               onSubmit={handleSubmit}
               className="space-y-4"
             >
-              {/* Nama */}
               <div>
                 <Label
                   htmlFor="nama"
                   value="Nama Lengkap"
                   className="text-sm font-semibold"
-                />
+                >Nama Lengkap</Label>
 
                 <TextInput
                   id="nama"
@@ -132,7 +128,7 @@ export default function Signup() {
                   htmlFor="email"
                   value="Email"
                   className="text-sm font-semibold"
-                />
+                >Email</Label>
 
                 <TextInput
                   id="email"
@@ -152,7 +148,7 @@ export default function Signup() {
                   htmlFor="nim"
                   value="NIM"
                   className="text-sm font-semibold"
-                />
+                > NIM</Label>
 
                 <TextInput
                   id="nim"
@@ -172,7 +168,7 @@ export default function Signup() {
                   htmlFor="password"
                   value="Password"
                   className="text-sm font-semibold"
-                />
+                >Password</Label>
 
                 <TextInput
                   id="password"
@@ -192,7 +188,7 @@ export default function Signup() {
                   htmlFor="confirmPassword"
                   value="Confirm Password"
                   className="text-sm font-semibold"
-                />
+                >Confirm Password</Label>
 
                 <TextInput
                   id="confirmPassword"

@@ -1,114 +1,372 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Badge,
   Button,
   Card,
   FileInput,
   Label,
-  Select,
+  Spinner,
 } from "flowbite-react";
 import SidebarMahaComp from "../components/SidebarMahaComp";
+import axios from "axios";
+
+const STORAGE_URL = "http://10.59.92.251:8000/storage";
 
 export default function PengajuanSaya() {
-  const nama = localStorage.getItem("nama") || "Mahasiswa";
-  const nim = localStorage.getItem("nim") || "-";
+  const [nama, setNama] = useState("");
+  const [nim, setNim] = useState("");
+  const [departemen, setDepartemen] = useState("");
+  const [programStudi, setProgramStudi] = useState("");
+  const [fileKtm, setFileKtm] = useState(null);
+  const [fileSpp, setFileSpp] = useState(null);
+  const [fileDistribusi, setFileDistribusi] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [jenisDokumen, setJenisDokumen] = useState("");
-  const [file, setFile] = useState(null);
+  const getToken = () => {
+    return (
+      localStorage.getItem("token") ||
+      localStorage.getItem("access_token") ||
+      ""
+    );
+  };
+  const getConfig = () => {
+    const token = getToken();
 
-  const [documents, setDocuments] = useState([
-    
-    {
-      id: 1,
-      nama: "Kartu Tanda Mahasiswa (KTM)",
-      status: "Verified",
-      upload: "07 Agustus 2026",
-      validasi: "08 Agustus 2026",
-      catatan: "-",
-      file: "ktm.pdf",
-    },
-    {
-      id: 2,
-      nama: "Bukti Pembayaran SPP",
-      status: "Pending",
-      upload: "08 Agustus 2026",
-      validasi: "-",
-      catatan: "Menunggu validasi admin",
-      file: "spp.pdf",
-    },
-    {
-      id: 3,
-      nama: "Surat Bebas Tanggungan Keuangan",
-      status: "Verified",
-      upload: "08 Agustus 2026",
-      validasi: "08 Agustus 2026",
-      catatan: "-",
-      file: "keuangan.pdf",
-    },
-    {
-      id: 4,
-      nama: "Distribusi Skripsi",
-      status: "Rejected",
-      upload: "08 Agustus 2026",
-      validasi: "08 Agustus 2026",
-      catatan: "Dokumen tidak jelas",
-      file: "skripsi.pdf",
-    },
-  ]);
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+  };
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
 
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
 
-  const handleFileChange = (event) => {
-    const selectedFile = event.target.files?.[0];
+        setNama(
+          user.nama ||
+            user.name ||
+            user.nama_lengkap ||
+            user.full_name ||
+            ""
+        );
 
-    if (!selectedFile) {
-      setFile(null);
-      return;
+        setNim(
+          user.nim ||
+            user.NIM ||
+            user.nim_mahasiswa ||
+            ""
+        );
+
+        setDepartemen(
+          user.departemen ||
+            user.department ||
+            ""
+        );
+
+        setProgramStudi(
+          user.program_studi ||
+            user.programStudi ||
+            user.prodi ||
+            ""
+        );
+      } catch (err) {
+        console.error("Gagal membaca data user:", err);
+      }
     }
 
-    setFile(selectedFile);
+    setNama((prev) => prev || localStorage.getItem("nama") || "Mahasiswa");
+    setNim((prev) => prev || localStorage.getItem("nim") || "");
+  }, []);
+  const getPengajuan = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await axios.post(
+        "http://192.168.137.80:8000/api/pengajuan-clearing",
+        getConfig()
+      );
+
+      console.log("DATA PENGAJUAN:", response.data);
+
+      const result = response.data?.data ?? response.data;
+
+      let data = [];
+
+      if (Array.isArray(result)) {
+        data = result;
+      } else if (Array.isArray(result?.data)) {
+        data = result.data;
+      } else if (result) {
+        data = [result];
+      }
+
+      setDocuments(data);
+    } catch (err) {
+      console.error("Gagal mengambil pengajuan:", err);
+
+      if (err.response?.status === 401) {
+        setError("Sesi login sudah habis. Silakan login kembali.");
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError("Gagal mengambil data pengajuan dari server.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUpload = () => {
-    if (!jenisDokumen) {
-      alert("Silakan pilih jenis dokumen.");
-      return;
-    }
+  useEffect(() => {
+    getPengajuan();
+  }, []);
 
+  const validateFile = (file) => {
     if (!file) {
-      alert("Silakan pilih file terlebih dahulu.");
+      return true;
+    }
+
+    const maxSize = 5 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      alert(`File ${file.name} terlalu besar. Maksimal 5 MB.`);
+      return false;
+    }
+
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert(
+        `File ${file.name} tidak didukung.\nGunakan PDF, JPG, JPEG, atau PNG.`
+      );
+
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!departemen.trim()) {
+      alert("Departemen wajib diisi.");
+      return;
+    }
+    if (!programStudi.trim()) {
+      alert("Program Studi wajib diisi.");
+      return;
+    }
+    if (!fileKtm) {
+      alert("File KTM wajib diupload.");
       return;
     }
 
-    // Cek ukuran file maksimal 5 MB
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Ukuran file maksimal 5 MB.");
+    if (!fileSpp) {
+      alert("File Bukti Pembayaran SPP wajib diupload.");
       return;
     }
 
-    const dataBaru = {
-      id: Date.now(),
-      nama: jenisDokumen,
-      status: "Pending",
-      upload: new Date().toLocaleDateString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      }),
-      validasi: "-",
-      catatan: "Menunggu validasi admin",
-      file: file.name,
-    };
+    if (!fileDistribusi) {
+      alert("File Distribusi Skripsi wajib diupload.");
+      return;
+    }
+    
 
-    setDocuments((prev) => [...prev, dataBaru]);
+    if (fileKtm && !validateFile(fileKtm)) {
+      return;
+    }
 
-    setJenisDokumen("");
-    setFile(null);
+    if (fileSpp && !validateFile(fileSpp)) {
+      return;
+    }
 
-    alert("Dokumen berhasil diupload.");
+    if (fileDistribusi && !validateFile(fileDistribusi)) {
+      return;
+    }
+
+    try {
+      setUploading(true);
+
+      const formData = new FormData();
+
+      formData.append("departemen", departemen);
+      formData.append("program_studi", programStudi);
+
+      if (fileKtm) {
+        formData.append("file_ktm", fileKtm);
+      }
+
+      if (fileSpp) {
+        formData.append("file_bukti_spp", fileSpp);
+      }
+
+      if (fileDistribusi) {
+        formData.append("file_distribusi", fileDistribusi);
+      }
+
+      console.log("FORM DATA:");
+
+      for (const pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+
+      const response = await axios.post(
+        "http://192.168.137.80:8000/api/pengajuan-clearing",
+        formData,
+        {
+          headers: {
+            ...getConfig().headers,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log("UPLOAD RESPONSE:", response.data);
+
+      alert("Pengajuan clearing berhasil diajukan.");
+
+      setFileKtm(null);
+      setFileSpp(null);
+      setFileDistribusi(null);
+
+      const inputKtm = document.getElementById("fileKtm");
+      const inputSpp = document.getElementById("fileSpp");
+      const inputDistribusi =
+        document.getElementById("fileDistribusi");
+
+      if (inputKtm) inputKtm.value = "";
+      if (inputSpp) inputSpp.value = "";
+      if (inputDistribusi) inputDistribusi.value = "";
+
+      await getPengajuan();
+
+    } catch (err) {
+      console.error("ERROR UPLOAD:", err);
+
+      console.log("STATUS:", err.response?.status);
+      console.log("RESPONSE:", err.response?.data);
+
+      if (err.response?.data?.errors) {
+        const errors = err.response.data.errors;
+
+        const messages = Object.values(errors)
+          .flat()
+          .join("\n");
+
+        setError(messages);
+        alert(messages);
+
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+        alert(err.response.data.message);
+
+      } else {
+        setError("Gagal mengajukan clearing.");
+        alert("Gagal mengajukan clearing.");
+      }
+
+    } finally {
+      setUploading(false);
+    }
+  };
+  const getFileUrl = (file) => {
+    if (!file) {
+      return null;
+    }
+
+    if (
+      file.startsWith("http://") ||
+      file.startsWith("https://")
+    ) {
+      return file;
+    }
+
+    if (file.startsWith("storage/")) {
+      return `http://10.59.92.251:8000/${file}`;
+    }
+
+    if (file.startsWith("/storage/")) {
+      return `http://10.59.92.251:8000${file}`;
+    }
+
+    return `${STORAGE_URL}/${file}`;
+  };
+
+  const handlePreview = (file) => {
+    const url = getFileUrl(file);
+
+    if (!url) {
+      alert("File tidak ditemukan.");
+      return;
+    }
+
+    window.open(url, "_blank");
+  };
+  const handleDownload = async (file) => {
+    const url = getFileUrl(file);
+
+    if (!url) {
+      alert("File tidak ditemukan.");
+      return;
+    }
+
+    try {
+      const response = await axios.get(url, {
+        responseType: "blob",
+      });
+
+      const blobUrl = window.URL.createObjectURL(
+        new Blob([response.data])
+      );
+
+      const link = document.createElement("a");
+
+      link.href = blobUrl;
+
+      const fileName = file.split("/").pop();
+
+      link.setAttribute(
+        "download",
+        fileName || "dokumen"
+      );
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      link.remove();
+
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Gagal download:", err);
+
+      alert("Gagal mengunduh file.");
+    }
   };
 
   const renderStatus = (status) => {
-    if (status === "Verified") {
+    const normalized = String(status || "")
+      .toLowerCase()
+      .replace(/[_-]/g, " ");
+
+    if (
+      normalized === "verified" ||
+      normalized === "approved" ||
+      normalized === "disetujui"
+    ) {
       return (
         <Badge
           color="success"
@@ -119,7 +377,10 @@ export default function PengajuanSaya() {
       );
     }
 
-    if (status === "Rejected") {
+    if (
+      normalized === "rejected" ||
+      normalized === "ditolak"
+    ) {
       return (
         <Badge
           color="failure"
@@ -140,298 +401,541 @@ export default function PengajuanSaya() {
     );
   };
 
+  const formatDate = (date) => {
+    if (!date) {
+      return "-";
+    }
+
+    try {
+      return new Date(date).toLocaleDateString(
+        "id-ID",
+        {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }
+      );
+    } catch {
+      return date;
+    }
+  };
+
+  const getFileName = (file) => {
+    if (!file) {
+      return "-";
+    }
+
+    return file.split("/").pop();
+  };
+
+  const getDocumentRows = () => {
+    const rows = [];
+
+    documents.forEach((pengajuan) => {
+      if (
+        pengajuan.file_ktm ||
+        pengajuan.ktm ||
+        pengajuan.fileKtm
+      ) {
+        rows.push({
+          id: `${pengajuan.id}-ktm`,
+          pengajuanId: pengajuan.id,
+          nama: "Kartu Tanda Mahasiswa (KTM)",
+          file:
+            pengajuan.file_ktm ||
+            pengajuan.ktm ||
+            pengajuan.fileKtm,
+          status:
+            pengajuan.status_ktm ||
+            pengajuan.status ||
+            "Pending",
+          upload:
+            pengajuan.created_at ||
+            pengajuan.tanggal_upload,
+          validasi:
+            pengajuan.validated_at ||
+            pengajuan.tanggal_validasi,
+          catatan:
+            pengajuan.catatan_ktm ||
+            pengajuan.catatan ||
+            "-",
+        });
+      }
+
+      if (
+        pengajuan.file_bukti_spp ||
+        pengajuan.bukti_spp ||
+        pengajuan.fileSpp
+      ) {
+        rows.push({
+          id: `${pengajuan.id}-spp`,
+          pengajuanId: pengajuan.id,
+          nama: "Bukti Pembayaran SPP",
+          file:
+            pengajuan.file_bukti_spp ||
+            pengajuan.bukti_spp ||
+            pengajuan.fileSpp,
+          status:
+            pengajuan.status_spp ||
+            pengajuan.status ||
+            "Pending",
+          upload:
+            pengajuan.created_at ||
+            pengajuan.tanggal_upload,
+          validasi:
+            pengajuan.validated_at ||
+            pengajuan.tanggal_validasi,
+          catatan:
+            pengajuan.catatan_spp ||
+            pengajuan.catatan ||
+            "-",
+        });
+      }
+
+      if (
+        pengajuan.file_distribusi ||
+        pengajuan.distribusi ||
+        pengajuan.fileDistribusi
+      ) {
+        rows.push({
+          id: `${pengajuan.id}-distribusi`,
+          pengajuanId: pengajuan.id,
+          nama: "Distribusi Skripsi",
+          file:
+            pengajuan.file_distribusi ||
+            pengajuan.distribusi ||
+            pengajuan.fileDistribusi,
+          status:
+            pengajuan.status_distribusi ||
+            pengajuan.status ||
+            "Pending",
+          upload:
+            pengajuan.created_at ||
+            pengajuan.tanggal_upload,
+          validasi:
+            pengajuan.validated_at ||
+            pengajuan.tanggal_validasi,
+          catatan:
+            pengajuan.catatan_distribusi ||
+            pengajuan.catatan ||
+            "-",
+        });
+      }
+    });
+
+    return rows;
+  };
+
+  const documentRows = getDocumentRows();
   return (
     <div className="min-h-screen bg-slate-50">
       <SidebarMahaComp />
+
       <main className="ml-64 p-8">
         <div className="mb-8">
-          <p className="mb-2 text-sm font-medium text-indigo-600"> Sistem Informasi Clearing Online </p>
-          <h1 className="text-3xl font-bold text-gray-800"> Pengajuan Saya </h1>
+          <p className="mb-2 text-sm font-medium text-indigo-600">
+            Sistem Informasi Clearing Online
+          </p>
+
+          <h1 className="text-3xl font-bold text-gray-800">
+            Pengajuan Saya
+          </h1>
+
           <p className="mt-2 text-gray-500">
             Kelola dan unggah dokumen persyaratan
             clearing Anda.
           </p>
         </div>
+        {error && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <p className="font-semibold">
+              Terjadi kesalahan
+            </p>
+
+            <p className="mt-1 whitespace-pre-line">
+              {error}
+            </p>
+          </div>
+        )}
         <Card className="mb-6 border border-gray-200 shadow-sm">
-          <div className="mb-5">
-            <h2 className="text-xl font-bold text-gray-800"> Unggah Dokumen Baru </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Pilih jenis dokumen dan unggah file
-              persyaratan Anda.
-            </p>
-          </div>
-          <div className="mb-5 grid gap-5 md:grid-cols-2">
-            <div>
-              <Label htmlFor="nama" value="Nama Mahasiswa" />
-              <input id="nama"  type="text" value={nama}  disabled className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-2.5 text-sm text-gray-500"/>
-            </div>
-            <div>
-              <Label htmlFor="nim" value="NIM" />
-              <input id="nim" type="text" value={nim} disabled className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-2.5 text-sm text-gray-500" />
-            </div>
-          </div>
-          <div className="mb-5">
-            <Label htmlFor="jenisDokumen" value="Jenis Dokumen" />
-            <Select id="jenisDokumen" value={jenisDokumen} onChange={(event) => setJenisDokumen(event.target.value) } className="mt-2" >
-              <option value=""> Pilih jenis dokumen </option>
-              <option value="Kartu Tanda Mahasiswa (KTM)"> Kartu Tanda Mahasiswa (KTM) </option>
-              <option value="Bukti Pembayaran SPP"> Bukti Pembayaran SPP </option>
-              <option value="Surat Bebas Tanggungan Keuangan"> Surat Bebas Tanggungan Keuangan </option>
-              <option value="Distribusi Skripsi"> Distribusi Skripsi </option>
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="file" value="File Dokumen" />
-            <FileInput id="file" className="mt-2" color="blue" onChange={handleFileChange} accept=".pdf,.jpg,.jpeg,.png" />
-            <p className="mt-2 text-xs text-gray-400">
-              Format yang diperbolehkan: PDF, JPG,
-              JPEG, PNG. Maksimal 5 MB.
-            </p>
-            {file && (
-              <div className="mt-3 rounded-lg bg-gray-50 p-3">
-                <p className="text-sm font-medium text-gray-700"> File dipilih: </p>
-                <p className="mt-1 text-sm text-gray-500"> {file.name} </p>
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  Unggah Dokumen Baru
+                </h2>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Lengkapi dokumen persyaratan clearing
+                  Anda.
+                </p>
               </div>
-            )}
+            </div>
           </div>
-          <div className="mt-6 flex justify-end">
-            <Button color="blue" onClick={handleUpload}> Upload Dokumen </Button>
-          </div>
+
+          <form onSubmit={handleUpload}>
+
+            <div className="mb-6 grid gap-5 md:grid-cols-2">
+              <div>
+                <Label
+                  htmlFor="nama"
+                  value="Nama Mahasiswa"
+                >Nama Lengakap</Label>
+
+                <input
+                  id="nama"
+                  type="text"
+                  value={nama}
+                  disabled
+                  className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-3 text-sm text-gray-500"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="nim" value="NIM" >NIM</Label>
+
+                <input
+                  id="nim"
+                  type="text"
+                  value={nim}
+                  disabled
+                  className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-3 text-sm text-gray-500"
+                />
+              </div>
+            </div>
+            <div className="mb-6 grid gap-5 md:grid-cols-2">
+              <div>
+                <Label
+                  htmlFor="departemen"
+                  value="Departemen"
+                >Departemen</Label>
+
+                <input
+                  id="departemen"
+                  type="text"
+                  value={departemen}
+                  onChange={(e) =>
+                    setDepartemen(e.target.value)
+                  }
+                  placeholder="Masukkan Departemen"
+                  className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="programStudi"
+                  value="Program Studi"
+                >Program Studi</Label>
+
+                <input
+                  id="programStudi"
+                  type="text"
+                  value={programStudi}
+                  onChange={(e) =>
+                    setProgramStudi(e.target.value)
+                  }
+                  placeholder="Masukkan Program Studi"
+                  className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <div className="mb-3">
+                <h3 className="font-semibold text-gray-800">
+                  1. Kartu Tanda Mahasiswa (KTM)
+                </h3>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Upload KTM dalam format PDF, JPG,
+                  JPEG, atau PNG. Maksimal 5 MB.
+                </p>
+              </div>
+
+              <FileInput
+                id="fileKtm"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) =>
+                  setFileKtm(
+                    e.target.files?.[0] || null
+                  )
+                }
+              />
+
+              {fileKtm && (
+                <p className="mt-2 text-sm text-gray-600">
+                  File dipilih:{" "}
+                  <span className="font-semibold">
+                    {fileKtm.name}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <div className="mb-3">
+                <h3 className="font-semibold text-gray-800">
+                  2. Bukti Pembayaran SPP
+                </h3>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Upload bukti pembayaran SPP dalam
+                  format PDF, JPG, JPEG, atau PNG.
+                  Maksimal 5 MB.
+                </p>
+              </div>
+
+              <FileInput
+                id="fileSpp"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) =>
+                  setFileSpp(
+                    e.target.files?.[0] || null
+                  )
+                }
+              />
+
+              {fileSpp && (
+                <p className="mt-2 text-sm text-gray-600">
+                  File dipilih:{" "}
+                  <span className="font-semibold">
+                    {fileSpp.name}
+                  </span>
+                </p>
+              )}
+            </div>
+            <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <div className="mb-3">
+                <h3 className="font-semibold text-gray-800">
+                  3. Distribusi Skripsi
+                </h3>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Upload dokumen distribusi skripsi
+                  dalam format PDF, JPG, JPEG, atau
+                  PNG. Maksimal 5 MB.
+                </p>
+              </div>
+
+              <FileInput
+                id="fileDistribusi"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) =>
+                  setFileDistribusi(
+                    e.target.files?.[0] || null
+                  )
+                }
+              />
+
+              {fileDistribusi && (
+                <p className="mt-2 text-sm text-gray-600">
+                  File dipilih:{" "}
+                  <span className="font-semibold">
+                    {fileDistribusi.name}
+                  </span>
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                color="blue"
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <>
+                    <Spinner
+                      size="sm"
+                      className="mr-2"
+                    />
+                    Mengajukan...
+                  </>
+                ) : (
+                  "Ajukan Clearing"
+                )}
+              </Button>
+            </div>
+          </form>
         </Card>
         <Card className="border border-gray-200 shadow-sm">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-800"> Dokumen Terunggah </h2>
-              <p className="mt-1 text-sm text-gray-500"> Daftar dokumen yang telah Anda unggah. </p>
+              <h2 className="text-xl font-bold text-gray-800">
+                Dokumen Terunggah
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Daftar dokumen persyaratan yang telah
+                Anda upload.
+              </p>
             </div>
+
             <div className="rounded-lg bg-indigo-50 px-4 py-2">
-              <span className="text-sm font-semibold text-indigo-600"> {documents.length} Dokumen </span>
+              <span className="text-sm font-semibold text-indigo-600">
+                {documentRows.length} Dokumen
+              </span>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th scope="col" className="whitespace-nowrap px-6 py-4 font-semibold"> Dokumen </th>
-                  <th scope="col" className="whitespace-nowrap px-6 py-4 font-semibold" > Status </th>
-                  <th scope="col" className="whitespace-nowrap px-6 py-4 font-semibold" > Tanggal Upload  </th>
-                  <th scope="col" className="whitespace-nowrap px-6 py-4 font-semibold" > Validasi </th>
-                  <th scope="col" className="whitespace-nowrap px-6 py-4 font-semibold" > Catatan </th>
-                  <th scope="col" className="whitespace-nowrap px-6 py-4 text-center font-semibold" > Aksi </th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Spinner size="xl" />
+
+              <p className="mt-4 text-sm text-gray-500">
+                Mengambil data dokumen...
+              </p>
+            </div>
+          ) : documentRows.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-300 py-16 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-100">
+                <svg
+                  className="h-7 w-7 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 8h10M7 12h10M7 16h6"
+                  />
+                </svg>
+              </div>
+
+              <p className="font-semibold text-gray-700">
+                Belum ada dokumen
+              </p>
+
+              <p className="mt-1 text-sm text-gray-400">
+                Silakan upload dokumen persyaratan
+                terlebih dahulu.
+              </p>
+            </div>
+          ) : (
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1000px] text-left text-sm text-gray-600">
+                <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase text-gray-500">
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="px-6 py-12 text-center"
-                    >
+                    <th className="px-5 py-4 font-semibold">
+                      Dokumen
+                    </th>
 
-                      <div className="flex flex-col items-center">
+                    <th className="px-5 py-4 font-semibold">
+                      Status
+                    </th>
 
-                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                    <th className="px-5 py-4 font-semibold">
+                      Tanggal Upload
+                    </th>
 
-                          <span className="text-xl">
-                            
-                          </span>
+                    <th className="px-5 py-4 font-semibold">
+                      Validasi
+                    </th>
 
-                        </div>
+                    <th className="px-5 py-4 font-semibold">
+                      Catatan
+                    </th>
 
-                        <p className="font-medium text-gray-700">
-                          Belum ada dokumen
-                        </p>
-
-                        <p className="mt-1 text-sm text-gray-400">
-                          Silakan unggah dokumen terlebih dahulu.
-                        </p>
-
-                      </div>
-
-                    </td>
-
+                    <th className="px-5 py-4 text-center font-semibold">
+                      Aksi
+                    </th>
                   </tr>
+                </thead>
 
-                ) : (
-
-                  documents.map((doc) => (
-
+                <tbody>
+                  {documentRows.map((doc) => (
                     <tr
                       key={doc.id}
-                      className="border-b border-gray-200 bg-white transition hover:bg-gray-50"
+                      className="border-b border-gray-100 bg-white transition hover:bg-gray-50"
                     >
-
-                      {/* DOKUMEN */}
-
-                      <td className="px-6 py-5">
-
+                      <td className="px-5 py-5">
                         <div className="flex items-center gap-3">
-
-                          {/* ICON */}
-
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
-
                             <svg
-                              xmlns="http://www.w3.org/2000/svg"
                               className="h-5 w-5 text-indigo-600"
-                              viewBox="0 0 20 20"
                               fill="currentColor"
+                              viewBox="0 0 20 20"
                             >
-
                               <path
                                 fillRule="evenodd"
                                 d="M4 4a2 2 0 012-2h5.586A2 2 0 0113 2.586L16.414 6A2 2 0 0117 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm7-1.414V7h4.414L11 2.586zM8 10a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm0 3a1 1 0 011-1h4a1 1 0 110 2H9a1 1 0 01-1-1z"
                                 clipRule="evenodd"
                               />
-
                             </svg>
-
                           </div>
 
-                          {/* NAMA FILE */}
-
                           <div className="min-w-0">
-
                             <p className="font-semibold text-gray-800">
                               {doc.nama}
                             </p>
 
-                            <p className="mt-1 max-w-[220px] truncate text-xs text-gray-400">
-                              {doc.file || "Tidak ada file"}
+                            <p className="mt-1 max-w-[240px] truncate text-xs text-gray-400">
+                              {getFileName(doc.file)}
                             </p>
-
                           </div>
-
                         </div>
-
                       </td>
-
-                      {/* STATUS */}
-
-                      <td className="whitespace-nowrap px-6 py-5">
-
+                      <td className="whitespace-nowrap px-5 py-5">
                         {renderStatus(doc.status)}
-
                       </td>
-
-                      {/* UPLOAD */}
-
-                      <td className="whitespace-nowrap px-6 py-5 text-gray-500">
-
-                        {doc.upload}
-
+                      <td className="whitespace-nowrap px-5 py-5 text-gray-500">
+                        {formatDate(doc.upload)}
                       </td>
-
-                      {/* VALIDASI */}
-
-                      <td className="whitespace-nowrap px-6 py-5 text-gray-500">
-
-                        {doc.validasi}
-
+                      <td className="whitespace-nowrap px-5 py-5 text-gray-500">
+                        {formatDate(doc.validasi)}
                       </td>
-
-                      {/* CATATAN */}
-
-                      <td className="max-w-[200px] px-6 py-5">
-
-                        <span className="text-sm text-gray-500">
-
+                      <td className="max-w-[220px] px-5 py-5">
+                        <span className="block truncate text-sm text-gray-500">
                           {doc.catatan || "-"}
-
                         </span>
-
                       </td>
-
-                      {/* AKSI */}
-
-                      <td className="px-6 py-5">
-
-                        <div className="flex justify-center gap-2">
-
-                          {/* PREVIEW */}
-
+                      <td className="px-5 py-5">
+                        <div className="flex items-center justify-center gap-2">
                           <Button
                             size="xs"
                             color="light"
-                            onClick={() => {
-                              alert(
-                                `Preview dokumen: ${doc.file}`
-                              );
-                            }}
+                            onClick={() =>
+                              handlePreview(
+                                doc.file
+                              )
+                            }
                           >
                             Preview
                           </Button>
 
-                          {/* DOWNLOAD */}
-
                           <Button
                             size="xs"
                             color="blue"
-                            onClick={() => {
-                              alert(
-                                `Download dokumen: ${doc.file}`
-                              );
-                            }}
+                            onClick={() =>
+                              handleDownload(
+                                doc.file
+                              )
+                            }
                           >
                             Unduh
                           </Button>
-
-                          {/* EDIT */}
-
-                          {(doc.status === "Pending" ||
-                            doc.status === "Rejected") && (
-
-                            <Button
-                              size="xs"
-                              color="light"
-                              onClick={() => {
-
-                                setJenisDokumen(
-                                  doc.nama
-                                );
-
-                                alert(
-                                  "Silakan pilih file baru pada form upload di atas."
-                                );
-
-                              }}
-                            >
-                              Edit
-                            </Button>
-
-                          )}
-
                         </div>
-
                       </td>
-
                     </tr>
-
-                  ))
-
-                )}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
+
+        {/* INFORMASI */}
+
         <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
-
           <div className="flex gap-3">
-
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
-
-              <span className="text-sm font-bold text-blue-600">
+              <span className="font-bold text-blue-600">
                 i
               </span>
-
             </div>
 
             <div>
-
               <h3 className="font-semibold text-blue-800">
                 Informasi Pengajuan
               </h3>
@@ -439,19 +943,15 @@ export default function PengajuanSaya() {
               <p className="mt-1 text-sm leading-6 text-blue-700">
                 Pastikan seluruh dokumen yang diunggah
                 merupakan dokumen yang benar dan dapat
-                terbaca dengan jelas. Dokumen dengan status
-                <strong> Rejected </strong>
-                dapat diperbarui melalui tombol Edit.
+                terbaca dengan jelas. Dokumen dengan
+                status <strong>Rejected</strong> dapat
+                diperbarui melalui tombol{" "}
+                <strong>Edit</strong>.
               </p>
-
             </div>
-
           </div>
-
         </div>
-
       </main>
-
     </div>
   );
 }
