@@ -13,34 +13,53 @@ import {
 import { HiSearch } from "react-icons/hi";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import axios from "axios";
 
 export default function DataPengajuan() {
-  // 1. DATA ASLI (Sumber data)
-  const allData = [
-    { id: 1, nama: "Rizki Maulana", nim: "1234567890", tanggal: "20 Mei 2026", departemen: "Hasil Hutan", status: "Menunggu Verifikasi" },
-    { id: 2, nama: "Sodikmomoko", nim: "2345678901", tanggal: "20 Mei 2026", departemen: "Hasil Hutan", status: "Disetujui" },
-    { id: 3, nama: "Mursalino Abroho", nim: "3456789012", tanggal: "20 Mei 2026", departemen: "Hasil Hutan", status: "Perlu Perbaikan" },
-    { id: 4, nama: "Peter Kounaloy", nim: "4567890123", tanggal: "20 Mei 2026", departemen: "Hasil Hutan", status: "Disetujui" },
-    { id: 5, nama: "Oghi Hooja", nim: "5678901234", tanggal: "20 Mei 2026", departemen: "Hasil Hutan", status: "Perlu Perbaikan" },
-    { id: 6, nama: "Justin Bieber", nim: "6789012345", tanggal: "20 Mei 2026", departemen: "Hasil Hutan", status: "Disetujui" },
-    { id: 7, nama: "Martin Edwards", nim: "7890123456", tanggal: "20 Mei 2026", departemen: "Hasil Hutan", status: "Perlu Perbaikan" },
-    { id: 8, nama: "Ello Bright", nim: "8901234567", tanggal: "20 Mei 2026", departemen: "Hasil Hutan", status: "Menunggu Verifikasi" },
-    // Tambah data dummy agar pagination terlihat efeknya
-    { id: 9, nama: "Budi Santoso", nim: "1231111111", tanggal: "21 Mei 2026", departemen: "Agronomi", status: "Menunggu Verifikasi" },
-    { id: 10, nama: "Ani Wijaya", nim: "2222222222", tanggal: "22 Mei 2026", departemen: "Pasca Panen", status: "Disetujui" },
-    { id: 11, nama: "Citra Dewi", nim: "3333333333", tanggal: "23 Mei 2026", departemen: "Hasil Hutan", status: "Perlu Perbaikan" },
-    { id: 12, nama: "Dodi Iskandar", nim: "4444444444", tanggal: "24 Mei 2026", departemen: "Teknologi Pangan", status: "Disetujui" },
-  ];
-
-  // 2. STATE UNTUK FILTER & PAGINATION
-  const [filteredData, setFilteredData] = useState(allData);
+  // 1. STATE
+  const [allData, setAllData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("Semua status");
   const [selectedDate, setSelectedDate] = useState("");
+  const [loading, setLoading] = useState(true);
   
   // State untuk pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Tampilkan 5 data per halaman
+  const itemsPerPage = 5;
+
+  // 2. AMBIL DATA DARI API
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = () => {
+    const token = localStorage.getItem('token');
+    axios.get('/api/bebas-pustaka', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(response => {
+      const data = response.data.map(item => ({
+        id: item.id,
+        nama: item.nama || '-',
+        nim: item.nim || '-',
+        tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric'
+        }) : '-',
+        departemen: item.departemen || '-',
+        status: item.status || 'Menunggu Verifikasi'
+      }));
+      setAllData(data);
+      setFilteredData(data);
+      setLoading(false);
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error);
+      setLoading(false);
+    });
+  };
 
   // 3. LOGIKA FILTER
   useEffect(() => {
@@ -64,10 +83,10 @@ export default function DataPengajuan() {
     }
 
     setFilteredData(result);
-    setCurrentPage(1); // Reset ke halaman 1 setiap kali filter berubah
-  }, [searchTerm, selectedStatus, selectedDate]);
+    setCurrentPage(1);
+  }, [searchTerm, selectedStatus, selectedDate, allData]);
 
-  // 4. LOGIKA PAGINATION (Memotong data untuk halaman saat ini)
+  // 4. LOGIKA PAGINATION
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -75,11 +94,54 @@ export default function DataPengajuan() {
 
   // 5. FUNGSI PEMBANTU
   const getStatusColor = (status) => {
-    if (status === "Menunggu Verifikasi") return "warning";
-    if (status === "Disetujui") return "success";
-    if (status === "Perlu Perbaikan") return "failure";
-    return "gray";
+    const statusMap = {
+      "Menunggu Verifikasi": "warning",
+      "Disetujui": "success",
+      "Perlu Perbaikan": "failure",
+      "Ditolak": "failure",
+      "diverifikasi": "success",
+      "approved": "success",
+      "menunggu": "warning",
+      "pending": "warning",
+      "ditolak": "failure",
+      "rejected": "failure",
+      "perbaikan": "failure",
+      "revision": "failure"
+    };
+    return statusMap[status] || "gray";
   };
+
+  // Format status agar sesuai dengan yang di tampilan
+  const formatStatus = (status) => {
+    const statusMap = {
+      "menunggu": "Menunggu Verifikasi",
+      "pending": "Menunggu Verifikasi",
+      "diverifikasi": "Disetujui",
+      "approved": "Disetujui",
+      "ditolak": "Ditolak",
+      "rejected": "Ditolak",
+      "perbaikan": "Perlu Perbaikan",
+      "revision": "Perlu Perbaikan"
+    };
+    return statusMap[status] || status;
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="w-full">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Data Pengajuan</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Kelola data pengajuan mahasiswa untuk pembersihan clearing
+          </p>
+        </div>
+        <div className="flex justify-center items-center h-64">
+          <p className="text-gray-500">Loading data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -103,6 +165,7 @@ export default function DataPengajuan() {
             <option>Menunggu Verifikasi</option>
             <option>Disetujui</option>
             <option>Perlu Perbaikan</option>
+            <option>Ditolak</option>
           </Select>
         </div>
         <div className="w-full md:w-1/4">
@@ -151,7 +214,7 @@ export default function DataPengajuan() {
                   <TableCell>{data.departemen}</TableCell>
                   <TableCell>
                     <Badge color={getStatusColor(data.status)}>
-                      {data.status}
+                      {formatStatus(data.status)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -174,13 +237,12 @@ export default function DataPengajuan() {
         </Table>
       </div>
 
-      {/* Pagination (Berfungsi Penuh!) */}
+      {/* Pagination */}
       <div className="flex items-center justify-between mt-4">
         <span className="text-sm text-gray-700">
-          Showing <span className="font-bold">{startIndex + 1}</span> to <span className="font-bold">{Math.min(endIndex, filteredData.length)}</span> of <span className="font-bold">{filteredData.length}</span> Entries
+          Showing <span className="font-bold">{filteredData.length > 0 ? startIndex + 1 : 0}</span> to <span className="font-bold">{Math.min(endIndex, filteredData.length)}</span> of <span className="font-bold">{filteredData.length}</span> Entries
         </span>
         <div className="flex gap-2">
-          {/* Tombol Previous */}
           <Button 
             size="xs" 
             color="gray" 
@@ -191,7 +253,6 @@ export default function DataPengajuan() {
             Previous
           </Button>
 
-          {/* Angka Halaman */}
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
             <Button
               key={pageNum}
@@ -204,7 +265,6 @@ export default function DataPengajuan() {
             </Button>
           ))}
 
-          {/* Tombol Next */}
           <Button 
             size="xs" 
             color="gray" 

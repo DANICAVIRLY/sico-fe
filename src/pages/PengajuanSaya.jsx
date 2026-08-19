@@ -10,20 +10,27 @@ import {
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
-const STORAGE_URL = "http://10.59.92.251:8000/storage";
+const API_URL = "http://10.59.92.251:8000";
+const STORAGE_URL = `${API_URL}/storage`;
 
 export default function PengajuanSaya() {
   const [nama, setNama] = useState("");
   const [nim, setNim] = useState("");
   const [departemen, setDepartemen] = useState("");
   const [programStudi, setProgramStudi] = useState("");
+
   const [fileKtm, setFileKtm] = useState(null);
   const [fileSpp, setFileSpp] = useState(null);
   const [fileDistribusi, setFileDistribusi] = useState(null);
+
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+
+  // =========================
+  // TOKEN
+  // =========================
 
   const getToken = () => {
     return (
@@ -32,15 +39,22 @@ export default function PengajuanSaya() {
       ""
     );
   };
+
   const getConfig = () => {
     const token = getToken();
 
     return {
       headers: {
         Authorization: `Bearer ${token}`,
+        Accept: "application/json",
       },
     };
   };
+
+  // =========================
+  // AMBIL DATA USER
+  // =========================
+
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -80,22 +94,40 @@ export default function PengajuanSaya() {
       }
     }
 
-    setNama((prev) => prev || localStorage.getItem("nama") || "Mahasiswa");
-    setNim((prev) => prev || localStorage.getItem("nim") || "");
+    setNama(
+      (prev) =>
+        prev ||
+        localStorage.getItem("nama") ||
+        "Mahasiswa"
+    );
+
+    setNim(
+      (prev) =>
+        prev ||
+        localStorage.getItem("nim") ||
+        ""
+    );
   }, []);
+
+  // =========================
+  // AMBIL DATA PENGAJUAN
+  // =========================
+
   const getPengajuan = async () => {
     try {
       setLoading(true);
       setError("");
 
       const response = await axios.post(
-        "http://192.168.137.80:8000/api/pengajuan-clearing",
+        `${API_URL}/api/pengajuan-clearing`,
+        {},
         getConfig()
       );
 
       console.log("DATA PENGAJUAN:", response.data);
 
-      const result = response.data?.data ?? response.data;
+      const result =
+        response.data?.data ?? response.data;
 
       let data = [];
 
@@ -109,14 +141,33 @@ export default function PengajuanSaya() {
 
       setDocuments(data);
     } catch (err) {
-      console.error("Gagal mengambil pengajuan:", err);
+      console.error(
+        "Gagal mengambil pengajuan:",
+        err
+      );
+
+      console.log(
+        "STATUS:",
+        err.response?.status
+      );
+
+      console.log(
+        "RESPONSE:",
+        err.response?.data
+      );
 
       if (err.response?.status === 401) {
-        setError("Sesi login sudah habis. Silakan login kembali.");
+        setError(
+          "Sesi login sudah habis. Silakan login kembali."
+        );
       } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
+        setError(
+          err.response.data.message
+        );
       } else {
-        setError("Gagal mengambil data pengajuan dari server.");
+        setError(
+          "Gagal mengambil data pengajuan dari server."
+        );
       }
     } finally {
       setLoading(false);
@@ -127,6 +178,10 @@ export default function PengajuanSaya() {
     getPengajuan();
   }, []);
 
+  // =========================
+  // VALIDASI FILE
+  // =========================
+
   const validateFile = (file) => {
     if (!file) {
       return true;
@@ -135,7 +190,9 @@ export default function PengajuanSaya() {
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      alert(`File ${file.name} terlalu besar. Maksimal 5 MB.`);
+      alert(
+        `File ${file.name} terlalu besar. Maksimal 5 MB.`
+      );
       return false;
     }
 
@@ -150,50 +207,59 @@ export default function PengajuanSaya() {
       alert(
         `File ${file.name} tidak didukung.\nGunakan PDF, JPG, JPEG, atau PNG.`
       );
-
       return false;
     }
 
     return true;
   };
 
+  // =========================
+  // UPLOAD PENGAJUAN
+  // =========================
+
   const handleUpload = async (e) => {
     e.preventDefault();
+
     setError("");
 
     if (!departemen.trim()) {
       alert("Departemen wajib diisi.");
       return;
     }
+
     if (!programStudi.trim()) {
       alert("Program Studi wajib diisi.");
       return;
     }
+
     if (!fileKtm) {
       alert("File KTM wajib diupload.");
       return;
     }
 
     if (!fileSpp) {
-      alert("File Bukti Pembayaran SPP wajib diupload.");
+      alert(
+        "File Bukti Pembayaran SPP wajib diupload."
+      );
       return;
     }
 
     if (!fileDistribusi) {
-      alert("File Distribusi Skripsi wajib diupload.");
-      return;
-    }
-    
-
-    if (fileKtm && !validateFile(fileKtm)) {
+      alert(
+        "File Distribusi Skripsi wajib diupload."
+      );
       return;
     }
 
-    if (fileSpp && !validateFile(fileSpp)) {
+    if (!validateFile(fileKtm)) {
       return;
     }
 
-    if (fileDistribusi && !validateFile(fileDistribusi)) {
+    if (!validateFile(fileSpp)) {
+      return;
+    }
+
+    if (!validateFile(fileDistribusi)) {
       return;
     }
 
@@ -202,86 +268,148 @@ export default function PengajuanSaya() {
 
       const formData = new FormData();
 
-      formData.append("departemen", departemen);
-      formData.append("program_studi", programStudi);
+      formData.append(
+        "departemen",
+        departemen
+      );
 
-      if (fileKtm) {
-        formData.append("file_ktm", fileKtm);
-      }
+      formData.append(
+        "program_studi",
+        programStudi
+      );
 
-      if (fileSpp) {
-        formData.append("file_bukti_spp", fileSpp);
-      }
+      formData.append(
+        "file_ktm",
+        fileKtm
+      );
 
-      if (fileDistribusi) {
-        formData.append("file_distribusi", fileDistribusi);
-      }
+      formData.append(
+        "file_bukti_spp",
+        fileSpp
+      );
+
+      formData.append(
+        "file_distribusi",
+        fileDistribusi
+      );
 
       console.log("FORM DATA:");
 
       for (const pair of formData.entries()) {
-        console.log(pair[0], pair[1]);
+        console.log(
+          pair[0],
+          pair[1]
+        );
       }
 
+      const token = getToken();
+
       const response = await axios.post(
-        "http://192.168.137.80:8000/api/pengajuan-clearing",
+        `${API_URL}/api/pengajuan-clearing`,
         formData,
         {
           headers: {
-            ...getConfig().headers,
-            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type":
+              "multipart/form-data",
           },
         }
       );
 
-      console.log("UPLOAD RESPONSE:", response.data);
+      console.log(
+        "UPLOAD RESPONSE:",
+        response.data
+      );
 
-      alert("Pengajuan clearing berhasil diajukan.");
+      alert(
+        "Pengajuan clearing berhasil diajukan."
+      );
 
+      // Reset file
       setFileKtm(null);
       setFileSpp(null);
       setFileDistribusi(null);
 
-      const inputKtm = document.getElementById("fileKtm");
-      const inputSpp = document.getElementById("fileSpp");
-      const inputDistribusi =
-        document.getElementById("fileDistribusi");
+      const inputKtm =
+        document.getElementById("fileKtm");
 
-      if (inputKtm) inputKtm.value = "";
-      if (inputSpp) inputSpp.value = "";
-      if (inputDistribusi) inputDistribusi.value = "";
+      const inputSpp =
+        document.getElementById("fileSpp");
+
+      const inputDistribusi =
+        document.getElementById(
+          "fileDistribusi"
+        );
+
+      if (inputKtm) {
+        inputKtm.value = "";
+      }
+
+      if (inputSpp) {
+        inputSpp.value = "";
+      }
+
+      if (inputDistribusi) {
+        inputDistribusi.value = "";
+      }
 
       await getPengajuan();
-
     } catch (err) {
-      console.error("ERROR UPLOAD:", err);
+      console.error(
+        "ERROR UPLOAD:",
+        err
+      );
 
-      console.log("STATUS:", err.response?.status);
-      console.log("RESPONSE:", err.response?.data);
+      console.log(
+        "STATUS:",
+        err.response?.status
+      );
+
+      console.log(
+        "RESPONSE:",
+        err.response?.data
+      );
 
       if (err.response?.data?.errors) {
-        const errors = err.response.data.errors;
+        const errors =
+          err.response.data.errors;
 
-        const messages = Object.values(errors)
-          .flat()
-          .join("\n");
+        const messages =
+          Object.values(errors)
+            .flat()
+            .join("\n");
 
         setError(messages);
         alert(messages);
+      } else if (
+        err.response?.data?.message
+      ) {
+        setError(
+          err.response.data.message
+        );
 
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-        alert(err.response.data.message);
-
+        alert(
+          err.response.data.message
+        );
       } else {
-        setError("Gagal mengajukan clearing.");
-        alert("Gagal mengajukan clearing.");
-      }
+        setError(
+          "Gagal mengajukan clearing."
+        );
 
+        alert(
+          "Gagal mengajukan clearing."
+        );
+      }
     } finally {
       setUploading(false);
     }
   };
+
+  // =========================
+  // URL FILE
+  // =========================
+
   const getFileUrl = (file) => {
     if (!file) {
       return null;
@@ -295,15 +423,19 @@ export default function PengajuanSaya() {
     }
 
     if (file.startsWith("storage/")) {
-      return `http://10.59.92.251:8000/${file}`;
+      return `${API_URL}/${file}`;
     }
 
     if (file.startsWith("/storage/")) {
-      return `http://10.59.92.251:8000${file}`;
+      return `${API_URL}${file}`;
     }
 
     return `${STORAGE_URL}/${file}`;
   };
+
+  // =========================
+  // PREVIEW
+  // =========================
 
   const handlePreview = (file) => {
     const url = getFileUrl(file);
@@ -315,6 +447,11 @@ export default function PengajuanSaya() {
 
     window.open(url, "_blank");
   };
+
+  // =========================
+  // DOWNLOAD
+  // =========================
+
   const handleDownload = async (file) => {
     const url = getFileUrl(file);
 
@@ -324,19 +461,25 @@ export default function PengajuanSaya() {
     }
 
     try {
-      const response = await axios.get(url, {
-        responseType: "blob",
-      });
-
-      const blobUrl = window.URL.createObjectURL(
-        new Blob([response.data])
+      const response = await axios.get(
+        url,
+        {
+          responseType: "blob",
+        }
       );
 
-      const link = document.createElement("a");
+      const blobUrl =
+        window.URL.createObjectURL(
+          new Blob([response.data])
+        );
+
+      const link =
+        document.createElement("a");
 
       link.href = blobUrl;
 
-      const fileName = file.split("/").pop();
+      const fileName =
+        file.split("/").pop();
 
       link.setAttribute(
         "download",
@@ -349,16 +492,29 @@ export default function PengajuanSaya() {
 
       link.remove();
 
-      window.URL.revokeObjectURL(blobUrl);
+      window.URL.revokeObjectURL(
+        blobUrl
+      );
     } catch (err) {
-      console.error("Gagal download:", err);
+      console.error(
+        "Gagal download:",
+        err
+      );
 
-      alert("Gagal mengunduh file.");
+      alert(
+        "Gagal mengunduh file."
+      );
     }
   };
 
+  // =========================
+  // STATUS
+  // =========================
+
   const renderStatus = (status) => {
-    const normalized = String(status || "")
+    const normalized = String(
+      status || ""
+    )
       .toLowerCase()
       .replace(/[_-]/g, " ");
 
@@ -370,7 +526,7 @@ export default function PengajuanSaya() {
       return (
         <Badge
           color="success"
-          className="inline-flex rounded-full px-3 py-1"
+          className="rounded-full px-3 py-1 text-xs font-medium"
         >
           Verified
         </Badge>
@@ -384,7 +540,7 @@ export default function PengajuanSaya() {
       return (
         <Badge
           color="failure"
-          className="inline-flex rounded-full px-3 py-1"
+          className="rounded-full px-3 py-1 text-xs font-medium"
         >
           Rejected
         </Badge>
@@ -394,12 +550,16 @@ export default function PengajuanSaya() {
     return (
       <Badge
         color="warning"
-        className="inline-flex rounded-full px-3 py-1"
+        className="rounded-full px-3 py-1 text-xs font-medium"
       >
         Pending
       </Badge>
     );
   };
+
+  // =========================
+  // FORMAT TANGGAL
+  // =========================
 
   const formatDate = (date) => {
     if (!date) {
@@ -407,7 +567,9 @@ export default function PengajuanSaya() {
     }
 
     try {
-      return new Date(date).toLocaleDateString(
+      return new Date(
+        date
+      ).toLocaleDateString(
         "id-ID",
         {
           day: "2-digit",
@@ -420,118 +582,139 @@ export default function PengajuanSaya() {
     }
   };
 
+  // =========================
+  // NAMA FILE
+  // =========================
+
   const getFileName = (file) => {
     if (!file) {
       return "-";
     }
 
-    return file.split("/").pop();
+    return file
+      .split("/")
+      .pop();
   };
+
+  // =========================
+  // BUAT BARIS DOKUMEN
+  // =========================
 
   const getDocumentRows = () => {
     const rows = [];
 
-    documents.forEach((pengajuan) => {
-      if (
-        pengajuan.file_ktm ||
-        pengajuan.ktm ||
-        pengajuan.fileKtm
-      ) {
-        rows.push({
-          id: `${pengajuan.id}-ktm`,
-          pengajuanId: pengajuan.id,
-          nama: "Kartu Tanda Mahasiswa (KTM)",
-          file:
-            pengajuan.file_ktm ||
-            pengajuan.ktm ||
-            pengajuan.fileKtm,
-          status:
-            pengajuan.status_ktm ||
-            pengajuan.status ||
-            "Pending",
-          upload:
-            pengajuan.created_at ||
-            pengajuan.tanggal_upload,
-          validasi:
-            pengajuan.validated_at ||
-            pengajuan.tanggal_validasi,
-          catatan:
-            pengajuan.catatan_ktm ||
-            pengajuan.catatan ||
-            "-",
-        });
-      }
+    documents.forEach(
+      (pengajuan) => {
+        if (
+          pengajuan.file_ktm ||
+          pengajuan.ktm ||
+          pengajuan.fileKtm
+        ) {
+          rows.push({
+            id: `${pengajuan.id}-ktm`,
+            pengajuanId:
+              pengajuan.id,
+            nama:
+              "Kartu Tanda Mahasiswa (KTM)",
+            file:
+              pengajuan.file_ktm ||
+              pengajuan.ktm ||
+              pengajuan.fileKtm,
+            status:
+              pengajuan.status_ktm ||
+              pengajuan.status ||
+              "Pending",
+            upload:
+              pengajuan.created_at ||
+              pengajuan.tanggal_upload,
+            validasi:
+              pengajuan.validated_at ||
+              pengajuan.tanggal_validasi,
+            catatan:
+              pengajuan.catatan_ktm ||
+              pengajuan.catatan ||
+              "-",
+          });
+        }
 
-      if (
-        pengajuan.file_bukti_spp ||
-        pengajuan.bukti_spp ||
-        pengajuan.fileSpp
-      ) {
-        rows.push({
-          id: `${pengajuan.id}-spp`,
-          pengajuanId: pengajuan.id,
-          nama: "Bukti Pembayaran SPP",
-          file:
-            pengajuan.file_bukti_spp ||
-            pengajuan.bukti_spp ||
-            pengajuan.fileSpp,
-          status:
-            pengajuan.status_spp ||
-            pengajuan.status ||
-            "Pending",
-          upload:
-            pengajuan.created_at ||
-            pengajuan.tanggal_upload,
-          validasi:
-            pengajuan.validated_at ||
-            pengajuan.tanggal_validasi,
-          catatan:
-            pengajuan.catatan_spp ||
-            pengajuan.catatan ||
-            "-",
-        });
-      }
+        if (
+          pengajuan.file_bukti_spp ||
+          pengajuan.bukti_spp ||
+          pengajuan.fileSpp
+        ) {
+          rows.push({
+            id: `${pengajuan.id}-spp`,
+            pengajuanId:
+              pengajuan.id,
+            nama:
+              "Bukti Pembayaran SPP",
+            file:
+              pengajuan.file_bukti_spp ||
+              pengajuan.bukti_spp ||
+              pengajuan.fileSpp,
+            status:
+              pengajuan.status_spp ||
+              pengajuan.status ||
+              "Pending",
+            upload:
+              pengajuan.created_at ||
+              pengajuan.tanggal_upload,
+            validasi:
+              pengajuan.validated_at ||
+              pengajuan.tanggal_validasi,
+            catatan:
+              pengajuan.catatan_spp ||
+              pengajuan.catatan ||
+              "-",
+          });
+        }
 
-      if (
-        pengajuan.file_distribusi ||
-        pengajuan.distribusi ||
-        pengajuan.fileDistribusi
-      ) {
-        rows.push({
-          id: `${pengajuan.id}-distribusi`,
-          pengajuanId: pengajuan.id,
-          nama: "Distribusi Skripsi",
-          file:
-            pengajuan.file_distribusi ||
-            pengajuan.distribusi ||
-            pengajuan.fileDistribusi,
-          status:
-            pengajuan.status_distribusi ||
-            pengajuan.status ||
-            "Pending",
-          upload:
-            pengajuan.created_at ||
-            pengajuan.tanggal_upload,
-          validasi:
-            pengajuan.validated_at ||
-            pengajuan.tanggal_validasi,
-          catatan:
-            pengajuan.catatan_distribusi ||
-            pengajuan.catatan ||
-            "-",
-        });
+        if (
+          pengajuan.file_distribusi ||
+          pengajuan.distribusi ||
+          pengajuan.fileDistribusi
+        ) {
+          rows.push({
+            id: `${pengajuan.id}-distribusi`,
+            pengajuanId:
+              pengajuan.id,
+            nama:
+              "Distribusi Skripsi",
+            file:
+              pengajuan.file_distribusi ||
+              pengajuan.distribusi ||
+              pengajuan.fileDistribusi,
+            status:
+              pengajuan.status_distribusi ||
+              pengajuan.status ||
+              "Pending",
+            upload:
+              pengajuan.created_at ||
+              pengajuan.tanggal_upload,
+            validasi:
+              pengajuan.validated_at ||
+              pengajuan.tanggal_validasi,
+            catatan:
+              pengajuan.catatan_distribusi ||
+              pengajuan.catatan ||
+              "-",
+          });
+        }
       }
-    });
+    );
 
     return rows;
   };
 
-  const documentRows = getDocumentRows();
+  const documentRows =
+    getDocumentRows();
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gray-100">
       <SidebarMahaComp />
 
       <main className="ml-64 p-8">
+        {/* HEADER */}
         <div className="mb-8">
           <p className="mb-2 text-sm font-medium text-indigo-600">
             Sistem Informasi Clearing Online
@@ -542,10 +725,12 @@ export default function PengajuanSaya() {
           </h1>
 
           <p className="mt-2 text-gray-500">
-            Kelola dan unggah dokumen persyaratan
-            clearing Anda.
+            Kelola dan unggah dokumen
+            persyaratan clearing Anda.
           </p>
         </div>
+
+        {/* ERROR */}
         {error && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             <p className="font-semibold">
@@ -557,30 +742,28 @@ export default function PengajuanSaya() {
             </p>
           </div>
         )}
+
+        {/* FORM UPLOAD */}
         <Card className="mb-6 border border-gray-200 shadow-sm">
           <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  Unggah Dokumen Baru
-                </h2>
+            <h2 className="text-xl font-bold text-gray-800">
+              Unggah Dokumen Baru
+            </h2>
 
-                <p className="mt-1 text-sm text-gray-500">
-                  Lengkapi dokumen persyaratan clearing
-                  Anda.
-                </p>
-              </div>
-            </div>
+            <p className="mt-1 text-sm text-gray-500">
+              Lengkapi dokumen persyaratan
+              clearing Anda.
+            </p>
           </div>
 
           <form onSubmit={handleUpload}>
-
+            {/* DATA MAHASISWA */}
             <div className="mb-6 grid gap-5 md:grid-cols-2">
               <div>
                 <Label
                   htmlFor="nama"
                   value="Nama Mahasiswa"
-                >Nama Lengakap</Label>
+                />
 
                 <input
                   id="nama"
@@ -592,7 +775,10 @@ export default function PengajuanSaya() {
               </div>
 
               <div>
-                <Label htmlFor="nim" value="NIM" >NIM</Label>
+                <Label
+                  htmlFor="nim"
+                  value="NIM"
+                />
 
                 <input
                   id="nim"
@@ -603,19 +789,23 @@ export default function PengajuanSaya() {
                 />
               </div>
             </div>
+
+            {/* DEPARTEMEN & PRODI */}
             <div className="mb-6 grid gap-5 md:grid-cols-2">
               <div>
                 <Label
                   htmlFor="departemen"
                   value="Departemen"
-                >Departemen</Label>
+                />
 
                 <input
                   id="departemen"
                   type="text"
                   value={departemen}
                   onChange={(e) =>
-                    setDepartemen(e.target.value)
+                    setDepartemen(
+                      e.target.value
+                    )
                   }
                   placeholder="Masukkan Departemen"
                   className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
@@ -626,20 +816,24 @@ export default function PengajuanSaya() {
                 <Label
                   htmlFor="programStudi"
                   value="Program Studi"
-                >Program Studi</Label>
+                />
 
                 <input
                   id="programStudi"
                   type="text"
                   value={programStudi}
                   onChange={(e) =>
-                    setProgramStudi(e.target.value)
+                    setProgramStudi(
+                      e.target.value
+                    )
                   }
                   placeholder="Masukkan Program Studi"
                   className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
+
+            {/* KTM */}
             <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
               <div className="mb-3">
                 <h3 className="font-semibold text-gray-800">
@@ -647,8 +841,9 @@ export default function PengajuanSaya() {
                 </h3>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  Upload KTM dalam format PDF, JPG,
-                  JPEG, atau PNG. Maksimal 5 MB.
+                  Upload KTM dalam format
+                  PDF, JPG, JPEG, atau PNG.
+                  Maksimal 5 MB.
                 </p>
               </div>
 
@@ -657,7 +852,8 @@ export default function PengajuanSaya() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) =>
                   setFileKtm(
-                    e.target.files?.[0] || null
+                    e.target.files?.[0] ||
+                      null
                   )
                 }
               />
@@ -672,6 +868,7 @@ export default function PengajuanSaya() {
               )}
             </div>
 
+            {/* SPP */}
             <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
               <div className="mb-3">
                 <h3 className="font-semibold text-gray-800">
@@ -679,8 +876,9 @@ export default function PengajuanSaya() {
                 </h3>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  Upload bukti pembayaran SPP dalam
-                  format PDF, JPG, JPEG, atau PNG.
+                  Upload bukti pembayaran
+                  SPP dalam format PDF,
+                  JPG, JPEG, atau PNG.
                   Maksimal 5 MB.
                 </p>
               </div>
@@ -690,7 +888,8 @@ export default function PengajuanSaya() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) =>
                   setFileSpp(
-                    e.target.files?.[0] || null
+                    e.target.files?.[0] ||
+                      null
                   )
                 }
               />
@@ -704,6 +903,8 @@ export default function PengajuanSaya() {
                 </p>
               )}
             </div>
+
+            {/* DISTRIBUSI */}
             <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
               <div className="mb-3">
                 <h3 className="font-semibold text-gray-800">
@@ -711,9 +912,10 @@ export default function PengajuanSaya() {
                 </h3>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  Upload dokumen distribusi skripsi
-                  dalam format PDF, JPG, JPEG, atau
-                  PNG. Maksimal 5 MB.
+                  Upload dokumen distribusi
+                  skripsi dalam format PDF,
+                  JPG, JPEG, atau PNG.
+                  Maksimal 5 MB.
                 </p>
               </div>
 
@@ -722,7 +924,8 @@ export default function PengajuanSaya() {
                 accept=".pdf,.jpg,.jpeg,.png"
                 onChange={(e) =>
                   setFileDistribusi(
-                    e.target.files?.[0] || null
+                    e.target.files?.[0] ||
+                      null
                   )
                 }
               />
@@ -736,6 +939,8 @@ export default function PengajuanSaya() {
                 </p>
               )}
             </div>
+
+            {/* BUTTON */}
             <div className="flex justify-end">
               <Button
                 type="submit"
@@ -757,25 +962,28 @@ export default function PengajuanSaya() {
             </div>
           </form>
         </Card>
+
+        {/* TABEL DOKUMEN */}
         <Card className="border border-gray-200 shadow-sm">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-gray-800">
                 Dokumen Terunggah
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Daftar dokumen persyaratan yang telah
-                Anda upload.
+                Daftar dokumen persyaratan
+                yang telah Anda upload.
               </p>
             </div>
 
-            <div className="rounded-lg bg-indigo-50 px-4 py-2">
+            <div className="mt-2 rounded-lg bg-indigo-50 px-4 py-2 sm:mt-0">
               <span className="text-sm font-semibold text-indigo-600">
                 {documentRows.length} Dokumen
               </span>
             </div>
           </div>
+
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
               <Spinner size="xl" />
@@ -807,12 +1015,11 @@ export default function PengajuanSaya() {
               </p>
 
               <p className="mt-1 text-sm text-gray-400">
-                Silakan upload dokumen persyaratan
-                terlebih dahulu.
+                Silakan upload dokumen
+                persyaratan terlebih dahulu.
               </p>
             </div>
           ) : (
-
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1000px] text-left text-sm text-gray-600">
                 <thead className="border-b border-gray-200 bg-gray-50 text-xs uppercase text-gray-500">
@@ -844,81 +1051,97 @@ export default function PengajuanSaya() {
                 </thead>
 
                 <tbody>
-                  {documentRows.map((doc) => (
-                    <tr
-                      key={doc.id}
-                      className="border-b border-gray-100 bg-white transition hover:bg-gray-50"
-                    >
-                      <td className="px-5 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
-                            <svg
-                              className="h-5 w-5 text-indigo-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
+                  {documentRows.map(
+                    (doc) => (
+                      <tr
+                        key={doc.id}
+                        className="border-b border-gray-100 bg-white transition hover:bg-gray-50"
+                      >
+                        <td className="px-5 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
+                              <svg
+                                className="h-5 w-5 text-indigo-600"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M4 4a2 2 0 012-2h5.586A2 2 0 0113 2.586L16.414 6A2 2 0 0117 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm7-1.414V7h4.414L11 2.586zM8 10a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm0 3a1 1 0 011-1h4a1 1 0 110 2H9a1 1 0 01-1-1z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-800">
+                                {doc.nama}
+                              </p>
+
+                              <p className="mt-1 max-w-[240px] truncate text-xs text-gray-400">
+                                {getFileName(
+                                  doc.file
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="whitespace-nowrap px-5 py-5">
+                          {renderStatus(
+                            doc.status
+                          )}
+                        </td>
+
+                        <td className="whitespace-nowrap px-5 py-5 text-gray-500">
+                          {formatDate(
+                            doc.upload
+                          )}
+                        </td>
+
+                        <td className="whitespace-nowrap px-5 py-5 text-gray-500">
+                          {formatDate(
+                            doc.validasi
+                          )}
+                        </td>
+
+                        <td className="max-w-[220px] px-5 py-5">
+                          <span className="block truncate text-sm text-gray-500">
+                            {doc.catatan ||
+                              "-"}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-5">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              size="xs"
+                              color="light"
+                              onClick={() =>
+                                handlePreview(
+                                  doc.file
+                                )
+                              }
                             >
-                              <path
-                                fillRule="evenodd"
-                                d="M4 4a2 2 0 012-2h5.586A2 2 0 0113 2.586L16.414 6A2 2 0 0117 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm7-1.414V7h4.414L11 2.586zM8 10a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm0 3a1 1 0 011-1h4a1 1 0 110 2H9a1 1 0 01-1-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
+                              Preview
+                            </Button>
+
+                            <Button
+                              size="xs"
+                              color="blue"
+                              onClick={() =>
+                                handleDownload(
+                                  doc.file
+                                )
+                              }
+                            >
+                              Unduh
+                            </Button>
                           </div>
-
-                          <div className="min-w-0">
-                            <p className="font-semibold text-gray-800">
-                              {doc.nama}
-                            </p>
-
-                            <p className="mt-1 max-w-[240px] truncate text-xs text-gray-400">
-                              {getFileName(doc.file)}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-5">
-                        {renderStatus(doc.status)}
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-5 text-gray-500">
-                        {formatDate(doc.upload)}
-                      </td>
-                      <td className="whitespace-nowrap px-5 py-5 text-gray-500">
-                        {formatDate(doc.validasi)}
-                      </td>
-                      <td className="max-w-[220px] px-5 py-5">
-                        <span className="block truncate text-sm text-gray-500">
-                          {doc.catatan || "-"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-5">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            size="xs"
-                            color="light"
-                            onClick={() =>
-                              handlePreview(
-                                doc.file
-                              )
-                            }
-                          >
-                            Preview
-                          </Button>
-
-                          <Button
-                            size="xs"
-                            color="blue"
-                            onClick={() =>
-                              handleDownload(
-                                doc.file
-                              )
-                            }
-                          >
-                            Unduh
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>
@@ -926,7 +1149,6 @@ export default function PengajuanSaya() {
         </Card>
 
         {/* INFORMASI */}
-
         <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
           <div className="flex gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
@@ -941,12 +1163,14 @@ export default function PengajuanSaya() {
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-blue-700">
-                Pastikan seluruh dokumen yang diunggah
-                merupakan dokumen yang benar dan dapat
-                terbaca dengan jelas. Dokumen dengan
-                status <strong>Rejected</strong> dapat
-                diperbarui melalui tombol{" "}
-                <strong>Edit</strong>.
+                Pastikan seluruh dokumen yang
+                diunggah merupakan dokumen
+                yang benar dan dapat terbaca
+                dengan jelas. Dokumen dengan
+                status{" "}
+                <strong>Rejected</strong>{" "}
+                dapat diperbarui melalui
+                pengunggahan ulang.
               </p>
             </div>
           </div>

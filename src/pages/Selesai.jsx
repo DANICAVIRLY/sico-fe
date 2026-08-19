@@ -1,79 +1,59 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SidebarAdminComp from "../components/SidebarAdminComp";
 import { HiSearch, HiCalendar } from "react-icons/hi";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function Selesai() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("Semua status");
   const [tanggal, setTanggal] = useState("");
+  const [mahasiswa, setMahasiswa] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Data dummy mahasiswa yang sudah selesai
-  const mahasiswa = [
-    {
-      id: 1,
-      nama: "Raisa Maulana",
-      nim: "1234567890",
-      tanggal: "20 Mar 2026",
-      departemen: "Hasil Hutan",
-      status: "Selesai",
-    },
-    {
-      id: 2,
-      nama: "Sadamariaka",
-      nim: "2345678901",
-      tanggal: "20 Apr 2026",
-      departemen: "Hasil Hutan",
-      status: "Selesai",
-    },
-    {
-      id: 3,
-      nama: "Marvelino Abraha",
-      nim: "3456789012",
-      tanggal: "20 Mei 2026",
-      departemen: "Hasil Hutan",
-      status: "Selesai",
-    },
-    {
-      id: 4,
-      nama: "Peter Kavinsky",
-      nim: "2345678901",
-      tanggal: "20 Apr 2026",
-      departemen: "Hasil Hutan",
-      status: "Selesai",
-    },
-    {
-      id: 5,
-      nama: "Gigi Hadid",
-      nim: "3456789012",
-      tanggal: "20 Mei 2026",
-      departemen: "Hasil Hutan",
-      status: "Selesai",
-    },
-    {
-      id: 6,
-      nama: "Justin Bieber",
-      nim: "2345678901",
-      tanggal: "20 Apr 2026",
-      departemen: "Hasil Hutan",
-      status: "Selesai",
-    },
-    {
-      id: 7,
-      nama: "Martin Edwards",
-      nim: "3456789012",
-      tanggal: "20 Mei 2026",
-      departemen: "Hasil Hutan",
-      status: "Selesai",
-    },
-    {
-      id: 8,
-      nama: "Ella Bright",
-      nim: "3456789012",
-      tanggal: "20 Mei 2026",
-      departemen: "Hasil Hutan",
-      status: "Selesai",
-    },
-  ];
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = () => {
+    const token = localStorage.getItem('token');
+    
+    axios.get('/api/pengajuan-clearing', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(response => {
+      const selesaiData = response.data
+        .filter(item => 
+          item.status === 'diverifikasi' || 
+          item.status === 'approved' || 
+          item.status === 'selesai'
+        )
+        .map(item => ({
+          id: item.id,
+          nama: item.nama || '-',
+          nim: item.nim || '-',
+          tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          }) : '-',
+          tanggalAsli: item.created_at || '',
+          departemen: item.departemen || '-',
+          status: 'Selesai'
+        }));
+      
+      setMahasiswa(selesaiData);
+      setLoading(false);
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error);
+      setLoading(false);
+    });
+  };
 
   // Filter data
   const filteredMahasiswa = mahasiswa.filter((item) => {
@@ -87,455 +67,212 @@ export default function Selesai() {
     const cocokStatus =
       status === "Semua status" || item.status === status;
 
-    return cocokSearch && cocokStatus;
+    // Filter tanggal
+    let cocokTanggal = true;
+    if (tanggal) {
+      const tanggalInput = new Date(tanggal);
+      const tanggalData = new Date(item.tanggalAsli);
+      
+      cocokTanggal = 
+        tanggalInput.getFullYear() === tanggalData.getFullYear() &&
+        tanggalInput.getMonth() === tanggalData.getMonth() &&
+        tanggalInput.getDate() === tanggalData.getDate();
+    }
+
+    return cocokSearch && cocokStatus && cocokTanggal;
   });
+
+  const totalPages = Math.ceil(filteredMahasiswa.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentData = filteredMahasiswa.slice(startIndex, endIndex);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <SidebarAdminComp />
+        <main className="ml-64 min-h-screen p-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3 text-gray-500">Loading...</span>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
       <SidebarAdminComp />
       <main className="ml-64 min-h-screen p-8">
 
-        {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#111827]">
-            Selesai
-          </h1>
-
+          <h1 className="text-2xl font-bold text-[#111827]">Selesai</h1>
           <p className="mt-1 text-sm text-gray-500">
             Daftar mahasiswa yang telah menyelesaikan proses clearing.
           </p>
         </div>
-        <div className="flex items-center gap-3 mb-4">
 
-          {/* Status */}
+        {/* FILTER */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          >
+            <option>Semua status</option>
+            <option>Selesai</option>
+          </select>
+
           <div className="relative">
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="
-                w-[150px]
-                h-[38px]
-                px-3
-                pr-8
-                text-sm
-                text-gray-600
-                bg-white
-                border
-                border-gray-300
-                rounded-lg
-                outline-none
-                focus:border-indigo-500
-                focus:ring-1
-                focus:ring-indigo-500
-              "
-            >
-              <option>Semua status</option>
-              <option>Selesai</option>
-            </select>
-          </div>
-
-          {/* Tanggal */}
-          <div className="relative">
-            <HiCalendar
-              className="
-                absolute
-                left-3
-                top-1/2
-                -translate-y-1/2
-                text-gray-400
-                w-4
-                h-4
-              "
-            />
-
             <input
-              type="text"
-              placeholder="Tanggal / Bulan"
+              type="date"
               value={tanggal}
               onChange={(e) => setTanggal(e.target.value)}
-              className="
-                w-[150px]
-                h-[38px]
-                pl-9
-                pr-3
-                text-sm
-                text-gray-600
-                bg-white
-                border
-                border-gray-300
-                rounded-lg
-                outline-none
-                focus:border-indigo-500
-                focus:ring-1
-                focus:ring-indigo-500
-              "
+              className="h-10 px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
+            <HiCalendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
 
-          {/* Search */}
-          <div className="relative flex-1">
-
-            <HiSearch
-              className="
-                absolute
-                right-3
-                top-1/2
-                -translate-y-1/2
-                text-gray-500
-                w-4
-                h-4
-              "
-            />
-
+          <div className="relative flex-1 min-w-[200px]">
             <input
               type="text"
               placeholder="Cari Nama, Nim, atau Departemen..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="
-                w-full
-                h-[38px]
-                pl-3
-                pr-10
-                text-sm
-                text-gray-600
-                bg-white
-                border
-                border-gray-300
-                rounded-lg
-                outline-none
-                focus:border-indigo-500
-                focus:ring-1
-                focus:ring-indigo-500
-              "
+              className="h-10 w-full px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
-
+            <HiSearch className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
+
+          {/* Tombol Reset Filter */}
+          {(search || tanggal || status !== "Semua status") && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setTanggal("");
+                setStatus("Semua status");
+              }}
+              className="h-10 px-4 rounded-lg border border-red-300 bg-red-50 text-sm text-red-600 hover:bg-red-100 transition"
+            >
+              Reset Filter
+            </button>
+          )}
         </div>
-        <div className="
-          bg-white
-          border
-          border-gray-300
-          rounded-xl
-          overflow-hidden
-        ">
 
+        {/* TABLE */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-
             <table className="w-full text-sm">
-
-              {/* Table Header */}
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-
-                  <th className="
-                    px-4
-                    py-3
-                    text-left
-                    font-semibold
-                    text-gray-700
-                    w-[50px]
-                  ">
-                    No
-                  </th>
-
-                  <th className="
-                    px-4
-                    py-3
-                    text-left
-                    font-semibold
-                    text-gray-700
-                  ">
-                    Nama
-                  </th>
-
-                  <th className="
-                    px-4
-                    py-3
-                    text-left
-                    font-semibold
-                    text-gray-700
-                  ">
-                    NIM
-                  </th>
-
-                  <th className="
-                    px-4
-                    py-3
-                    text-left
-                    font-semibold
-                    text-gray-700
-                  ">
-                    Tanggal
-                  </th>
-
-                  <th className="
-                    px-4
-                    py-3
-                    text-left
-                    font-semibold
-                    text-gray-700
-                  ">
-                    Departemen
-                  </th>
-
-                  <th className="
-                    px-4
-                    py-3
-                    text-left
-                    font-semibold
-                    text-gray-700
-                  ">
-                    Status
-                  </th>
-
-                  <th className="
-                    px-4
-                    py-3
-                    text-center
-                    font-semibold
-                    text-gray-700
-                    w-[120px]
-                  ">
-                    Aksi
-                  </th>
-
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700 w-12">No</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Nama</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">NIM</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Tanggal</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Departemen</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
+                  <th className="px-6 py-3 text-center font-semibold text-gray-700">Aksi</th>
                 </tr>
               </thead>
-
-              {/* Table Body */}
-              <tbody>
-
-                {filteredMahasiswa.length > 0 ? (
-                  filteredMahasiswa.map((item, index) => (
-
-                    <tr
-                      key={item.id}
-                      className="
-                        border-b
-                        border-gray-200
-                        last:border-b-0
-                        hover:bg-gray-50
-                        transition
-                      "
-                    >
-
-                      {/* No */}
-                      <td className="
-                        px-4
-                        py-3
-                        text-gray-600
-                      ">
-                        {index + 1}.
-                      </td>
-
-                      {/* Nama */}
-                      <td className="
-                        px-4
-                        py-3
-                        font-medium
-                        text-gray-800
-                      ">
-                        {item.nama}
-                      </td>
-
-                      {/* NIM */}
-                      <td className="
-                        px-4
-                        py-3
-                        text-gray-600
-                      ">
-                        {item.nim}
-                      </td>
-
-                      {/* Tanggal */}
-                      <td className="
-                        px-4
-                        py-3
-                        text-gray-600
-                      ">
-                        {item.tanggal}
-                      </td>
-
-                      {/* Departemen */}
-                      <td className="
-                        px-4
-                        py-3
-                        text-gray-600
-                      ">
-                        {item.departemen}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3">
-
-                        <span className="
-                          inline-flex
-                          items-center
-                          justify-center
-                          px-3
-                          py-1
-                          rounded-full
-                          text-xs
-                          font-medium
-                          text-emerald-600
-                          bg-emerald-50
-                          border
-                          border-emerald-200
-                        ">
+              <tbody className="divide-y divide-gray-100">
+                {currentData.length > 0 ? (
+                  currentData.map((item, index) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-3 text-gray-500">{startIndex + index + 1}</td>
+                      <td className="px-6 py-3 font-medium text-gray-800">{item.nama}</td>
+                      <td className="px-6 py-3 text-gray-600">{item.nim}</td>
+                      <td className="px-6 py-3 text-gray-600">{item.tanggal}</td>
+                      <td className="px-6 py-3 text-gray-600">{item.departemen}</td>
+                      <td className="px-6 py-3">
+                        <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full text-emerald-600 bg-emerald-50 border border-emerald-200">
                           Selesai
                         </span>
-
                       </td>
-
-                      {/* Aksi */}
-                      <td className="px-4 py-3">
-
-                        <div className="flex justify-center">
-
-                          <button
-                            onClick={() =>
-                              console.log(
-                                "Detail mahasiswa:",
-                                item
-                              )
-                            }
-                            className="
-                              px-3
-                              py-1.5
-                              rounded-full
-                              border
-                              border-indigo-300
-                              text-indigo-600
-                              bg-white
-                              text-xs
-                              font-medium
-                              hover:bg-indigo-50
-                              transition
-                              whitespace-nowrap
-                            "
-                          >
-                            Lihat Detail
-                          </button>
-
-                        </div>
-
+                      <td className="px-6 py-3 text-center">
+                        <button
+                          onClick={() => navigate(`/verifikasi-mahasiswa/${item.id}`)}
+                          className="px-4 py-1.5 text-sm font-medium text-indigo-600 bg-white border border-indigo-300 rounded-full hover:bg-indigo-50 transition"
+                        >
+                          Lihat Detail
+                        </button>
                       </td>
-
                     </tr>
-
                   ))
                 ) : (
-
                   <tr>
-                    <td
-                      colSpan="7"
-                      className="
-                        px-4
-                        py-10
-                        text-center
-                        text-gray-500
-                      "
-                    >
-                      Data mahasiswa tidak ditemukan.
+                    <td colSpan="7" className="px-6 py-12 text-center text-gray-400">
+                      <div className="flex flex-col items-center">
+                        <svg className="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Data mahasiswa tidak ditemukan.</span>
+                      </div>
                     </td>
                   </tr>
-
                 )}
-
               </tbody>
-
             </table>
-
           </div>
-
         </div>
-        <div className="
-          flex
-          items-center
-          justify-center
-          gap-5
-          mt-5
-          text-sm
-        ">
 
-          <button
-            disabled
-            className="
-              text-gray-400
-              cursor-not-allowed
-            "
-          >
-            ← Previous
-          </button>
+        {/* PAGINATION */}
+        {filteredMahasiswa.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+            <span className="text-sm text-gray-500">
+              Menampilkan <span className="font-medium">{startIndex + 1}</span> -{' '}
+              <span className="font-medium">{Math.min(endIndex, filteredMahasiswa.length)}</span> dari{' '}
+              <span className="font-medium">{filteredMahasiswa.length}</span> data
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
+                  currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                ← Previous
+              </button>
 
-          <button
-            className="
-              w-7
-              h-7
-              rounded-md
-              bg-gray-800
-              text-white
-              text-xs
-              font-medium
-            "
-          >
-            1
-          </button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setCurrentPage(num)}
+                  className={`w-8 h-8 text-sm font-medium rounded-lg ${
+                    currentPage === num ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
 
-          <button
-            className="
-              text-gray-600
-              hover:text-indigo-600
-            "
-          >
-            2
-          </button>
+              {totalPages > 5 && (
+                <>
+                  <span className="text-gray-400">...</span>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    className="w-8 h-8 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100"
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
 
-          <button
-            className="
-              text-gray-600
-              hover:text-indigo-600
-            "
-          >
-            3
-          </button>
-
-          <span className="text-gray-500">
-            ...
-          </span>
-
-          <button
-            className="
-              text-gray-600
-              hover:text-indigo-600
-            "
-          >
-            67
-          </button>
-
-          <button
-            className="
-              text-gray-600
-              hover:text-indigo-600
-            "
-          >
-            68
-          </button>
-
-          <button
-            className="
-              text-gray-700
-              hover:text-indigo-600
-            "
-          >
-            Next →
-          </button>
-
-        </div>
+              <button
+                className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
+                  currentPage === totalPages || totalPages === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
 
       </main>
-
     </div>
   );
 }
