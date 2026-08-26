@@ -3,13 +3,19 @@ import { Link, useLocation } from "react-router-dom";
 import { HiCheckCircle, HiArrowLeft } from "react-icons/hi";
 
 export default function VerifikasiBerhasil() {
-  // Ambil catatan yang dikirim dari halaman sebelumnya
+  // Ambil data yang dikirim dari halaman DetailVerifikasi
   const location = useLocation();
-  const catatanDiterima = location.state?.catatanPustakawan || "-";
+  const {
+    nama = "-",
+    nim = "-",
+    tanggal = "-",
+    departemen = "-",
+    diverifikasiOleh = "-",
+    catatanPustakawan = "-",
+  } = location.state || {};
 
   return (
     <div className="max-w-4xl mx-auto">
-      
       {/* Judul Halaman */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-blue-800">Hasil Verifikasi</h1>
@@ -21,7 +27,6 @@ export default function VerifikasiBerhasil() {
       {/* Kartu Utama */}
       <Card className="w-full shadow-md">
         <div className="flex flex-col items-center p-6">
-          
           {/* 1. Ikon Centang Hijau Besar */}
           <div className="bg-green-500 rounded-full p-4 mb-4 text-white">
             <HiCheckCircle className="w-12 h-12" />
@@ -39,28 +44,28 @@ export default function VerifikasiBerhasil() {
           <div className="w-full border border-gray-200 rounded-lg overflow-hidden mb-6">
             <div className="grid grid-cols-2 border-b border-gray-200">
               <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Nama</div>
-              <div className="p-4 text-gray-800">Amira Thudzahra</div>
+              <div className="p-4 text-gray-800">{nama}</div>
             </div>
             <div className="grid grid-cols-2 border-b border-gray-200">
               <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">NIM</div>
-              <div className="p-4 text-gray-800">1234567890</div>
+              <div className="p-4 text-gray-800">{nim}</div>
             </div>
             <div className="grid grid-cols-2 border-b border-gray-200">
               <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Tanggal</div>
-              <div className="p-4 text-gray-800">10 Juni 2026</div>
+              <div className="p-4 text-gray-800">{tanggal}</div>
             </div>
             <div className="grid grid-cols-2 border-b border-gray-200">
               <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Diverifikasi Oleh</div>
-              <div className="p-4 text-gray-800">Danica</div>
+              <div className="p-4 text-gray-800">{diverifikasiOleh}</div>
             </div>
             <div className="grid grid-cols-2 border-b border-gray-200">
               <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Departemen</div>
-              <div className="p-4 text-gray-800">Kehutanan</div>
+              <div className="p-4 text-gray-800">{departemen}</div>
             </div>
             {/* 4. Baris Catatan (Dinamis dari input sebelumnya) */}
             <div className="grid grid-cols-2">
               <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Catatan</div>
-              <div className="p-4 text-gray-800">{catatanDiterima}</div>
+              <div className="p-4 text-gray-800">{catatanPustakawan}</div>
             </div>
           </div>
 
@@ -71,7 +76,6 @@ export default function VerifikasiBerhasil() {
               Kembali Ke Dashboard
             </Button>
           </Link>
-
         </div>
       </Card>
     </div>

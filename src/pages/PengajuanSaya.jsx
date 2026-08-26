@@ -10,7 +10,7 @@ import {
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
-const API_URL = "http://10.59.92.251:8000";
+const API_URL = "http://10.6.65.141:8000";
 const STORAGE_URL = `${API_URL}/storage`;
 
 export default function PengajuanSaya() {
@@ -118,9 +118,14 @@ export default function PengajuanSaya() {
       setLoading(true);
       setError("");
 
-      const response = await axios.post(
+      // PENTING: pakai GET untuk ambil daftar, bukan POST.
+      // Endpoint /api/pengajuan-clearing dipakai untuk 2 hal:
+      // - POST -> membuat pengajuan baru (store)
+      // - GET  -> mengambil daftar pengajuan (index)
+      // Sebelumnya request ini pakai POST dengan body kosong,
+      // sehingga malah kena validasi "store" dan selalu gagal (422).
+      const response = await axios.get(
         `${API_URL}/api/pengajuan-clearing`,
-        {},
         getConfig()
       );
 

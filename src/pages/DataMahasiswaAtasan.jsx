@@ -21,54 +21,72 @@ export default function DataMahasiswaAtasan() {
     fetchData();
   }, []);
 
-  const fetchData = () => {
-    const token = localStorage.getItem('token');
-    
-    axios.get('/api/pengajuan-clearing', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(response => {
-      const data = response.data.map(item => ({
-        id: item.id,
-        nama: item.nama || '-',
-        nim: item.nim || '-',
-        tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        }) : '-',
-        departemen: item.departemen || '-',
-        status: formatStatus(item.status)
-      }));
-      setMahasiswaData(data);
-      setLoading(false);
-    })
-    .catch(error => {
-      console.error('Error fetching data:', error);
-      setLoading(false);
-    });
-  };
-
   const formatStatus = (status) => {
     const statusMap = {
-      'menunggu': 'Belum Ditandatangani',
-      'pending': 'Belum Ditandatangani',
-      'diverifikasi': 'Selesai Ditandatangani',
-      'approved': 'Selesai Ditandatangani',
-      'selesai': 'Selesai Ditandatangani',
-      'ditolak': 'Ditolak',
-      'rejected': 'Ditolak',
-      'perbaikan': 'Perlu Perbaikan',
-      'revision': 'Perlu Perbaikan',
-      'ttd_atasan': 'Selesai Ditandatangani'
+      menunggu: "Belum Ditandatangani",
+      diajukan: "Belum Ditandatangani",
+      pending: "Belum Ditandatangani",
+      diverifikasi_admin: "Belum Ditandatangani",
+      diverifikasi: "Belum Ditandatangani",
+      disetujui: "Selesai Ditandatangani",
+      approved: "Selesai Ditandatangani",
+      selesai: "Selesai Ditandatangani",
+      ttd_atasan: "Selesai Ditandatangani",
+      ditolak: "Ditolak",
+      rejected: "Ditolak",
+      revisi_admin: "Perlu Perbaikan",
+      perbaikan: "Perlu Perbaikan",
+      revision: "Perlu Perbaikan",
     };
-    return statusMap[status] || status;
+    return statusMap[status?.toLowerCase()] || status || "Belum Ditandatangani";
+  };
+
+  const fetchData = () => {
+    const token = localStorage.getItem("token");
+
+    axios
+      .get("http://10.6.65.141:8000/api/pengajuan-clearing", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      })
+      .then((response) => {
+        const rawItems = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.data)
+          ? response.data.data
+          : response.data?.data?.data || [];
+
+        const data = rawItems.map((item) => ({
+          ...item,
+          id: item.id,
+          nama: item.user?.nama || item.nama || "-",
+          nim: item.user?.nim || item.nim || "-",
+          tanggal: item.created_at
+            ? new Date(item.created_at).toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "-",
+          tanggalAsli: item.created_at || "",
+          departemen: item.departemen || item.user?.departemen || "-",
+          status: formatStatus(item.status),
+        }));
+
+        setMahasiswaData(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      });
   };
 
   const filteredData = mahasiswaData.filter((mahasiswa) => {
     const cocokStatus =
-      statusFilter === "Semua status" ||
-      mahasiswa.status === statusFilter;
+      statusFilter === "Semua status" || mahasiswa.status === statusFilter;
 
     const cocokSearch =
       mahasiswa.nama.toLowerCase().includes(search.toLowerCase()) ||
@@ -77,7 +95,13 @@ export default function DataMahasiswaAtasan() {
 
     let cocokTanggal = true;
     if (tanggal) {
-      cocokTanggal = mahasiswa.tanggal.includes(tanggal);
+      const tanggalInput = new Date(tanggal);
+      const tanggalData = new Date(mahasiswa.tanggalAsli);
+
+      cocokTanggal =
+        tanggalInput.getFullYear() === tanggalData.getFullYear() &&
+        tanggalInput.getMonth() === tanggalData.getMonth() &&
+        tanggalInput.getDate() === tanggalData.getDate();
     }
 
     return cocokStatus && cocokSearch && cocokTanggal;
@@ -123,10 +147,9 @@ export default function DataMahasiswaAtasan() {
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
       <AtasanSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      
+
       {/* Main Content - FULL WIDTH */}
       <div className="flex-1 p-6 md:p-8">
-        
         {/* Mobile Menu Button */}
         <button
           onClick={toggleSidebar}
@@ -149,7 +172,10 @@ export default function DataMahasiswaAtasan() {
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="h-11 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
           >
             <option>Semua status</option>
@@ -161,11 +187,13 @@ export default function DataMahasiswaAtasan() {
 
           <div className="relative">
             <input
-              type="text"
-              placeholder="Tanggal / Bulan"
+              type="date"
               value={tanggal}
-              onChange={(e) => setTanggal(e.target.value)}
-              className="h-11 px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              onChange={(e) => {
+                setTanggal(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-11 px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
             <HiCalendar className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           </div>
@@ -175,11 +203,28 @@ export default function DataMahasiswaAtasan() {
               type="text"
               placeholder="Cari Nama, NIM, atau Departemen..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               className="h-11 w-full px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
             <HiSearch className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           </div>
+
+          {(search || tanggal || statusFilter !== "Semua status") && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setTanggal("");
+                setStatusFilter("Semua status");
+                setCurrentPage(1);
+              }}
+              className="h-11 px-4 rounded-lg border border-red-300 bg-red-50 text-sm text-red-600 hover:bg-red-100 transition"
+            >
+              Reset Filter
+            </button>
+          )}
         </div>
 
         {/* Table - Full Width */}
@@ -213,7 +258,11 @@ export default function DataMahasiswaAtasan() {
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button
-                          onClick={() => navigate(`/verifikasi-mahasiswa/${item.id}`)}
+                          onClick={() =>
+                            navigate(`/tanda-tangan/${item.id}`, {
+                              state: { dataMahasiswa: item },
+                            })
+                          }
                           className="px-4 py-1.5 text-sm font-medium text-indigo-600 bg-white border border-indigo-300 rounded-full hover:bg-indigo-50"
                         >
                           Lihat Detail
@@ -242,14 +291,14 @@ export default function DataMahasiswaAtasan() {
         {filteredData.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
             <span className="text-sm text-gray-500">
-              Menampilkan <span className="font-medium">{startIndex + 1}</span> -{' '}
-              <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> dari{' '}
+              Menampilkan <span className="font-medium">{startIndex + 1}</span> -{" "}
+              <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> dari{" "}
               <span className="font-medium">{filteredData.length}</span> data
             </span>
             <div className="flex items-center gap-1">
               <button
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
-                  currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'
+                  currentPage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-gray-100"
                 }`}
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
@@ -262,7 +311,7 @@ export default function DataMahasiswaAtasan() {
                   key={num}
                   onClick={() => setCurrentPage(num)}
                   className={`w-8 h-8 text-sm font-medium rounded-lg ${
-                    currentPage === num ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                    currentPage === num ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   {num}
@@ -283,7 +332,9 @@ export default function DataMahasiswaAtasan() {
 
               <button
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
-                  currentPage === totalPages || totalPages === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'
+                  currentPage === totalPages || totalPages === 0
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages || totalPages === 0}
@@ -293,7 +344,6 @@ export default function DataMahasiswaAtasan() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

@@ -13,28 +13,91 @@ export default function PustakawanDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Ambil token dari localStorage
-    const token = localStorage.getItem('token');
-    
-    axios.get('/api/bebas-pustaka', {
-      headers: {
-        Authorization: `Bearer ${token}`
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const response = await axios.get(
+          "http://10.6.65.141:8000/api/bebas-pustaka",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
+        );
+
+        console.log("RESPONSE DASHBOARD PUSTAKAWAN:", response.data);
+
+        // Ambil array dari response.data.data maupun pagination response.data.data.data
+        const items = Array.isArray(response.data?.data)
+          ? response.data.data
+          : response.data?.data?.data || [];
+
+        // Pastikan data memang array
+        if (!Array.isArray(items)) {
+          console.error(
+            "Data dari backend bukan array:",
+            response.data
+          );
+
+          setData({
+            total: 0,
+            diverifikasi: 0,
+            menunggu: 0,
+            ditolak: 0,
+          });
+
+          return;
+        }
+
+        console.log("DATA PENGAJUAN:", items);
+
+        setData({
+          total: items.length,
+
+          diverifikasi: items.filter(
+            (item) =>
+              item.status === "diverifikasi" ||
+              item.status === "disetujui" ||
+              item.status === "approved" ||
+              item.status === "verified"
+          ).length,
+
+          menunggu: items.filter(
+            (item) =>
+              item.status === "menunggu" ||
+              item.status === "pending" ||
+              !item.status
+          ).length,
+
+          ditolak: items.filter(
+            (item) =>
+              item.status === "ditolak" ||
+              item.status === "rejected"
+          ).length,
+        });
+
+      } catch (error) {
+        console.error("Error fetching data:", error);
+
+        if (error.response) {
+          console.error(
+            "STATUS:",
+            error.response.status
+          );
+
+          console.error(
+            "RESPONSE:",
+            error.response.data
+          );
+        }
+      } finally {
+        setLoading(false);
       }
-    })
-    .then(response => {
-      const items = response.data;
-      setData({
-        total: items.length,
-        diverifikasi: items.filter(item => item.status === 'diverifikasi').length,
-        menunggu: items.filter(item => item.status === 'menunggu').length,
-        ditolak: items.filter(item => item.status === 'ditolak').length
-      });
-      setLoading(false);
-    })
-    .catch(error => {
-      console.error('Error fetching data:', error);
-      setLoading(false);
-    });
+    };
+
+    fetchData();
   }, []);
 
   if (loading) {

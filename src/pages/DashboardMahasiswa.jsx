@@ -7,8 +7,10 @@ export default function DashboardMahasiswa() {
   const [nama, setNama] = useState("");
 
   useEffect(() => {
-    const namaMahasiswa = localStorage.getItem("nama");
-    setNama(namaMahasiswa || "Mahasiswa");
+    // Data user login disimpan sebagai object JSON di key "user",
+    // bukan sebagai string terpisah di key "nama".
+    const userData = JSON.parse(localStorage.getItem("user") || "null");
+    setNama(userData?.nama || "Mahasiswa");
   }, []);
 
   return (
