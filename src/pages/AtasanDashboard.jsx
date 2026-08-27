@@ -1,5 +1,10 @@
 import { Dropdown } from "flowbite-react";
-import { HiDocumentText, HiCheckCircle, HiXCircle, HiBell } from "react-icons/hi";
+import {
+  HiDocumentText,
+  HiCheckCircle,
+  HiXCircle,
+  HiBell,
+} from "react-icons/hi";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -8,7 +13,7 @@ export default function AtasanDashboard() {
   const [data, setData] = useState({
     total: 0,
     disetujui: 0,
-    ditolak: 0
+    ditolak: 0,
   });
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -19,64 +24,71 @@ export default function AtasanDashboard() {
   }, []);
 
   const fetchData = () => {
-    const token = localStorage.getItem('token');
-    
-    axios.get('/api/pengajuan-clearing', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(response => {
-      const items = Array.isArray(response.data) ? response.data : [];
-      
-      setData({
-        total: items.length,
-        disetujui: items.filter(item => 
-          item.status === 'diverifikasi' || 
-          item.status === 'approved' || 
-          item.status === 'selesai'
-        ).length,
-        ditolak: items.filter(item => 
-          item.status === 'ditolak' || 
-          item.status === 'rejected'
-        ).length
+    const token = localStorage.getItem("token");
+
+    axios
+      .get("/api/pengajuan-clearing", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response) => {
+        const items = Array.isArray(response.data) ? response.data : [];
+
+        setData({
+          total: items.length,
+          disetujui: items.filter(
+            (item) =>
+              item.status === "diverifikasi" ||
+              item.status === "approved" ||
+              item.status === "selesai",
+          ).length,
+          ditolak: items.filter(
+            (item) => item.status === "ditolak" || item.status === "rejected",
+          ).length,
+        });
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setLoading(false);
       });
-      setLoading(false);
-    })
-    .catch(error => {
-      console.error('Error fetching data:', error);
-      setLoading(false);
-    });
   };
 
   const fetchNotifications = () => {
-    const token = localStorage.getItem('token');
-    
-    axios.get('/api/notifications', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(response => {
-      const notifData = Array.isArray(response.data) ? response.data : [];
-      setNotifications(notifData);
-      setHasNotif(notifData.length > 0);
-    })
-    .catch(error => {
-      console.error('Error fetching notifications:', error);
-      setNotifications([]);
-      setHasNotif(false);
-    });
+    const token = localStorage.getItem("token");
+
+    axios
+      .get("/api/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((response) => {
+        const notifData = Array.isArray(response.data) ? response.data : [];
+        setNotifications(notifData);
+        setHasNotif(notifData.length > 0);
+      })
+      .catch((error) => {
+        console.error("Error fetching notifications:", error);
+        setNotifications([]);
+        setHasNotif(false);
+      });
   };
 
   const markAllAsRead = () => {
-    const token = localStorage.getItem('token');
-    axios.post('/api/notifications/read-all', {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(() => {
-      setHasNotif(false);
-      setNotifications([]);
-    })
-    .catch(error => {
-      console.error('Error marking notifications:', error);
-    });
+    const token = localStorage.getItem("token");
+    axios
+      .post(
+        "/api/notifications/read-all",
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
+      .then(() => {
+        setHasNotif(false);
+        setNotifications([]);
+      })
+      .catch((error) => {
+        console.error("Error marking notifications:", error);
+      });
   };
 
   if (loading) {
@@ -84,8 +96,12 @@ export default function AtasanDashboard() {
       <div className="w-full relative">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Atasan</h1>
-            <p className="text-sm text-gray-500 mt-1">Pantau kinerja dan data clearing online</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Dashboard Atasan
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Pantau kinerja dan data clearing online
+            </p>
           </div>
         </div>
         <div className="flex justify-center items-center h-64">
@@ -101,7 +117,9 @@ export default function AtasanDashboard() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard Atasan</h1>
-          <p className="text-sm text-gray-500 mt-1">Pantau kinerja dan data clearing online</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Pantau kinerja dan data clearing online
+          </p>
         </div>
 
         <div>
@@ -118,32 +136,42 @@ export default function AtasanDashboard() {
             }
           >
             <Dropdown.Header>
-              <span className="block text-sm font-medium text-gray-900">Notifikasi</span>
+              <span className="block text-sm font-medium text-gray-900">
+                Notifikasi
+              </span>
               <span className="block text-sm text-gray-500">
-                {notifications.length > 0 ? `Ada ${notifications.length} notifikasi baru` : 'Tidak ada notifikasi baru'}
+                {notifications.length > 0
+                  ? `Ada ${notifications.length} notifikasi baru`
+                  : "Tidak ada notifikasi baru"}
               </span>
             </Dropdown.Header>
-            
+
             {notifications.length > 0 ? (
               notifications.map((notif, index) => (
                 <Dropdown.Item key={index}>
                   <div className="flex flex-col">
-                    <span className="font-medium text-gray-900">{notif.title || 'Notifikasi'}</span>
-                    <span className="text-xs text-gray-500">{notif.message || 'Tidak ada pesan'}</span>
+                    <span className="font-medium text-gray-900">
+                      {notif.title || "Notifikasi"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {notif.message || "Tidak ada pesan"}
+                    </span>
                   </div>
                 </Dropdown.Item>
               ))
             ) : (
               <Dropdown.Item>
                 <div className="flex flex-col">
-                  <span className="text-sm text-gray-500">Belum ada notifikasi</span>
+                  <span className="text-sm text-gray-500">
+                    Belum ada notifikasi
+                  </span>
                 </div>
               </Dropdown.Item>
             )}
-            
+
             <Dropdown.Divider />
-            <Dropdown.Item 
-              onClick={markAllAsRead} 
+            <Dropdown.Item
+              onClick={markAllAsRead}
               className="text-center text-blue-600 font-medium"
             >
               Tandai semua telah dibaca
@@ -154,13 +182,16 @@ export default function AtasanDashboard() {
 
       {/* Card dengan border di ATAS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
         {/* Total Pengajuan */}
         <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Total Pengajuan</p>
-              <h2 className="text-2xl font-bold text-gray-800 mt-1">{data.total}</h2>
+              <p className="text-sm text-gray-500 font-medium">
+                Total Pengajuan
+              </p>
+              <h2 className="text-2xl font-bold text-gray-800 mt-1">
+                {data.total}
+              </h2>
             </div>
             <div className="p-3 bg-blue-100 rounded-full text-blue-600">
               <HiDocumentText className="w-6 h-6" />
@@ -172,8 +203,12 @@ export default function AtasanDashboard() {
         <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Sudah Disetujui</p>
-              <h2 className="text-2xl font-bold text-gray-800 mt-1">{data.disetujui}</h2>
+              <p className="text-sm text-gray-500 font-medium">
+                Sudah Disetujui
+              </p>
+              <h2 className="text-2xl font-bold text-gray-800 mt-1">
+                {data.disetujui}
+              </h2>
             </div>
             <div className="p-3 bg-green-100 rounded-full text-green-600">
               <HiCheckCircle className="w-6 h-6" />
@@ -186,14 +221,15 @@ export default function AtasanDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">Sudah Ditolak</p>
-              <h2 className="text-2xl font-bold text-gray-800 mt-1">{data.ditolak}</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mt-1">
+                {data.ditolak}
+              </h2>
             </div>
             <div className="p-3 bg-red-100 rounded-full text-red-600">
               <HiXCircle className="w-6 h-6" />
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

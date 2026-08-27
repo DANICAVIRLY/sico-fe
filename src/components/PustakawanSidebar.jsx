@@ -23,7 +23,7 @@ export default function PustakawanSidebar({ isOpen, onClose }) {
         >
           <HiX className="w-6 h-6" />
         </button>
-      <div className="flex flex-col items-center justify-center pt-10 pb-10 text-white border-b border-[#2f3a96]">
+        <div className="flex flex-col items-center justify-center pt-10 pb-10 text-white border-b border-[#2f3a96]">
           <img
             src="https://upload.wikimedia.org/wikipedia/id/0/0f/Logo_IPB.png"
             alt="Logo IPB"
@@ -35,29 +35,26 @@ export default function PustakawanSidebar({ isOpen, onClose }) {
           </div>
         </div>
 
-    
-<div className="flex flex-col gap-2 mt-6 px-6">
-  <Link
-    to="/pustakawan-dashboard"
-    onClick={onClose}
-    className="flex items-center gap-4 text-white text-lg font-medium py-3 hover:bg-[#2f3a96] px-4 rounded-lg transition-colors"
-  >
-    <HiChartPie className="w-6 h-6" />
-    Dashboard
-  </Link>
+        <div className="flex flex-col gap-2 mt-6 px-6">
+          <Link
+            to="/pustakawan-dashboard"
+            onClick={onClose}
+            className="flex items-center gap-4 text-white text-lg font-medium py-3 hover:bg-[#2f3a96] px-4 rounded-lg transition-colors"
+          >
+            <HiChartPie className="w-6 h-6" />
+            Dashboard
+          </Link>
 
+          <Link
+            to="/data-pengajuan"
+            onClick={onClose}
+            className="flex items-center gap-4 text-white text-lg font-medium py-3 hover:bg-[#2f3a96] px-4 rounded-lg transition-colors"
+          >
+            <HiDocumentText className="w-6 h-6" />
+            Data pengajuan
+          </Link>
+        </div>
 
-  <Link 
-    to="/data-pengajuan" 
-    onClick={onClose}
-    className="flex items-center gap-4 text-white text-lg font-medium py-3 hover:bg-[#2f3a96] px-4 rounded-lg transition-colors"
-  >
-    <HiDocumentText className="w-6 h-6" />
-    Data pengajuan  
-  </Link>
-</div>
-
-      
         <div className="mt-auto pb-10 px-6">
           <Link
             to="/"

@@ -50,8 +50,8 @@ export default function DataMahasiswa() {
         const rawItems = Array.isArray(response.data)
           ? response.data
           : Array.isArray(response.data?.data)
-          ? response.data.data
-          : response.data?.data?.data || [];
+            ? response.data.data
+            : response.data?.data?.data || [];
 
         const data = rawItems.map((item) => ({
           ...item, // Menyertakan seluruh properti file (file_spp, file_skripsi, ktm, dll)
@@ -151,8 +151,18 @@ export default function DataMahasiswa() {
           onClick={toggleSidebar}
           className="lg:hidden bg-[#1e2678] text-white p-2 rounded-lg mb-4"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
         </button>
 
@@ -229,26 +239,50 @@ export default function DataMahasiswa() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700 w-12">No</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Nama</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">NIM</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Tanggal</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Departemen</th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
-                  <th className="px-6 py-3 text-center font-semibold text-gray-700">Aksi</th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700 w-12">
+                    No
+                  </th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                    Nama
+                  </th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                    NIM
+                  </th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                    Tanggal
+                  </th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                    Departemen
+                  </th>
+                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-center font-semibold text-gray-700">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {currentData.length > 0 ? (
                   currentData.map((item, index) => (
                     <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-3 text-gray-500">{startIndex + index + 1}</td>
-                      <td className="px-6 py-3 font-medium text-gray-800">{item.nama}</td>
+                      <td className="px-6 py-3 text-gray-500">
+                        {startIndex + index + 1}
+                      </td>
+                      <td className="px-6 py-3 font-medium text-gray-800">
+                        {item.nama}
+                      </td>
                       <td className="px-6 py-3 text-gray-600">{item.nim}</td>
-                      <td className="px-6 py-3 text-gray-600">{item.tanggal}</td>
-                      <td className="px-6 py-3 text-gray-600">{item.departemen}</td>
+                      <td className="px-6 py-3 text-gray-600">
+                        {item.tanggal}
+                      </td>
+                      <td className="px-6 py-3 text-gray-600">
+                        {item.departemen}
+                      </td>
                       <td className="px-6 py-3">
-                        <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getStatusStyle(item.status)}`}>
+                        <span
+                          className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getStatusStyle(item.status)}`}
+                        >
                           {item.status}
                         </span>
                       </td>
@@ -268,10 +302,23 @@ export default function DataMahasiswa() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-gray-400">
+                    <td
+                      colSpan="7"
+                      className="px-6 py-12 text-center text-gray-400"
+                    >
                       <div className="flex flex-col items-center">
-                        <svg className="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <svg
+                          className="w-12 h-12 text-gray-300 mb-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
                         </svg>
                         <span>Data mahasiswa tidak ditemukan.</span>
                       </div>
@@ -287,9 +334,13 @@ export default function DataMahasiswa() {
         {filteredData.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
             <span className="text-sm text-gray-500">
-              Menampilkan <span className="font-medium">{startIndex + 1}</span> -{" "}
-              <span className="font-medium">{Math.min(endIndex, filteredData.length)}</span> dari{" "}
-              <span className="font-medium">{filteredData.length}</span> data
+              Menampilkan <span className="font-medium">{startIndex + 1}</span>{" "}
+              -{" "}
+              <span className="font-medium">
+                {Math.min(endIndex, filteredData.length)}
+              </span>{" "}
+              dari <span className="font-medium">{filteredData.length}</span>{" "}
+              data
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -306,7 +357,7 @@ export default function DataMahasiswa() {
 
               {Array.from(
                 { length: Math.min(totalPages, 5) },
-                (_, i) => i + 1
+                (_, i) => i + 1,
               ).map((num) => (
                 <button
                   key={num}

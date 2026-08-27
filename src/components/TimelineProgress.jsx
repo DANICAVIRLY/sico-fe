@@ -53,21 +53,17 @@ export default function TimelineProgress({ status = "pengajuan_clearing" }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-      
       {/* Header */}
       <div className="flex justify-between items-center mb-10">
         <h2 className="text-lg font-bold text-blue-800">
           Tahapan Proses Clearing
         </h2>
 
-        <span className="text-blue-700 font-medium">
-          {currentStep}/4
-        </span>
+        <span className="text-blue-700 font-medium">{currentStep}/4</span>
       </div>
 
       {/* Timeline */}
       <div className="relative px-8">
-
         {/* Garis belakang */}
         <div className="absolute top-[20px] left-[8%] right-[8%] h-[4px] bg-gray-300 rounded-full" />
 
@@ -84,7 +80,6 @@ export default function TimelineProgress({ status = "pengajuan_clearing" }) {
 
         {/* Steps */}
         <div className="relative flex justify-between">
-
           {steps.map((step) => {
             const isCompleted = step.id < currentStep;
             const isActive = step.id === currentStep;
@@ -94,7 +89,6 @@ export default function TimelineProgress({ status = "pengajuan_clearing" }) {
                 key={step.id}
                 className="flex flex-col items-center text-center w-1/4"
               >
-
                 {/* Circle */}
                 <div
                   className={`
@@ -106,8 +100,8 @@ export default function TimelineProgress({ status = "pengajuan_clearing" }) {
                       isCompleted
                         ? "bg-blue-600 border-blue-600 text-white"
                         : isActive
-                        ? "bg-white border-blue-600 text-blue-600"
-                        : "bg-white border-gray-300 text-gray-400"
+                          ? "bg-white border-blue-600 text-blue-600"
+                          : "bg-white border-gray-300 text-gray-400"
                     }
                   `}
                 >
@@ -153,9 +147,7 @@ export default function TimelineProgress({ status = "pengajuan_clearing" }) {
                 {/* Status */}
                 <p className="mt-1 text-xs">
                   {isCompleted && (
-                    <span className="text-blue-600">
-                      Selesai
-                    </span>
+                    <span className="text-blue-600">Selesai</span>
                   )}
 
                   {isActive && (
@@ -165,15 +157,12 @@ export default function TimelineProgress({ status = "pengajuan_clearing" }) {
                   )}
 
                   {!isCompleted && !isActive && (
-                    <span className="text-gray-400">
-                      Belum
-                    </span>
+                    <span className="text-gray-400">Belum</span>
                   )}
                 </p>
               </div>
             );
           })}
-
         </div>
       </div>
     </div>
