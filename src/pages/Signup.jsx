@@ -1,6 +1,6 @@
 import { Button, Label, TextInput } from "flowbite-react";
 import logo from "../assets/logo_ipb.png";
-import ipb from "../assets/ipb.jpeg";
+import ipb from "../assets/ipb.png";
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";

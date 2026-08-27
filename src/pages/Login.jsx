@@ -2,6 +2,7 @@ import { Button, Label, TextInput } from "flowbite-react";
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import ipb from "../assets/ipb.png";
 
 export default function Login() {
   const [login, setLogin] = useState("");
@@ -134,14 +135,14 @@ export default function Login() {
               <div className="mb-2 block">
                 <Label
                   htmlFor="login"
-                  value="Email / NIM"
+                  value="Email"
                 />
               </div>
 
               <TextInput
                 id="login"
                 type="text"
-                placeholder="Masukkan email atau NIM"
+                placeholder="Masukkan email "
                 required
                 shadow
                 value={login}
@@ -169,16 +170,6 @@ export default function Login() {
               />
             </div>
 
-            {/* Lupa password */}
-            <div className="flex justify-end mt-1">
-              <Link
-                to="/lupa-password"
-                className="text-sm text-blue-600 hover:underline font-medium"
-              >
-                Lupa password?
-              </Link>
-            </div>
-
             {/* Button */}
             <Button
               type="submit"
@@ -191,16 +182,13 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Image */}
-      <div className="hidden md:block md:w-1/2 relative overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1000&auto=format&fit=crop"
-          alt="Gerbang IPB University"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-
-        <div className="absolute inset-0 bg-black/10"></div>
-      </div>
+      <div className="hidden md:block fixed right-0 top-0 h-screen w-1/2">
+               <img
+                 src={ipb}
+                 alt="IPB University"
+                 className="h-full w-full object-cover"
+               />
+             </div>
     </div>
   );
 }
