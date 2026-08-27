@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import SidebarAdminComp from "../components/SidebarAdminComp";
-import { HiSearch, HiCalendar } from "react-icons/hi";
+import { HiSearch, HiDownload } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import * as XLSX from "xlsx";
 
 export default function Selesai() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("Semua status");
-  const [tanggal, setTanggal] = useState("");
   const [mahasiswa, setMahasiswa] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,72 +19,95 @@ export default function Selesai() {
   }, []);
 
   const fetchData = () => {
-    const token = localStorage.getItem('token');
-    
-    axios.get('/api/pengajuan-clearing', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(response => {
-      const selesaiData = response.data
-        .filter(item => 
-          item.status === 'diverifikasi' || 
-          item.status === 'approved' || 
-          item.status === 'selesai'
-        )
-        .map(item => ({
-          id: item.id,
-          nama: item.nama || '-',
-          nim: item.nim || '-',
-          tanggal: item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          }) : '-',
-          tanggalAsli: item.created_at || '',
-          departemen: item.departemen || '-',
-          status: 'Selesai'
-        }));
-      
-      setMahasiswa(selesaiData);
-      setLoading(false);
-    })
-    .catch(error => {
-      console.error('Error fetching data:', error);
-      setLoading(false);
-    });
+    const token = localStorage.getItem("token");
+
+    axios
+      .get("http://10.6.65.141:8000/api/pengajuan-clearing", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      })
+      .then((response) => {
+        const rawItems = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.data)
+          ? response.data.data
+          : response.data?.data?.data || [];
+
+        const statusDiverifikasi = [
+          "diverifikasi_admin",
+          "diverifikasi",
+          "disetujui",
+          "approved",
+          "selesai",
+        ];
+
+        const selesaiData = rawItems
+          .filter((item) => statusDiverifikasi.includes(item.status?.toLowerCase()))
+          .map((item) => ({
+            id: item.id,
+            nama: item.user?.nama || item.nama || "-",
+            nim: item.user?.nim || item.nim || "-",
+            tanggal: item.created_at
+              ? new Date(item.created_at).toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "-",
+            departemen: item.departemen || item.user?.departemen || "-",
+            status: "Diverifikasi",
+          }));
+
+        setMahasiswa(selesaiData);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      });
   };
 
   // Filter data
   const filteredMahasiswa = mahasiswa.filter((item) => {
     const keyword = search.toLowerCase();
 
-    const cocokSearch =
+    return (
       item.nama.toLowerCase().includes(keyword) ||
       item.nim.toLowerCase().includes(keyword) ||
-      item.departemen.toLowerCase().includes(keyword);
-
-    const cocokStatus =
-      status === "Semua status" || item.status === status;
-
-    // Filter tanggal
-    let cocokTanggal = true;
-    if (tanggal) {
-      const tanggalInput = new Date(tanggal);
-      const tanggalData = new Date(item.tanggalAsli);
-      
-      cocokTanggal = 
-        tanggalInput.getFullYear() === tanggalData.getFullYear() &&
-        tanggalInput.getMonth() === tanggalData.getMonth() &&
-        tanggalInput.getDate() === tanggalData.getDate();
-    }
-
-    return cocokSearch && cocokStatus && cocokTanggal;
+      item.departemen.toLowerCase().includes(keyword)
+    );
   });
 
   const totalPages = Math.ceil(filteredMahasiswa.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentData = filteredMahasiswa.slice(startIndex, endIndex);
+
+  // Export ke Excel
+  const handleExportExcel = () => {
+    const dataExport = filteredMahasiswa.map((item, index) => ({
+      No: index + 1,
+      Nama: item.nama,
+      NIM: item.nim,
+      Tanggal: item.tanggal,
+      Departemen: item.departemen,
+      Status: item.status,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Selesai");
+
+    const tanggalFile = new Date().toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).replace(/\//g, "-");
+
+    XLSX.writeFile(workbook, `data-mahasiswa-selesai-${tanggalFile}.xlsx`);
+  };
 
   if (loading) {
     return (
@@ -105,53 +127,46 @@ export default function Selesai() {
     <div className="min-h-screen bg-gray-100">
       <SidebarAdminComp />
       <main className="ml-64 min-h-screen p-8">
-
-        <div className="mb-6">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-[#111827]">Selesai</h1>
           <p className="mt-1 text-sm text-gray-500">
             Daftar mahasiswa yang telah menyelesaikan proses clearing.
           </p>
         </div>
 
+        {/* Tombol Export Excel - baris terpisah, pojok kanan */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+          >
+            <HiDownload className="w-4 h-4" />
+            Export Excel
+          </button>
+        </div>
+
         {/* FILTER */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          >
-            <option>Semua status</option>
-            <option>Selesai</option>
-          </select>
-
-          <div className="relative">
-            <input
-              type="date"
-              value={tanggal}
-              onChange={(e) => setTanggal(e.target.value)}
-              className="h-10 px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-            />
-            <HiCalendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          </div>
-
           <div className="relative flex-1 min-w-[200px]">
             <input
               type="text"
               placeholder="Cari Nama, Nim, atau Departemen..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               className="h-10 w-full px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
             <HiSearch className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           </div>
 
           {/* Tombol Reset Filter */}
-          {(search || tanggal || status !== "Semua status") && (
+          {search && (
             <button
               onClick={() => {
                 setSearch("");
-                setTanggal("");
-                setStatus("Semua status");
+                setCurrentPage(1);
               }}
               className="h-10 px-4 rounded-lg border border-red-300 bg-red-50 text-sm text-red-600 hover:bg-red-100 transition"
             >
@@ -186,7 +201,7 @@ export default function Selesai() {
                       <td className="px-6 py-3 text-gray-600">{item.departemen}</td>
                       <td className="px-6 py-3">
                         <span className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full text-emerald-600 bg-emerald-50 border border-emerald-200">
-                          Selesai
+                          Diverifikasi
                         </span>
                       </td>
                       <td className="px-6 py-3 text-center">
@@ -220,14 +235,14 @@ export default function Selesai() {
         {filteredMahasiswa.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
             <span className="text-sm text-gray-500">
-              Menampilkan <span className="font-medium">{startIndex + 1}</span> -{' '}
-              <span className="font-medium">{Math.min(endIndex, filteredMahasiswa.length)}</span> dari{' '}
+              Menampilkan <span className="font-medium">{startIndex + 1}</span> -{" "}
+              <span className="font-medium">{Math.min(endIndex, filteredMahasiswa.length)}</span> dari{" "}
               <span className="font-medium">{filteredMahasiswa.length}</span> data
             </span>
             <div className="flex items-center gap-1">
               <button
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
-                  currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'
+                  currentPage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-gray-100"
                 }`}
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
@@ -240,7 +255,7 @@ export default function Selesai() {
                   key={num}
                   onClick={() => setCurrentPage(num)}
                   className={`w-8 h-8 text-sm font-medium rounded-lg ${
-                    currentPage === num ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                    currentPage === num ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   {num}
@@ -261,7 +276,7 @@ export default function Selesai() {
 
               <button
                 className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
-                  currentPage === totalPages || totalPages === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'
+                  currentPage === totalPages || totalPages === 0 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-gray-100"
                 }`}
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages || totalPages === 0}
@@ -271,7 +286,6 @@ export default function Selesai() {
             </div>
           </div>
         )}
-
       </main>
     </div>
   );

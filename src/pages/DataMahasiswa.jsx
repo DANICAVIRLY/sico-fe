@@ -23,17 +23,23 @@ export default function DataMahasiswa() {
 
   const formatStatus = (status) => {
     const statusMap = {
+      diajukan: "Menunggu Verifikasi",
       menunggu: "Menunggu Verifikasi",
       pending: "Menunggu Verifikasi",
-      diverifikasi: "Selesai",
-      approved: "Selesai",
-      selesai: "Selesai",
+      revisi_admin: "Menunggu Verifikasi",
+      perbaikan: "Menunggu Verifikasi",
+      revision: "Menunggu Verifikasi",
+
+      diverifikasi_admin: "Diverifikasi",
+      diverifikasi: "Diverifikasi",
+      disetujui: "Diverifikasi",
+      approved: "Diverifikasi",
+      selesai: "Diverifikasi",
+
       ditolak: "Ditolak",
       rejected: "Ditolak",
-      perbaikan: "Perlu Perbaikan",
-      revision: "Perlu Perbaikan",
     };
-    return statusMap[status?.toLowerCase()] || status || "Menunggu Verifikasi";
+    return statusMap[status?.toLowerCase()] || "Menunggu Verifikasi";
   };
 
   const fetchData = () => {
@@ -109,13 +115,13 @@ export default function DataMahasiswa() {
   const currentData = filteredData.slice(startIndex, endIndex);
 
   const getStatusStyle = (status) => {
-    if (status === "Selesai") {
+    if (status === "Diverifikasi") {
       return "bg-green-100 text-green-700 border border-green-300";
     }
-    if (status === "Perlu Perbaikan" || status === "Ditolak") {
+    if (status === "Ditolak") {
       return "bg-red-100 text-red-700 border border-red-300";
     }
-    return "bg-yellow-100 text-yellow-700 border border-yellow-300";
+    return "bg-yellow-100 text-yellow-700 border border-yellow-300"; // Menunggu Verifikasi
   };
 
   const toggleSidebar = () => {
@@ -175,8 +181,7 @@ export default function DataMahasiswa() {
           >
             <option>Semua status</option>
             <option>Menunggu Verifikasi</option>
-            <option>Selesai</option>
-            <option>Perlu Perbaikan</option>
+            <option>Diverifikasi</option>
             <option>Ditolak</option>
           </select>
 
