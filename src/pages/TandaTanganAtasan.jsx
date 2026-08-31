@@ -1,81 +1,251 @@
 import { Card, Button } from "flowbite-react";
 import { Link, useParams, useLocation } from "react-router-dom";
-import { HiArrowLeft } from "react-icons/hi";
+import { HiArrowLeft, HiDocumentText, HiDownload } from "react-icons/hi";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function TandaTangan() {
   const { id } = useParams();
   const location = useLocation();
+
   const stateData = location.state?.dataMahasiswa;
 
   const [loading, setLoading] = useState(!stateData);
   const [pengajuan, setPengajuan] = useState(stateData || null);
+  const [submitting, setSubmitting] = useState(false);
 
+  // PDF preview
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [loadingPdf, setLoadingPdf] = useState(true);
+
+  const API = "http://10.6.65.141:8000/api";
+
+  const today = new Date();
+
+  const tanggalSurat = today.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  // =========================================================
+  // FETCH DETAIL PENGAJUAN
+  // =========================================================
   useEffect(() => {
-    // Kalau data tidak ada di state, ambil dari API
     if (!stateData) {
       fetchData();
     } else {
       setLoading(false);
     }
+
+    fetchPreviewPdf();
+
+    // cleanup Blob URL
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
   }, [id]);
 
-  const fetchData = () => {
-    const token = localStorage.getItem("token");
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-    axios
-      .get(`http://10.6.65.141:8000/api/pengajuan-clearing/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      })
-      .then((response) => {
-        const item = response.data?.data || response.data;
+      const response = await axios.get(
+        `${API}/pengajuan-clearing/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        }
+      );
 
-        setPengajuan({
-          id: item.id,
-          nama: item.user?.nama || item.nama || "-",
-          nim: item.user?.nim || item.nim || "-",
-          tanggal: item.created_at
-            ? new Date(item.created_at).toLocaleDateString("id-ID", {
+      const item = response.data?.data || response.data;
+
+      setPengajuan({
+        id: item.id,
+        nama: item.user?.nama || item.nama || "-",
+        nim: item.user?.nim || item.nim || "-",
+
+        tanggal: item.created_at
+          ? new Date(item.created_at).toLocaleDateString(
+              "id-ID",
+              {
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
-              })
-            : "-",
-          departemen:
-            item.departemen || item.user?.departemen || "-",
-          status: item.status || "Menunggu TTD",
-          created_at: item.created_at,
-        });
+              }
+            )
+          : "-",
 
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-        console.error("Response:", error.response?.data);
-        setLoading(false);
+        departemen:
+          item.departemen ||
+          item.user?.departemen ||
+          "-",
+
+        status: item.status || "Menunggu TTD",
+
+        created_at: item.created_at,
       });
+
+      setLoading(false);
+    } catch (error) {
+      console.error(
+        "Error fetching data:",
+        error.response?.data || error
+      );
+
+      setLoading(false);
+    }
   };
 
- 
-  //setuju dan tanda tangan
-  const handleSetujui = () => {
-    const token = localStorage.getItem("token");
+  // =========================================================
+  // PREVIEW SURAT PDF
+  // GET /pengajuan-clearing/{id}/preview-surat
+  // =========================================================
+  const fetchPreviewPdf = async () => {
+    try {
+      setLoadingPdf(true);
 
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("Token tidak ditemukan");
+        setLoadingPdf(false);
+        return;
+      }
+
+      const response = await axios.get(
+        `${API}/pengajuan-clearing/${id}/preview-surat`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/pdf",
+          },
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob(
+        [response.data],
+        {
+          type: "application/pdf",
+        }
+      );
+
+      const url = URL.createObjectURL(blob);
+
+      setPdfUrl(url);
+      setLoadingPdf(false);
+    } catch (error) {
+      console.error(
+        "Gagal mengambil preview surat:",
+        error.response?.data || error
+      );
+
+      setLoadingPdf(false);
+    }
+  };
+
+  // =========================================================
+  // BUKA PREVIEW DI TAB BARU
+  // =========================================================
+  const handlePreviewSurat = () => {
+    if (!pdfUrl) {
+      alert("Preview surat belum tersedia.");
+      return;
+    }
+
+    window.open(pdfUrl, "_blank");
+  };
+
+  // =========================================================
+  // DOWNLOAD / LIHAT SURAT FINAL
+  // GET /pengajuan-clearing/{id}/download-surat
+  // =========================================================
+  const handleDownloadSurat = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Token tidak ditemukan. Silakan login ulang.");
+        return;
+      }
+
+      const response = await axios.get(
+        `${API}/pengajuan-clearing/${id}/download-surat`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/pdf",
+          },
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob(
+        [response.data],
+        {
+          type: "application/pdf",
+        }
+      );
+
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `surat-clearing-${pengajuan?.nim || id}.pdf`;
+
+      document.body.appendChild(link);
+
+      link.click();
+
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(
+        "Gagal download surat:",
+        error.response?.data || error
+      );
+
+      alert(
+        error.response?.data?.message ||
+          "Gagal mendownload surat."
+      );
+    }
+  };
+
+  // =========================================================
+  // SETUJUI CLEARING
+  // POST /pengajuan-clearing/{id}/review-atasan
+  // =========================================================
+  const handleSetujui = async () => {
     const ttd = prompt(
       "Ketik nama lengkap sebagai tanda tangan:"
     );
 
     if (!ttd) return;
 
-    axios
-      .post(
-        `http://10.6.65.141:8000/api/pengajuan-clearing/${id}/review-atasan`,
+    try {
+      setSubmitting(true);
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Token tidak ditemukan. Silakan login ulang.");
+        setSubmitting(false);
+        return;
+      }
+
+      await axios.post(
+        `${API}/pengajuan-clearing/${id}/review-atasan`,
         {
           keputusan: "setuju",
+          catatan: `Disetujui oleh atasan: ${ttd}`,
         },
         {
           headers: {
@@ -84,45 +254,53 @@ export default function TandaTangan() {
             "Content-Type": "application/json",
           },
         }
-      )
-      .then((response) => {
-        console.log(
-          "REVIEW ATASAN BERHASIL:",
-          response.data
-        );
+      );
 
-        alert("Dokumen berhasil ditandatangani!");
+      alert("✅ Dokumen berhasil ditandatangani!");
 
-        window.location.href = "/dashboard-atasan";
-      })
-      .catch((error) => {
-        console.error(
-          "ERROR REVIEW ATASAN:",
-          error.response?.data
-        );
+      window.location.href = `/verifikasi-qr/${id}`;
+    } catch (error) {
+      console.error(
+        "Error setujui:",
+        error.response?.data || error
+      );
 
-        alert(
-          error.response?.data?.message ||
-            "Gagal menandatangani dokumen."
-        );
-      });
+      alert(
+        error.response?.data?.message ||
+          "❌ Gagal menandatangani dokumen."
+      );
+
+      setSubmitting(false);
+    }
   };
 
-  //tolak dokumen
-  const handleTolak = () => {
+  // =========================================================
+  // TOLAK CLEARING
+  // POST /pengajuan-clearing/{id}/review-atasan
+  // =========================================================
+  const handleTolak = async () => {
     const alasan = prompt(
       "Masukkan alasan penolakan:"
     );
 
     if (!alasan) return;
 
-    const token = localStorage.getItem("token");
+    try {
+      setSubmitting(true);
 
-    axios
-      .post(
-        `http://10.6.65.141:8000/api/pengajuan-clearing/${id}/review-atasan`,
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        alert("Token tidak ditemukan. Silakan login ulang.");
+        setSubmitting(false);
+        return;
+      }
+
+      await axios.post(
+        `${API}/pengajuan-clearing/${id}/review-atasan`,
         {
           keputusan: "tolak",
+          catatan: alasan,
         },
         {
           headers: {
@@ -131,37 +309,35 @@ export default function TandaTangan() {
             "Content-Type": "application/json",
           },
         }
-      )
-      .then((response) => {
-        console.log(
-          "PENOLAKAN BERHASIL:",
-          response.data
-        );
+      );
 
-        alert("Dokumen ditolak!");
+      alert("❌ Dokumen berhasil ditolak!");
 
-        window.location.href = "/dashboard-atasan";
-      })
-      .catch((error) => {
-        console.error(
-          "ERROR MENOLAK:",
-          error.response?.data
-        );
+      window.location.href =
+        "/data-mahasiswa-atasan";
+    } catch (error) {
+      console.error(
+        "Error tolak:",
+        error.response?.data || error
+      );
 
-        alert(
-          error.response?.data?.message ||
-            "Gagal menolak dokumen."
-        );
-      });
+      alert(
+        error.response?.data?.message ||
+          "❌ Gagal menolak dokumen."
+      );
+
+      setSubmitting(false);
+    }
   };
 
-
-  //loading
+  // =========================================================
+  // LOADING
+  // =========================================================
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-4">
         <div className="flex justify-center items-center h-64">
-          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
 
           <span className="ml-3 text-gray-500">
             Loading...
@@ -171,7 +347,9 @@ export default function TandaTangan() {
     );
   }
 
-  //data tidak di temukan
+  // =========================================================
+  // DATA TIDAK DITEMUKAN
+  // =========================================================
   if (!pengajuan) {
     return (
       <div className="max-w-6xl mx-auto p-4">
@@ -191,11 +369,15 @@ export default function TandaTangan() {
     );
   }
 
-  //halaman utama
+  // =========================================================
+  // UI
+  // =========================================================
   return (
     <div className="max-w-6xl mx-auto p-4">
 
-      {/* Breadcrumb */}
+      {/* =====================================================
+          BREADCRUMB
+      ===================================================== */}
       <div className="text-sm text-gray-500 mb-4 flex gap-2">
         <Link
           to="/dashboard-atasan"
@@ -220,54 +402,102 @@ export default function TandaTangan() {
         </span>
       </div>
 
+      {/* =====================================================
+          TITLE
+      ===================================================== */}
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        tanda_tangan_atasan
+        Tanda Tangan Atasan
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* ========================= */}
-        {/* KIRI - PREVIEW */}
-        {/* ========================= */}
-        <div className="bg-[#e6f6e9] p-8 rounded-xl border border-green-200 min-h-[500px] flex flex-col items-center justify-center relative">
+        {/* ===================================================
+            KIRI - PREVIEW SURAT
+        =================================================== */}
+        <div className="bg-[#e6f6e9] p-6 rounded-xl border border-green-200">
 
-          <h3 className="text-lg font-bold text-gray-800 mb-6 w-full text-left">
-            Preview Dokumen
-          </h3>
+          {/* HEADER */}
+          <div className="flex justify-between items-center mb-4">
 
-          <div className="bg-white p-8 rounded-lg shadow-sm w-full max-w-md h-[400px] relative">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-white rounded-lg border border-green-200">
+                <HiDocumentText className="w-5 h-5 text-green-600" />
+              </div>
 
-            <div className="space-y-3 mt-8">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">
+                  Surat Keterangan
+                </h3>
 
-              <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
-
-              <div className="h-3 bg-gray-200 rounded w-5/6 mx-auto"></div>
-
-              <div className="h-3 bg-gray-200 rounded w-4/6 mx-auto"></div>
-
-              <div className="h-3 bg-gray-200 rounded w-full mt-4"></div>
-
-              <div className="h-3 bg-gray-200 rounded w-full"></div>
-
-              <div className="h-3 bg-gray-200 rounded w-full"></div>
-
-              <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-
+                <p className="text-xs text-gray-500">
+                  Preview dokumen clearing
+                </p>
+              </div>
             </div>
 
-            <div className="absolute bottom-8 right-8 w-24 h-12 bg-blue-100 rounded border border-blue-300 flex items-center justify-center text-blue-500 text-xs font-medium">
-              Tanda Tangan
+            {/* BUTTON */}
+            <div className="flex gap-2">
+
+             
+            </div>
+          </div>
+
+          {/* =================================================
+              PDF FRAME
+          ================================================= */}
+          <div className="bg-gray-100 p-4 rounded-2xl border border-gray-200">
+
+            <div className="bg-white rounded-xl border border-gray-300 shadow-md overflow-hidden relative">
+
+              {loadingPdf ? (
+                <div
+                  className="flex flex-col justify-center items-center text-gray-500"
+                  style={{
+                    aspectRatio: "208 / 295",
+                  }}
+                >
+                  <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
+
+                  <span className="text-sm">
+                    Memuat surat...
+                  </span>
+                </div>
+              ) : pdfUrl ? (
+                <iframe
+                  src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+                  title="Preview Surat Clearing"
+                  className="w-full block"
+                  style={{
+                    aspectRatio: "208 / 295",
+                    border: "none",
+                  }}
+                />
+              ) : (
+                <div
+                  className="flex flex-col justify-center items-center text-gray-400"
+                  
+                >
+                  <HiDocumentText className="w-12 h-12 mb-3" />
+
+                  <p className="text-sm">
+                    Preview surat tidak tersedia.
+                  </p>
+                </div>
+              )}
+
             </div>
 
           </div>
         </div>
 
-        {/* ========================= */}
-        {/* KANAN - INFORMASI & AKSI */}
-        {/* ========================= */}
+        {/* ===================================================
+            KANAN
+        =================================================== */}
         <div className="space-y-6">
 
-          {/* Informasi Dokumen */}
+          {/* =================================================
+              INFORMASI DOKUMEN
+          ================================================= */}
           <Card className="shadow-sm">
 
             <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
@@ -276,7 +506,7 @@ export default function TandaTangan() {
 
             <div className="space-y-3 text-sm">
 
-              <div className="flex justify-between border-b pb-2">
+              <div className="flex justify-between border-b pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   Jenis Pengajuan
                 </span>
@@ -286,17 +516,17 @@ export default function TandaTangan() {
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2">
+              <div className="flex justify-between border-b pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   Nama
                 </span>
 
-                <span className="text-gray-900">
+                <span className="text-gray-900 text-right">
                   {pengajuan.nama}
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2">
+              <div className="flex justify-between border-b pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   NIM
                 </span>
@@ -306,42 +536,44 @@ export default function TandaTangan() {
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2">
+              <div className="flex justify-between border-b pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   Tanggal Pengajuan
                 </span>
 
-                <span className="text-gray-900">
+                <span className="text-gray-900 text-right">
                   {pengajuan.tanggal}
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2">
+              <div className="flex justify-between border-b pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   Departemen
                 </span>
 
-                <span className="text-gray-900">
+                <span className="text-gray-900 text-right">
                   {pengajuan.departemen}
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2">
+              <div className="flex justify-between items-center border-b pb-2 gap-4">
+
                 <span className="text-gray-500 font-medium">
                   Status
                 </span>
 
-                <span className="text-gray-900">
-                  <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
-                    {pengajuan.status || "Menunggu TTD"}
-                  </span>
+                <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
+                  {pengajuan.status || "Menunggu TTD"}
                 </span>
+
               </div>
 
             </div>
           </Card>
 
-          {/* Tindakan */}
+          {/* =================================================
+              TINDAKAN
+          ================================================= */}
           <Card className="shadow-sm">
 
             <h3 className="text-lg font-bold text-gray-800 mb-2">
@@ -349,32 +581,38 @@ export default function TandaTangan() {
             </h3>
 
             <p className="text-sm text-gray-500 mb-4">
-              Dengan menandatangani dokumen ini, anda
+              Dengan menandatangani dokumen ini, Anda
               menyetujui dokumen tersebut.
             </p>
 
             <div className="flex flex-col gap-3">
 
-              {/* SETUJUI */}
               <Button
                 className="w-full bg-[#2e1a7a] hover:bg-[#1e1260] text-white font-bold py-2.5"
                 onClick={handleSetujui}
+                disabled={submitting}
               >
-                Setujui & Tandatangani
+                {submitting
+                  ? "Memproses..."
+                  : "Setujui & Tandatangani"}
               </Button>
 
-              {/* TOLAK */}
               <Button
                 className="w-full bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold py-2.5"
                 onClick={handleTolak}
+                disabled={submitting}
               >
-                Tolak Dokumen
+                {submitting
+                  ? "Memproses..."
+                  : "Tolak Dokumen"}
               </Button>
 
             </div>
           </Card>
 
-          {/* Kembali */}
+          {/* =================================================
+              KEMBALI
+          ================================================= */}
           <div className="pt-2">
 
             <Link to="/data-mahasiswa-atasan">
