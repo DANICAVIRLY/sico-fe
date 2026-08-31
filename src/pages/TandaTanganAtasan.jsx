@@ -18,8 +18,6 @@ export default function TandaTangan() {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [loadingPdf, setLoadingPdf] = useState(true);
 
-  const API = "http://10.6.65.141:8000/api";
-
   const today = new Date();
 
   const tanggalSurat = today.toLocaleDateString("id-ID", {
@@ -52,9 +50,8 @@ export default function TandaTangan() {
     try {
       const token = localStorage.getItem("token");
 
-<<<<<<< HEAD
       const response = await axios.get(
-        `${API}/pengajuan-clearing/${id}`,
+        `http://10.6.65.110:8000/api/pengajuan-clearing/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -62,17 +59,6 @@ export default function TandaTangan() {
           },
         }
       );
-=======
-    axios
-      .get(`http://10.6.65.110:8000/api/pengajuan-clearing/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      })
-      .then((response) => {
-        const item = response.data?.data || response.data;
->>>>>>> 444f404 (update frontend)
 
       const item = response.data?.data || response.data;
 
@@ -130,7 +116,7 @@ export default function TandaTangan() {
       }
 
       const response = await axios.get(
-        `${API}/pengajuan-clearing/${id}/preview-surat`,
+        `http://10.6.65.110:8000/api/pengajuan-clearing/${id}/preview-surat`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -187,7 +173,7 @@ export default function TandaTangan() {
       }
 
       const response = await axios.get(
-        `${API}/pengajuan-clearing/${id}/download-surat`,
+        `http://10.6.65.110:8000/api/pengajuan-clearing/${id}/download-surat`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -242,7 +228,6 @@ export default function TandaTangan() {
 
     if (!ttd) return;
 
-<<<<<<< HEAD
     try {
       setSubmitting(true);
 
@@ -255,12 +240,7 @@ export default function TandaTangan() {
       }
 
       await axios.post(
-        `${API}/pengajuan-clearing/${id}/review-atasan`,
-=======
-    axios
-      .post(
         `http://10.6.65.110:8000/api/pengajuan-clearing/${id}/review-atasan`,
->>>>>>> 444f404 (update frontend)
         {
           keputusan: "setuju",
           catatan: `Disetujui oleh atasan: ${ttd}`,
@@ -306,7 +286,6 @@ export default function TandaTangan() {
     try {
       setSubmitting(true);
 
-<<<<<<< HEAD
       const token = localStorage.getItem("token");
 
       if (!token) {
@@ -316,12 +295,7 @@ export default function TandaTangan() {
       }
 
       await axios.post(
-        `${API}/pengajuan-clearing/${id}/review-atasan`,
-=======
-    axios
-      .post(
         `http://10.6.65.110:8000/api/pengajuan-clearing/${id}/review-atasan`,
->>>>>>> 444f404 (update frontend)
         {
           keputusan: "tolak",
           catatan: alasan,
