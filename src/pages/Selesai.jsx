@@ -22,7 +22,7 @@ export default function Selesai() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.65.141:8000/api/pengajuan-clearing", {
+      .get("http://10.6.65.110:8000/api/pengajuan-clearing", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",

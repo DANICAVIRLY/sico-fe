@@ -14,7 +14,7 @@ export default function BuatPengajuan() {
   const cekStatusPengajuan = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://10.6.65.141:8000/api/bebas-pustaka", {
+      const response = await axios.get("http://10.6.65.110:8000/api/bebas-pustaka", {
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
@@ -65,7 +65,7 @@ export default function BuatPengajuan() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "http://10.6.65.141:8000/api/bebas-pustaka",
+        "http://10.6.65.110:8000/api/bebas-pustaka",
         {},
         {
           headers: {

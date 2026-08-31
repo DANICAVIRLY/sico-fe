@@ -18,7 +18,7 @@ export default function PustakawanDashboard() {
         const token = localStorage.getItem("token");
 
         const response = await axios.get(
-          "http://10.6.65.141:8000/api/bebas-pustaka",
+          "http://:10.6.65.1108000/api/bebas-pustaka",
           {
             headers: {
               Authorization: `Bearer ${token}`,

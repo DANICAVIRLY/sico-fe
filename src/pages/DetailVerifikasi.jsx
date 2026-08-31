@@ -56,7 +56,7 @@ export default function DetailVerifikasi() {
 
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://10.6.65.141:8000/api/bebas-pustaka", {
+      const response = await axios.get("http://10.6.65.110:8000/api/bebas-pustaka", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -126,7 +126,7 @@ export default function DetailVerifikasi() {
       const token = localStorage.getItem("token");
 
       await axios.post(
-        `http://10.6.65.141:8000/api/bebas-pustaka/${id}/review`,
+        `http://10.6.65.110:8000/api/bebas-pustaka/${id}/review`,
         {
           keputusan,
           catatan_revisi: catatan,

@@ -8,7 +8,7 @@ export default function DashboardAdmin() {
     total: 0,
     menunggu: 0,
     perbaikan: 0,
-    selesai: 0
+    selesai: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -17,31 +17,44 @@ export default function DashboardAdmin() {
   }, []);
 
   const fetchData = () => {
-    const token = localStorage.getItem('token');
-    
-    axios.get('/api/pengajuan-clearing', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then(response => {
-      const items = response.data;
-      setData({
-        total: items.length,
-        menunggu: items.filter(item => 
-          item.status === 'menunggu' || item.status === 'pending'
-        ).length,
-        perbaikan: items.filter(item => 
-          item.status === 'perbaikan' || item.status === 'revision'
-        ).length,
-        selesai: items.filter(item => 
-          item.status === 'diverifikasi' || item.status === 'approved' || item.status === 'selesai'
-        ).length
+    const token = localStorage.getItem("token");
+
+    axios
+      .get("http://10.6.65.110:8000/api/pengajuan-clearing", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      })
+      .then((response) => {
+        const items = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.data)
+          ? response.data.data
+          : response.data?.data?.data || [];
+
+        setData({
+          total: items.length,
+          menunggu: items.filter((item) =>
+            ["diajukan", "menunggu", "pending", "revisi_admin", "perbaikan", "revision"].includes(
+              item.status?.toLowerCase()
+            )
+          ).length,
+          perbaikan: items.filter((item) =>
+            ["revisi_admin", "perbaikan", "revision"].includes(item.status?.toLowerCase())
+          ).length,
+          selesai: items.filter((item) =>
+            ["diverifikasi_admin", "diverifikasi", "disetujui", "approved", "selesai"].includes(
+              item.status?.toLowerCase()
+            )
+          ).length,
+        });
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setLoading(false);
       });
-      setLoading(false);
-    })
-    .catch(error => {
-      console.error('Error fetching data:', error);
-      setLoading(false);
-    });
   };
 
   if (loading) {
@@ -70,7 +83,6 @@ export default function DashboardAdmin() {
 
         {/* Card statistik dengan border di ATAS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
-          
           {/* Total Pengajuan */}
           <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-indigo-500">
             <div className="flex items-center justify-between">
@@ -122,7 +134,6 @@ export default function DashboardAdmin() {
               </div>
             </div>
           </div>
-
         </div>
       </main>
     </div>
