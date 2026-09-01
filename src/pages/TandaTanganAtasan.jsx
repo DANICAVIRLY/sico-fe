@@ -51,7 +51,7 @@ export default function TandaTangan() {
       const token = localStorage.getItem("token");
 
       const response = await axios.get(
-        `http://10.6.65.110:8000/api/pengajuan-clearing/${id}`,
+        `http://10.6.64.238:8000/api/pengajuan-clearing/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -116,7 +116,7 @@ export default function TandaTangan() {
       }
 
       const response = await axios.get(
-        `http://10.6.65.110:8000/api/pengajuan-clearing/${id}/preview-surat`,
+        `http://10.6.64.238:8000/api/pengajuan-clearing/${id}/preview-surat`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -173,7 +173,7 @@ export default function TandaTangan() {
       }
 
       const response = await axios.get(
-        `http://10.6.65.110:8000/api/pengajuan-clearing/${id}/download-surat`,
+        `http://10.6.64.238:8000/api/pengajuan-clearing/${id}/download-surat`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -240,7 +240,7 @@ export default function TandaTangan() {
       }
 
       await axios.post(
-        `http://10.6.65.110:8000/api/pengajuan-clearing/${id}/review-atasan`,
+        `http://10.6.64.238:8000/api/pengajuan-clearing/${id}/review-atasan`,
         {
           keputusan: "setuju",
           catatan: `Disetujui oleh atasan: ${ttd}`,
@@ -295,7 +295,7 @@ export default function TandaTangan() {
       }
 
       await axios.post(
-        `http://10.6.65.110:8000/api/pengajuan-clearing/${id}/review-atasan`,
+        `http://10.6.64.238:8000/api/pengajuan-clearing/${id}/review-atasan`,
         {
           keputusan: "tolak",
           catatan: alasan,

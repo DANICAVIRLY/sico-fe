@@ -27,7 +27,7 @@ export default function Login() {
       console.log("DATA YANG DIKIRIM:", payload);
 
       const response = await axios.post(
-        "http://10.6.65.110:8000/api/auth/login",
+        "http://10.6.64.238:8000/api/auth/login",
         payload,
         {
           headers: {
@@ -136,7 +136,7 @@ export default function Login() {
                 <Label
                   htmlFor="login"
                   value="Email"
-                />
+                >Email</Label>
               </div>
 
               <TextInput
@@ -147,7 +147,7 @@ export default function Login() {
                 shadow
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
-              />
+              /> 
             </div>
 
             {/* Password */}
@@ -156,7 +156,7 @@ export default function Login() {
                 <Label
                   htmlFor="password"
                   value="Password"
-                />
+                >Password</Label>
               </div>
 
               <TextInput

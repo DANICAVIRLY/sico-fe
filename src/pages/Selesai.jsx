@@ -12,7 +12,7 @@ export default function Selesai() {
   const [loading, setLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchData();
@@ -22,7 +22,7 @@ export default function Selesai() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.65.110:8000/api/pengajuan-clearing", {
+      .get("http://10.6.64.238:8000/api/pengajuan-clearing", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",

@@ -10,7 +10,7 @@ import {
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
-const API_URL = "http://10.6.65.110:8000";
+const API_URL = "http://10.6.64.238:8000";
 const STORAGE_URL = `${API_URL}/storage`;
 
 export default function PengajuanSaya() {

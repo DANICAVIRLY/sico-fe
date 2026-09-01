@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Card, Button, Badge } from 'flowbite-react';
 import SidebarMahaComp from '../components/SidebarMahaComp';
-import { HiCheckCircle, HiClock, HiQrcode } from 'react-icons/hi';
+import { HiCheckCircle, HiCheck, HiClock, HiQrcode, HiDeviceMobile } from 'react-icons/hi';
 import axios from 'axios';
+
+const STEPPER_ITEMS = [
+  { label: 'Surat Bebas Pustaka' },
+  { label: 'Pengajuan Clearing' },
+  { label: 'Verifikasi Admin' },
+  { label: 'Verifikasi Atasan' },
+];
 
 export default function DashboardMahasiswa() {
   const [nama, setNama] = useState("");
@@ -104,7 +111,7 @@ export default function DashboardMahasiswa() {
   };
 
   // QR Code URL untuk verifikasi
-  const qrUrl = pengajuan?.id 
+  const qrUrl = pengajuan?.id
     ? `http://10.6.65.141:8000/api/surat/verify/${surat?.qr_token || pengajuan.id}`
     : "#";
 
@@ -128,8 +135,6 @@ export default function DashboardMahasiswa() {
 
       <main className="lg:ml-64 p-6 md:p-8">
         <div className="w-full">
-
-          {/* HEADER */}
           <div className="mb-6 md:mb-8">
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">
               Halo!, {nama}
@@ -138,80 +143,111 @@ export default function DashboardMahasiswa() {
               Berikut Ringkasan Clearing Anda
             </p>
           </div>
-
-          {/* TIMELINE PROGRESS */}
           <div className="mb-6">
-            <h3 className="font-bold text-gray-800 mb-3">Tahapan Proses Clearing</h3>
-            <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                    <span>Pengajuan</span>
-                    <span>Verifikasi Admin</span>
-                    <span>Verifikasi Atasan</span>
-                    <span>Selesai</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500"
-                      style={{ width: `${(tahapan / totalTahapan) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <span className="text-sm font-medium text-indigo-600 whitespace-nowrap">
+            <Card className="border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-indigo-700">Tahapan Proses Clearing</h3>
+                <span className="text-sm font-semibold text-indigo-600 whitespace-nowrap">
                   {tahapan}/{totalTahapan}
                 </span>
               </div>
-            </div>
+
+              <div className="flex items-start justify-between mt-4 px-2">
+                {STEPPER_ITEMS.map((step, index) => {
+                  const stepNumber = index + 1;
+                  const isDone = tahapan >= totalTahapan ? true : stepNumber < tahapan;
+                  const isActive = tahapan < totalTahapan && stepNumber === tahapan;
+                  const isLineFilled = tahapan >= totalTahapan ? true : stepNumber <= tahapan;
+
+                  return (
+                    <div
+                      key={step.label}
+                      className="flex-1 flex flex-col items-center relative"
+                    >
+                      {index !== 0 && (
+                        <div
+                          className={`absolute top-4 right-1/2 w-full h-0.5 ${
+                            isLineFilled ? "bg-indigo-600" : "bg-gray-200"
+                          }`}
+                        />
+                      )}
+
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center z-10 ${
+                          isDone
+                            ? "bg-indigo-600 text-white"
+                            : isActive
+                            ? "bg-white border-2 border-indigo-600 text-indigo-600"
+                            : "bg-gray-100 border border-gray-300 text-gray-400"
+                        }`}
+                      >
+                        {isDone ? (
+                          <HiCheck className="w-4 h-4" />
+                        ) : (
+                          <HiDeviceMobile className="w-4 h-4" />
+                        )}
+                      </div>
+
+                      <p className="text-xs font-semibold text-gray-800 mt-2 text-center">
+                        {step.label}
+                      </p>
+
+                      <p
+                        className={`text-[11px] mt-0.5 ${
+                          isDone || isActive ? "text-indigo-600" : "text-gray-400"
+                        }`}
+                      >
+                        {isDone ? "Selesai" : isActive ? "Sedang diproses" : "Belum"}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
           </div>
 
-          {/* STATUS PENGAJUAN */}
-          {pengajuan && (
-            <div className="mb-6">
-              <Card className="border border-gray-200 shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                  <div>
-                    <h3 className="font-bold text-gray-800">Pengajuan Clearing</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Status: {getStatusBadge(pengajuan.status)}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Diajukan: {pengajuan.created_at
-                        ? new Date(pengajuan.created_at).toLocaleDateString("id-ID", {
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          })
-                        : "-"}
+          <div className="mb-6">
+            <h3 className="text-xl font-bold mb-4">Dokumen Selesai</h3>
+            <Card className="rounded-lg shadow-sm border border-gray-200">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="text-base font-bold text-gray-900">
+                    Clearing Perpustakaan
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selesai pada 15 Mei 2026
+                  </p>
+                  <div className="flex gap-2 mt-3">
+                    <Button size="xs" outline>
+                      Lihat PDF
+                    </Button>
+                    <Button size="xs" outline>
+                      Download
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-24 flex items-center justify-center bg-white rounded-lg border border-gray-200 p-1">
+                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 font-mono bg-gray-50 rounded">
+                      QR Code
+                    </div>
+                  </div>
+                  <div className="w-28">
+                    <p className="text-xs font-bold text-gray-900 leading-tight">
+                      Scan untuk verifikasi dokumen ini
                     </p>
                   </div>
-                  {pengajuan.status === "diverifikasi" || pengajuan.status === "selesai" ? (
-                    <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-full">
-                      <HiCheckCircle className="w-5 h-5" />
-                      <span className="font-medium text-sm">Selesai</span>
-                    </div>
-                  ) : pengajuan.status === "ditolak" ? (
-                    <div className="flex items-center gap-2 text-red-600 bg-red-50 px-3 py-1.5 rounded-full">
-                      <span className="font-medium text-sm">Ditolak</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-full">
-                      <HiClock className="w-5 h-5" />
-                      <span className="font-medium text-sm">Diproses</span>
-                    </div>
-                  )}
                 </div>
-              </Card>
-            </div>
-          )}
+              </div>
+            </Card>
+          </div>
 
-          {/* DOKUMEN SELESAI + QR CODE */}
           {surat ? (
             <div>
               <h3 className="text-xl font-bold mb-4">Dokumen Selesai</h3>
               <Card className="rounded-lg shadow-sm border border-green-200 bg-green-50">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                  
+
                   {/* KIRI - Info Dokumen */}
                   <div className="flex-1">
                     <h3 className="text-base font-bold text-gray-900">
