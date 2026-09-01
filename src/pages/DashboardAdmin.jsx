@@ -7,7 +7,7 @@ export default function DashboardAdmin() {
   const [data, setData] = useState({
     total: 0,
     menunggu: 0,
-    perbaikan: 0,
+    revisi: 0,
     selesai: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -35,13 +35,18 @@ export default function DashboardAdmin() {
 
         setData({
           total: items.length,
+          // "Menunggu Verifikasi" sekarang HANYA untuk status yang benar-benar
+          // menunggu tindakan admin (belum pernah direview sama sekali).
           menunggu: items.filter((item) =>
-            ["diajukan", "menunggu", "pending", "revisi_admin", "perbaikan", "revision"].includes(
+            ["diajukan", "menunggu", "pending"].includes(
               item.status?.toLowerCase()
             )
           ).length,
-          perbaikan: items.filter((item) =>
-            ["revisi_admin", "perbaikan", "revision"].includes(item.status?.toLowerCase())
+          // "Revisi" untuk status yang sedang menunggu mahasiswa memperbaiki.
+          revisi: items.filter((item) =>
+            ["revisi_admin", "perbaikan", "revision"].includes(
+              item.status?.toLowerCase()
+            )
           ).length,
           selesai: items.filter((item) =>
             ["diverifikasi_admin", "diverifikasi", "disetujui", "approved", "selesai"].includes(
@@ -109,12 +114,12 @@ export default function DashboardAdmin() {
             </div>
           </div>
 
-          {/* Perlu Perbaikan */}
+          {/* Revisi */}
           <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-red-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Perlu Perbaikan</p>
-                <h2 className="text-2xl font-bold text-gray-800 mt-1">{data.perbaikan}</h2>
+                <p className="text-sm text-gray-500 font-medium">Revisi</p>
+                <h2 className="text-2xl font-bold text-gray-800 mt-1">{data.revisi}</h2>
               </div>
               <div className="p-3 bg-red-100 rounded-full text-red-600">
                 <HiPencil className="w-6 h-6" />
