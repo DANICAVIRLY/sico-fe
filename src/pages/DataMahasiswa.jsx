@@ -26,7 +26,7 @@ export default function DataMahasiswa() {
       diajukan: "Menunggu Verifikasi",
       menunggu: "Menunggu Verifikasi",
       pending: "Menunggu Verifikasi",
-      revisi_admin: "Menunggu Verifikasi",
+      revisi_admin: "Revisi",
       perbaikan: "Menunggu Verifikasi",
       revision: "Menunggu Verifikasi",
 
@@ -118,7 +118,7 @@ export default function DataMahasiswa() {
     if (status === "Diverifikasi") {
       return "bg-green-100 text-green-700 border border-green-300";
     }
-    if (status === "Ditolak") {
+    if (status === "Revisi") {
       return "bg-red-100 text-red-700 border border-red-300";
     }
     return "bg-yellow-100 text-yellow-700 border border-yellow-300"; // Menunggu Verifikasi

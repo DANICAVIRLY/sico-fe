@@ -29,7 +29,7 @@ export default function DashboardMahasiswa() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.65.141:8000/api/pengajuan-clearing", {
+      .get("http://10.6.64.238:8000/api/pengajuan-clearing", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -65,7 +65,7 @@ export default function DashboardMahasiswa() {
   const fetchSurat = (id) => {
     const token = localStorage.getItem("token");
     axios
-      .get(`http://10.6.65.141:8000/api/pengajuan-clearing/${id}/surat`, {
+      .get(`http://10.6.64.238:8000/api/pengajuan-clearing/${id}/surat`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
