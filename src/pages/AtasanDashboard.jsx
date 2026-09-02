@@ -12,7 +12,7 @@ import axios from "axios";
 // PENTING: samain base URL ke satu tempat (sama seperti file lain).
 // Ganti kalau ternyata IP backend aktifnya beda.
 // =====================================================================
-const API_BASE_URL = "http://10.6.65.93:8000";
+const API_BASE_URL = "http://10.6.64.238:8000";
 
 export default function AtasanDashboard() {
   const [hasNotif, setHasNotif] = useState(true);
@@ -63,25 +63,25 @@ export default function AtasanDashboard() {
   };
 
   // =====================================================================
-  // CATATAN: endpoint "/api/notifications" ini TIDAK ADA di route list
-  // backend yang pernah dikirim sebelumnya (cuma ada auth, bebas-pustaka,
-  // dashboard, laporan, pengajuan-clearing, surat/verify). Jadi request
-  // ini kemungkinan besar akan selalu gagal (404) sampai route & endpoint
-  // notifikasi ini beneran dibikin di backend. Dibiarkan apa adanya
-  // sesuai permintaan (tampilan/behavior lain jangan diubah), tapi
-  // ditandai di sini biar diketahui.
+  // Endpoint asli backend ada di prefix "/notifikasi" (bukan
+  // "/notifications"), lewat NotifikasiController + NotifikasiResource.
+  // GET /api/notifikasi mengembalikan SEMUA notifikasi (paginated,
+  // format Laravel Resource Collection: { data: [...], links, meta }),
+  // bukan cuma yang belum dibaca. Jadi filter "belum dibaca" dilakukan
+  // di sisi frontend di sini.
   // =====================================================================
   const fetchNotifications = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get(`${API_BASE_URL}/api/notifications`, {
+      .get(`${API_BASE_URL}/api/notifikasi`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
-        const notifData = Array.isArray(response.data) ? response.data : [];
-        setNotifications(notifData);
-        setHasNotif(notifData.length > 0);
+        const allNotif = response.data?.data || [];
+        const belumDibaca = allNotif.filter((n) => !n.dibaca);
+        setNotifications(belumDibaca);
+        setHasNotif(belumDibaca.length > 0);
       })
       .catch((error) => {
         console.error("Error fetching notifications:", error);
@@ -94,7 +94,7 @@ export default function AtasanDashboard() {
     const token = localStorage.getItem("token");
     axios
       .post(
-        `${API_BASE_URL}/api/notifications/read-all`,
+        `${API_BASE_URL}/api/notifikasi/read-all`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -166,13 +166,13 @@ export default function AtasanDashboard() {
 
             {notifications.length > 0 ? (
               notifications.map((notif, index) => (
-                <Dropdown.Item key={index}>
+                <Dropdown.Item key={notif.id || index}>
                   <div className="flex flex-col">
                     <span className="font-medium text-gray-900">
-                      {notif.title || "Notifikasi"}
+                      {notif.judul || "Notifikasi"}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {notif.message || "Tidak ada pesan"}
+                      {notif.pesan || "Tidak ada pesan"}
                     </span>
                   </div>
                 </Dropdown.Item>
