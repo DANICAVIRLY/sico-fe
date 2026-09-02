@@ -10,6 +10,11 @@ import {
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
+
+const API_URL = "http://10.6.65.93:8000";
+const STORAGE_URL = `${API_URL}/storage`;
+
+
 export default function PengajuanSaya() {
   const [nama, setNama] = useState("");
   const [nim, setNim] = useState("");

@@ -8,7 +8,7 @@ import {
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = "http://10.6.65.93:8000/api";
+const API_BASE_URL = "http://10.6.64.238:8000";
 
 export default function AtasanDashboard() {
   const [hasNotif, setHasNotif] = useState(true);
@@ -25,73 +25,82 @@ export default function AtasanDashboard() {
     fetchNotifications();
   }, []);
 
+  // =====================================================================
+  // Sebelumnya component ini manggil GET /api/pengajuan-clearing lalu
+  // hitung total/disetujui/ditolak manual di frontend. Itu salah endpoint
+  // (base URL relatif, ga nyambung ke backend) dan salah baca struktur
+  // response (bukan array, tapi object pagination).
+  //
+  // Sekarang manggil GET /api/dashboard, endpoint yang emang udah
+  // disiapkan backend (DashboardService::atasanDashboard) buat ngitung
+  // statistik ini di sisi server.
+  //
+  // CATATAN: nama field statistik di bawah ini (menunggu_ttd /
+  // sudah_ditandatangani, dst) masih tebakan berdasarkan pola penamaan
+  // backend (snake_case, mirip total_pengajuan/sudah_disetujui/
+  // sudah_ditolak). console.log di bawah dipasang supaya struktur
+  // response asli bisa dicek di DevTools dan nama field disesuaikan
+  // kalau ternyata beda.
+  // =====================================================================
   const fetchData = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get(`${API_BASE}/pengajuan-clearing`, {
+      .get(`${API_BASE_URL}/api/dashboard`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
       })
       .then((response) => {
-        // Sama seperti halaman lain: hasil bisa dibungkus di data.data.data
-        // atau data.data, bukan array polos di response.data.
-        const result = response.data?.data ?? response.data;
+        const statistik = response.data?.data?.statistik || {};
 
-        let items = [];
-        if (Array.isArray(result)) {
-          items = result;
-        } else if (Array.isArray(result?.data)) {
-          items = result.data;
-        }
-
-        console.log("PENGAJUAN CLEARING (ATASAN):", items);
-
-        // "Sudah disetujui/ditandatangani" ditentukan dari timestamp
-        // disetujui_atasan_at, bukan field status (status tetap "disetujui"
-        // walau atasan sudah tanda tangan, lihat catatan di dashboard
-        // mahasiswa).
-        const sudahDitandatangani = items.filter((item) =>
-          Boolean(item.disetujui_atasan_at)
-        ).length;
-
-        // Menunggu tanda tangan: sudah direview admin, tapi atasan belum
-        // menandatangani.
-        const menungguTtd = items.filter(
-          (item) =>
-            Boolean(item.direview_admin_at) && !item.disetujui_atasan_at
-        ).length;
+        console.log("DASHBOARD ATASAN - FULL RESPONSE:", response.data);
+        console.log("DASHBOARD ATASAN - STATISTIK:", statistik);
 
         setData({
-          total: items.length,
-          menungguTtd,
-          sudahDitandatangani,
+          total: statistik.total_pengajuan ?? 0,
+          // "Menunggu Tanda Tangan": sudah direview admin, atasan belum ttd.
+          menungguTtd:
+            statistik.menunggu_ttd ??
+            statistik.menunggu_tanda_tangan ??
+            statistik.sudah_disetujui ??
+            0,
+          // "Sudah Ditandatangani": atasan sudah approve/ttd.
+          sudahDitandatangani:
+            statistik.sudah_ditandatangani ??
+            statistik.selesai_ditandatangani ??
+            statistik.sudah_disetujui_atasan ??
+            0,
         });
         setLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data:", error.response?.data || error);
         setLoading(false);
       });
   };
 
+  // =====================================================================
+  // Endpoint asli backend ada di prefix "/notifikasi" (bukan
+  // "/notifications"), lewat NotifikasiController + NotifikasiResource.
+  // GET /api/notifikasi mengembalikan SEMUA notifikasi (paginated,
+  // format Laravel Resource Collection: { data: [...], links, meta }),
+  // bukan cuma yang belum dibaca. Jadi filter "belum dibaca" dilakukan
+  // di sisi frontend di sini.
+  // =====================================================================
   const fetchNotifications = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get(`${API_BASE}/notifications`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
+      .get(`${API_BASE_URL}/api/notifikasi`, {
+        headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
-        const result = response.data?.data ?? response.data;
-        const notifData = Array.isArray(result) ? result : [];
-        setNotifications(notifData);
-        setHasNotif(notifData.length > 0);
+        const allNotif = response.data?.data || [];
+        const belumDibaca = allNotif.filter((n) => !n.dibaca);
+        setNotifications(belumDibaca);
+        setHasNotif(belumDibaca.length > 0);
       })
       .catch((error) => {
         console.error("Error fetching notifications:", error);
@@ -104,7 +113,7 @@ export default function AtasanDashboard() {
     const token = localStorage.getItem("token");
     axios
       .post(
-        `${API_BASE}/notifications/read-all`,
+        `${API_BASE_URL}/api/notifikasi/read-all`,
         {},
         {
           headers: {
@@ -179,13 +188,13 @@ export default function AtasanDashboard() {
 
             {notifications.length > 0 ? (
               notifications.map((notif, index) => (
-                <Dropdown.Item key={index}>
+                <Dropdown.Item key={notif.id || index}>
                   <div className="flex flex-col">
                     <span className="font-medium text-gray-900">
-                      {notif.title || "Notifikasi"}
+                      {notif.judul || "Notifikasi"}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {notif.message || "Tidak ada pesan"}
+                      {notif.pesan || "Tidak ada pesan"}
                     </span>
                   </div>
                 </Dropdown.Item>

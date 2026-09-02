@@ -11,7 +11,9 @@ export default function BuatPengajuan() {
   const nim = userData?.nim || "";
 
   const [loading, setLoading] = useState(false);
-  // status: null | "pending" | "verified" | "revisi"
+
+  // status:
+  // null | "pending" | "verified" | "revisi"
   const [status, setStatus] = useState(null);
   const [catatanRevisi, setCatatanRevisi] = useState("");
   const [pengajuanId, setPengajuanId] = useState(null);
@@ -19,6 +21,7 @@ export default function BuatPengajuan() {
   const cekStatusPengajuan = async () => {
     try {
       const token = localStorage.getItem("token");
+
       const response = await axios.get(API_BASE, {
         headers: {
           Accept: "application/json",
@@ -26,7 +29,8 @@ export default function BuatPengajuan() {
         },
       });
 
-      const listData = response.data?.data?.data || response.data?.data || [];
+      const listData =
+        response.data?.data?.data || response.data?.data || [];
 
       const semuaPengajuanSaya = Array.isArray(listData)
         ? listData.filter(
@@ -44,7 +48,7 @@ export default function BuatPengajuan() {
         return;
       }
 
-      // Ambil yang id-nya paling besar (paling baru)
+      // Ambil pengajuan dengan ID paling besar (paling baru)
       const pengajuanSaya = semuaPengajuanSaya.reduce((terbaru, item) =>
         item.id > terbaru.id ? item : terbaru
       );
@@ -53,8 +57,11 @@ export default function BuatPengajuan() {
 
       setPengajuanId(pengajuanSaya.id);
 
-      // Enum backend: 'menunggu' | 'disetujui' | 'revisi'
-      const rawStatus = String(pengajuanSaya.status ?? "").toLowerCase();
+      // Enum backend:
+      // 'menunggu' | 'disetujui' | 'revisi'
+      const rawStatus = String(
+        pengajuanSaya.status ?? ""
+      ).toLowerCase();
 
       if (rawStatus === "revisi") {
         setStatus("revisi");
@@ -88,24 +95,37 @@ export default function BuatPengajuan() {
     if (tombolDisabled) return;
 
     setLoading(true);
+
     try {
       const token = localStorage.getItem("token");
+
       const headers = {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
       };
 
       if (isRevisi && pengajuanId) {
-        await axios.post(`${API_BASE}/${pengajuanId}/ajukan-ulang`, {}, { headers });
+        await axios.post(
+          `${API_BASE}/${pengajuanId}/ajukan-ulang`,
+          {},
+          { headers }
+        );
+
         alert("Pengajuan ulang berhasil dikirim!");
       } else {
         await axios.post(API_BASE, {}, { headers });
+
         alert("Pengajuan berhasil dikirim!");
       }
 
       cekStatusPengajuan();
     } catch (error) {
-      alert(error.response?.data?.message || "Pengajuan gagal dikirim.");
+      console.log("Error mengirim pengajuan:", error);
+
+      alert(
+        error.response?.data?.message ||
+          "Pengajuan gagal dikirim."
+      );
     } finally {
       setLoading(false);
     }
@@ -116,31 +136,67 @@ export default function BuatPengajuan() {
     if (isVerified) return "Sudah Diverifikasi";
     if (isPending) return "Menunggu Verifikasi";
     if (isRevisi) return "Ajukan Ulang";
+
     return "Kirim";
   };
 
   return (
     <div className="min-h-screen bg-slate-50">
       <SidebarMahaComp />
-      <main className="ml-64 p-8">
-        <h2 className="text-4xl font-bold mb-10"> Buat Pengajuan </h2>
-        <div className="grid grid-cols-2 gap-10">
 
-          {/* Kolom Kiri */}
+      <main className="ml-64 p-8">
+        <h2 className="text-4xl font-bold mb-10">
+          Buat Pengajuan
+        </h2>
+
+        <div className="grid grid-cols-2 gap-10">
+          {/* =========================
+              KOLOM KIRI
+          ========================== */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="mb-5">
-              <Label htmlFor="nama" value="Nama Lengkap"> Nama Lengkap</Label>
-              <TextInput id="nama" value={nama || ""} readOnly />
-            </div>
-            <div className="mb-5">
-              <Label htmlFor="nim" value="NIM">NIM</Label>
-              <TextInput id="nim" value={nim || ""} readOnly />
+              <Label
+                htmlFor="nama"
+                value="Nama Lengkap"
+              >
+                Nama Lengkap
+              </Label>
+
+              <TextInput
+                id="nama"
+                value={nama || ""}
+                readOnly
+              />
             </div>
 
+            <div className="mb-5">
+              <Label
+                htmlFor="nim"
+                value="NIM"
+              >
+                NIM
+              </Label>
+
+              <TextInput
+                id="nim"
+                value={nim || ""}
+                readOnly
+              />
+            </div>
+
+            {/* =========================
+                CATATAN REVISI
+            ========================== */}
             {isRevisi && (
               <div className="mb-5 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
-                <p className="font-semibold mb-1">Pengajuan perlu direvisi</p>
-                <p>{catatanRevisi || "Pustakawan tidak menyertakan catatan."}</p>
+                <p className="font-semibold mb-1">
+                  Pengajuan perlu direvisi
+                </p>
+
+                <p>
+                  {catatanRevisi ||
+                    "Pustakawan tidak menyertakan catatan."}
+                </p>
               </div>
             )}
 
@@ -155,36 +211,85 @@ export default function BuatPengajuan() {
             </div>
           </div>
 
-          {/* Kolom Kanan */}
+          {/* =========================
+              KOLOM KANAN
+          ========================== */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-center font-medium mb-5"> Tanda Tangan Pustakawan </h2>
+            <h2 className="text-center font-medium mb-5">
+              Tanda Tangan Pustakawan
+            </h2>
+
             <div className="rounded-lg h-64 flex flex-col items-center justify-center">
+              {/* =========================
+                  SUDAH DIVERIFIKASI
+              ========================== */}
               {isVerified ? (
                 <div className="flex flex-col items-center space-y-3">
                   <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center shadow-sm">
-                    <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-12 h-12 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
-                  <span className="text-green-600 font-semibold text-lg">Verifikasi Selesai</span>
+
+                  <span className="text-green-600 font-semibold text-lg">
+                    Verifikasi Selesai
+                  </span>
                 </div>
+
               ) : isRevisi ? (
+                /* =========================
+                    PERLU REVISI
+                ========================== */
                 <div className="flex flex-col items-center space-y-3">
                   <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center shadow-sm">
-                    <svg className="w-12 h-12 text-yellow-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z" />
+                    <svg
+                      className="w-12 h-12 text-yellow-600"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z"
+                      />
                     </svg>
                   </div>
-                  <span className="text-yellow-600 font-semibold text-lg">Perlu Revisi</span>
+
+                  <span className="text-yellow-600 font-semibold text-lg">
+                    Perlu Revisi
+                  </span>
                 </div>
+
               ) : isPending ? (
-                <span className="text-gray-400">Menunggu verifikasi pustakawan</span>
+                /* =========================
+                    MENUNGGU
+                ========================== */
+                <span className="text-gray-400">
+                  Menunggu verifikasi pustakawan
+                </span>
+
               ) : (
-                <span className="text-gray-400"> Belum ada tanda tangan </span>
+                /* =========================
+                    BELUM ADA PENGAJUAN
+                ========================== */
+                <span className="text-gray-400">
+                  Belum ada tanda tangan
+                </span>
               )}
             </div>
           </div>
-
         </div>
       </main>
     </div>
