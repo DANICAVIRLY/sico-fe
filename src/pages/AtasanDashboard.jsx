@@ -1,19 +1,21 @@
 import { Dropdown } from "flowbite-react";
 import {
   HiDocumentText,
+  HiClock,
   HiCheckCircle,
-  HiXCircle,
   HiBell,
 } from "react-icons/hi";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
+const API_BASE = "http://10.6.65.93:8000/api";
+
 export default function AtasanDashboard() {
   const [hasNotif, setHasNotif] = useState(true);
   const [data, setData] = useState({
     total: 0,
-    disetujui: 0,
-    ditolak: 0,
+    menungguTtd: 0,
+    sudahDitandatangani: 0,
   });
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -27,23 +29,45 @@ export default function AtasanDashboard() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("/api/pengajuan-clearing", {
-        headers: { Authorization: `Bearer ${token}` },
+      .get(`${API_BASE}/pengajuan-clearing`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
       })
       .then((response) => {
-        const items = Array.isArray(response.data) ? response.data : [];
+        // Sama seperti halaman lain: hasil bisa dibungkus di data.data.data
+        // atau data.data, bukan array polos di response.data.
+        const result = response.data?.data ?? response.data;
+
+        let items = [];
+        if (Array.isArray(result)) {
+          items = result;
+        } else if (Array.isArray(result?.data)) {
+          items = result.data;
+        }
+
+        console.log("PENGAJUAN CLEARING (ATASAN):", items);
+
+        // "Sudah disetujui/ditandatangani" ditentukan dari timestamp
+        // disetujui_atasan_at, bukan field status (status tetap "disetujui"
+        // walau atasan sudah tanda tangan, lihat catatan di dashboard
+        // mahasiswa).
+        const sudahDitandatangani = items.filter((item) =>
+          Boolean(item.disetujui_atasan_at)
+        ).length;
+
+        // Menunggu tanda tangan: sudah direview admin, tapi atasan belum
+        // menandatangani.
+        const menungguTtd = items.filter(
+          (item) =>
+            Boolean(item.direview_admin_at) && !item.disetujui_atasan_at
+        ).length;
 
         setData({
           total: items.length,
-          disetujui: items.filter(
-            (item) =>
-              item.status === "diverifikasi" ||
-              item.status === "approved" ||
-              item.status === "selesai",
-          ).length,
-          ditolak: items.filter(
-            (item) => item.status === "ditolak" || item.status === "rejected",
-          ).length,
+          menungguTtd,
+          sudahDitandatangani,
         });
         setLoading(false);
       })
@@ -57,11 +81,15 @@ export default function AtasanDashboard() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("/api/notifications", {
-        headers: { Authorization: `Bearer ${token}` },
+      .get(`${API_BASE}/notifications`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
       })
       .then((response) => {
-        const notifData = Array.isArray(response.data) ? response.data : [];
+        const result = response.data?.data ?? response.data;
+        const notifData = Array.isArray(result) ? result : [];
         setNotifications(notifData);
         setHasNotif(notifData.length > 0);
       })
@@ -76,10 +104,13 @@ export default function AtasanDashboard() {
     const token = localStorage.getItem("token");
     axios
       .post(
-        "/api/notifications/read-all",
+        `${API_BASE}/notifications/read-all`,
         {},
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
         },
       )
       .then(() => {
@@ -199,34 +230,36 @@ export default function AtasanDashboard() {
           </div>
         </div>
 
-        {/* Sudah Disetujui */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-green-500">
+        {/* Menunggu Tanda Tangan */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-yellow-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">
-                Sudah Disetujui
+                Menunggu Tanda Tangan
               </p>
               <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                {data.disetujui}
+                {data.menungguTtd}
               </h2>
             </div>
-            <div className="p-3 bg-green-100 rounded-full text-green-600">
-              <HiCheckCircle className="w-6 h-6" />
+            <div className="p-3 bg-yellow-100 rounded-full text-yellow-600">
+              <HiClock className="w-6 h-6" />
             </div>
           </div>
         </div>
 
-        {/* Sudah Ditolak */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-red-500">
+        {/* Sudah Ditandatangani */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Sudah Ditolak</p>
+              <p className="text-sm text-gray-500 font-medium">
+                Sudah Ditandatangani
+              </p>
               <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                {data.ditolak}
+                {data.sudahDitandatangani}
               </h2>
             </div>
-            <div className="p-3 bg-red-100 rounded-full text-red-600">
-              <HiXCircle className="w-6 h-6" />
+            <div className="p-3 bg-green-100 rounded-full text-green-600">
+              <HiCheckCircle className="w-6 h-6" />
             </div>
           </div>
         </div>

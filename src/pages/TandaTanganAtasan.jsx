@@ -254,7 +254,7 @@ export default function TandaTangan() {
         }
       );
 
-      alert("✅ Dokumen berhasil ditandatangani!");
+      alert("Dokumen berhasil ditandatangani!");
 
       window.location.href = `/verifikasi-qr/${id}`;
     } catch (error) {
@@ -265,7 +265,7 @@ export default function TandaTangan() {
 
       alert(
         error.response?.data?.message ||
-          "❌ Gagal menandatangani dokumen."
+          "Gagal menandatangani dokumen."
       );
 
       setSubmitting(false);
@@ -309,7 +309,7 @@ export default function TandaTangan() {
         }
       );
 
-      alert("❌ Dokumen berhasil ditolak!");
+      alert("Dokumen berhasil ditolak!");
 
       window.location.href =
         "/data-mahasiswa-atasan";
@@ -321,7 +321,7 @@ export default function TandaTangan() {
 
       alert(
         error.response?.data?.message ||
-          "❌ Gagal menolak dokumen."
+          "Gagal menolak dokumen."
       );
 
       setSubmitting(false);

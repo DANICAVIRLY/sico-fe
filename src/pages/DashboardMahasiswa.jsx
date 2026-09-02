@@ -75,16 +75,23 @@ export default function DashboardMahasiswa() {
         clearingRes.data?.data?.data || clearingRes.data?.data || [];
       const item = Array.isArray(clearingItems) ? clearingItems[0] || null : null;
 
-      console.log("PENGAJUAN CLEARING STATUS:", item?.status);
+      console.log("PENGAJUAN CLEARING FULL ITEM:", item);
 
       if (item) setPengajuan(item);
 
       // 3. Hitung tahapan gabungan
+      // CATATAN: field "status" pada pengajuan-clearing TIDAK berubah lagi
+      // setelah admin menyetujui (tetap "disetujui" walau atasan sudah tanda
+      // tangan). Progres verifikasi admin & atasan yang sebenarnya dilacak
+      // lewat timestamp direview_admin_at dan disetujui_atasan_at, jadi step
+      // dihitung dari situ, bukan dari string status.
       let step = 0;
       if (bpSelesai) step = 1;
 
       if (item) {
         const statusClearing = String(item.status ?? "").toLowerCase();
+        const sudahDireviewAdmin = Boolean(item.direview_admin_at);
+        const sudahDisetujuiAtasan = Boolean(item.disetujui_atasan_at);
 
         if (statusClearing === "ditolak") {
           // Ditolak: tetap di step 1 (bebas pustaka), clearing perlu diajukan ulang
@@ -92,19 +99,21 @@ export default function DashboardMahasiswa() {
         } else if (statusClearing === "revisi_admin") {
           // Perlu revisi: masih di tahap Pengajuan Clearing, belum lolos verifikasi admin
           step = bpSelesai ? 1 : 0;
-        } else if (statusClearing === "diverifikasi" || statusClearing === "selesai") {
+        } else if (sudahDisetujuiAtasan) {
+          // Atasan sudah menyetujui/menandatangani -> proses selesai total
           step = 4;
-        } else if (statusClearing === "menunggu_ttd") {
+        } else if (sudahDireviewAdmin) {
+          // Admin sudah approve & kirim ke atasan, tapi atasan belum tanda tangan
           step = 3;
         } else {
-          // Status lain (misal 'diajukan') dianggap baru masuk step 2
+          // Baru diajukan, belum direview admin sama sekali
           step = 2;
         }
       }
 
       setTahapan(step);
 
-      if (item && (item.status === "diverifikasi" || item.status === "selesai")) {
+      if (item && item.disetujui_atasan_at) {
         fetchSurat(item.id);
       }
     } catch (error) {
@@ -379,6 +388,26 @@ export default function DashboardMahasiswa() {
                 </div>
               </Card>
             </div>
+          ) : pengajuan?.disetujui_atasan_at ? (
+            /* Atasan sudah menyetujui, tapi data surat (fetchSurat) belum berhasil dimuat.
+               Ini beda kondisi dari "menunggu tanda tangan" - jangan tampilkan pesan menunggu. */
+            <div>
+              <h3 className="text-xl font-bold mb-4">Status Pengajuan Clearing</h3>
+              <Card className="rounded-lg shadow-sm border border-green-200 bg-green-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+                    <HiCheckCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-green-700">Pengajuan Selesai</h3>
+                    <p className="text-sm text-gray-600">
+                      Pengajuan clearing Anda sudah disetujui Admin dan ditandatangani Atasan.
+                      Surat sedang disiapkan, silakan muat ulang halaman beberapa saat lagi.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
           ) : (
             <div>
               <h3 className="text-xl font-bold mb-4">Status Pengajuan Clearing</h3>
@@ -388,9 +417,13 @@ export default function DashboardMahasiswa() {
                     <HiClock className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-yellow-700">Menunggu Verifikasi</h3>
+                    <h3 className="font-bold text-yellow-700">
+                      {pengajuan?.direview_admin_at ? "Menunggu Tanda Tangan Atasan" : "Menunggu Verifikasi"}
+                    </h3>
                     <p className="text-sm text-gray-600">
-                      Pengajuan clearing Anda sedang diproses oleh Admin/Atasan.
+                      {pengajuan?.direview_admin_at
+                        ? "Pengajuan clearing Anda sudah disetujui Admin dan sedang menunggu tanda tangan Atasan."
+                        : "Pengajuan clearing Anda sedang diproses oleh Admin/Atasan."}
                     </p>
                   </div>
                 </div>
