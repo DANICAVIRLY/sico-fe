@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button, Badge } from 'flowbite-react';
 import SidebarMahaComp from '../components/SidebarMahaComp';
-import { HiCheckCircle, HiCheck, HiClock, HiQrcode, HiDeviceMobile } from 'react-icons/hi';
+import { HiCheckCircle, HiCheck, HiClock, HiQrcode, HiDeviceMobile, HiExclamationCircle } from 'react-icons/hi';
 import axios from 'axios';
+
+const API_BASE = "http://10.6.65.93:8000/api";
 
 const STEPPER_ITEMS = [
   { label: 'Surat Bebas Pustaka' },
@@ -12,9 +15,11 @@ const STEPPER_ITEMS = [
 ];
 
 export default function DashboardMahasiswa() {
+  const navigate = useNavigate();
   const [nama, setNama] = useState("");
   const [loading, setLoading] = useState(true);
   const [pengajuan, setPengajuan] = useState(null);
+  const [bebasPustakaSelesai, setBebasPustakaSelesai] = useState(false);
   const [surat, setSurat] = useState(null);
   const [tahapan, setTahapan] = useState(0);
   const totalTahapan = 4;
@@ -25,47 +30,94 @@ export default function DashboardMahasiswa() {
     fetchData();
   }, []);
 
-  const fetchData = () => {
+  const fetchData = async () => {
     const token = localStorage.getItem("token");
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    };
+    const userData = JSON.parse(localStorage.getItem("user") || "null");
 
-    axios
-      .get("http://10.6.64.238:8000/api/pengajuan-clearing", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      })
-      .then((response) => {
-        const items = response.data?.data || response.data || [];
-        const item = items[0] || null;
+    try {
+      // 1. Cek status Bebas Pustaka
+      const bebasPustakaRes = await axios.get(
+        `${API_BASE}/bebas-pustaka`,
+        { headers }
+      );
+      const bebasPustakaList =
+        bebasPustakaRes.data?.data?.data || bebasPustakaRes.data?.data || [];
 
-        if (item) {
-          setPengajuan(item);
+      const semuaBebasPustakaSaya = Array.isArray(bebasPustakaList)
+        ? bebasPustakaList.filter(
+            (item) => String(item.user_id) === String(userData?.id)
+          )
+        : [];
 
-          // Hitung tahapan berdasarkan status
-          let step = 0;
-          if (item.status === 'menunggu_ttd') step = 2;
-          else if (item.status === 'diverifikasi' || item.status === 'selesai') step = 4;
-          else if (item.status === 'ditolak') step = 0;
-          setTahapan(step);
+      const bebasPustakaSaya =
+        semuaBebasPustakaSaya.length > 0
+          ? semuaBebasPustakaSaya.reduce((terbaru, item) =>
+              item.id > terbaru.id ? item : terbaru
+            )
+          : null;
 
-          // Jika sudah diverifikasi, ambil surat
-          if (item.status === 'diverifikasi' || item.status === 'selesai') {
-            fetchSurat(item.id);
-          }
+      const bpSelesai =
+        String(bebasPustakaSaya?.status ?? "").toLowerCase() === "disetujui";
+      setBebasPustakaSelesai(bpSelesai);
+
+      console.log("BEBAS PUSTAKA STATUS:", bebasPustakaSaya?.status);
+
+      // 2. Cek status Pengajuan Clearing
+      const clearingRes = await axios.get(
+        `${API_BASE}/pengajuan-clearing`,
+        { headers }
+      );
+      const clearingItems =
+        clearingRes.data?.data?.data || clearingRes.data?.data || [];
+      const item = Array.isArray(clearingItems) ? clearingItems[0] || null : null;
+
+      console.log("PENGAJUAN CLEARING STATUS:", item?.status);
+
+      if (item) setPengajuan(item);
+
+      // 3. Hitung tahapan gabungan
+      let step = 0;
+      if (bpSelesai) step = 1;
+
+      if (item) {
+        const statusClearing = String(item.status ?? "").toLowerCase();
+
+        if (statusClearing === "ditolak") {
+          // Ditolak: tetap di step 1 (bebas pustaka), clearing perlu diajukan ulang
+          step = bpSelesai ? 1 : 0;
+        } else if (statusClearing === "revisi_admin") {
+          // Perlu revisi: masih di tahap Pengajuan Clearing, belum lolos verifikasi admin
+          step = bpSelesai ? 1 : 0;
+        } else if (statusClearing === "diverifikasi" || statusClearing === "selesai") {
+          step = 4;
+        } else if (statusClearing === "menunggu_ttd") {
+          step = 3;
+        } else {
+          // Status lain (misal 'diajukan') dianggap baru masuk step 2
+          step = 2;
         }
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
-        setLoading(false);
-      });
+      }
+
+      setTahapan(step);
+
+      if (item && (item.status === "diverifikasi" || item.status === "selesai")) {
+        fetchSurat(item.id);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchSurat = (id) => {
     const token = localStorage.getItem("token");
     axios
-      .get(`http://10.6.64.238:8000/api/pengajuan-clearing/${id}/surat`, {
+      .get(`${API_BASE}/pengajuan-clearing/${id}/surat`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -79,22 +131,11 @@ export default function DashboardMahasiswa() {
       });
   };
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      menunggu_ttd: { color: "warning", label: "Menunggu TTD" },
-      diverifikasi: { color: "success", label: "Selesai" },
-      selesai: { color: "success", label: "Selesai" },
-      ditolak: { color: "failure", label: "Ditolak" },
-    };
-    const info = statusMap[status] || { color: "gray", label: status || "Diproses" };
-    return <Badge color={info.color}>{info.label}</Badge>;
-  };
-
   const handlePreviewSurat = () => {
     const token = localStorage.getItem("token");
     if (pengajuan?.id) {
       window.open(
-        `http://10.6.65.141:8000/api/pengajuan-clearing/${pengajuan.id}/surat?token=${token}`,
+        `${API_BASE}/pengajuan-clearing/${pengajuan.id}/surat?token=${token}`,
         "_blank"
       );
     }
@@ -104,16 +145,14 @@ export default function DashboardMahasiswa() {
     const token = localStorage.getItem("token");
     if (pengajuan?.id) {
       window.open(
-        `http://10.6.65.141:8000/api/pengajuan-clearing/${pengajuan.id}/surat/download?token=${token}`,
+        `${API_BASE}/pengajuan-clearing/${pengajuan.id}/surat/download?token=${token}`,
         "_blank"
       );
     }
   };
 
-  // QR Code URL untuk verifikasi
-  const qrUrl = pengajuan?.id
-    ? `http://10.6.65.141:8000/api/surat/verify/${surat?.qr_token || pengajuan.id}`
-    : "#";
+  const statusPengajuan = String(pengajuan?.status ?? "").toLowerCase();
+  const perluDirevisi = statusPengajuan === "revisi_admin";
 
   if (loading) {
     return (
@@ -143,6 +182,7 @@ export default function DashboardMahasiswa() {
               Berikut Ringkasan Clearing Anda
             </p>
           </div>
+
           <div className="mb-6">
             <Card className="border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-2">
@@ -155,9 +195,9 @@ export default function DashboardMahasiswa() {
               <div className="flex items-start justify-between mt-4 px-2">
                 {STEPPER_ITEMS.map((step, index) => {
                   const stepNumber = index + 1;
-                  const isDone = tahapan >= totalTahapan ? true : stepNumber < tahapan;
-                  const isActive = tahapan < totalTahapan && stepNumber === tahapan;
-                  const isLineFilled = tahapan >= totalTahapan ? true : stepNumber <= tahapan;
+                  const isDone = stepNumber <= tahapan;
+                  const isActive = stepNumber === tahapan + 1;
+                  const isLineFilled = stepNumber <= tahapan;
 
                   return (
                     <div
@@ -206,49 +246,11 @@ export default function DashboardMahasiswa() {
             </Card>
           </div>
 
-          <div className="mb-6">
-            <h3 className="text-xl font-bold mb-4">Dokumen Selesai</h3>
-            <Card className="rounded-lg shadow-sm border border-gray-200">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="text-base font-bold text-gray-900">
-                    Clearing Perpustakaan
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Selesai pada 15 Mei 2026
-                  </p>
-                  <div className="flex gap-2 mt-3">
-                    <Button size="xs" outline>
-                      Lihat PDF
-                    </Button>
-                    <Button size="xs" outline>
-                      Download
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 flex items-center justify-center bg-white rounded-lg border border-gray-200 p-1">
-                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 font-mono bg-gray-50 rounded">
-                      QR Code
-                    </div>
-                  </div>
-                  <div className="w-28">
-                    <p className="text-xs font-bold text-gray-900 leading-tight">
-                      Scan untuk verifikasi dokumen ini
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
           {surat ? (
             <div>
               <h3 className="text-xl font-bold mb-4">Dokumen Selesai</h3>
               <Card className="rounded-lg shadow-sm border border-green-200 bg-green-50">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-
-                  {/* KIRI - Info Dokumen */}
                   <div className="flex-1">
                     <h3 className="text-base font-bold text-gray-900">
                       Clearing Perpustakaan
@@ -273,12 +275,11 @@ export default function DashboardMahasiswa() {
                     </div>
                   </div>
 
-                  {/* KANAN - QR CODE */}
                   <div className="flex items-center gap-4">
                     <div className="w-24 h-24 flex items-center justify-center bg-white rounded-lg border border-gray-200 p-1">
                       {surat.qr_token ? (
                         <img
-                          src={`http://10.6.65.141:8000/api/surat/qr/${surat.qr_token}`}
+                          src={`${API_BASE}/surat/qr/${surat.qr_token}`}
                           alt="QR Code"
                           className="w-full h-full object-contain"
                           onError={(e) => {
@@ -307,13 +308,80 @@ export default function DashboardMahasiswa() {
                       </p>
                     </div>
                   </div>
-
                 </div>
               </Card>
             </div>
-          ) : pengajuan && pengajuan.status !== "ditolak" ? (
+          ) : !bebasPustakaSelesai ? (
             <div>
-              <h3 className="text-xl font-bold mb-4">Dokumen Selesai</h3>
+              <h3 className="text-xl font-bold mb-4">Langkah Selanjutnya</h3>
+              <Card className="rounded-lg shadow-sm border border-yellow-200 bg-yellow-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
+                    <HiClock className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-yellow-700">Selesaikan Bebas Pustaka</h3>
+                    <p className="text-sm text-gray-600">
+                      Ajukan dan tunggu verifikasi bebas pustaka sebelum melanjutkan ke pengajuan clearing.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ) : !pengajuan ? (
+            <div>
+              <h3 className="text-xl font-bold mb-4">Langkah Selanjutnya</h3>
+              <Card className="rounded-lg shadow-sm border border-indigo-200 bg-indigo-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
+                    <HiCheckCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-indigo-700">Bebas Pustaka Selesai!</h3>
+                    <p className="text-sm text-gray-600">
+                      Sekarang Anda bisa mengajukan Pengajuan Clearing.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ) : perluDirevisi ? (
+            /* [ADDED] Kartu khusus status revisi - tampilkan catatan dari admin */
+            <div>
+              <h3 className="text-xl font-bold mb-4">Status Pengajuan Clearing</h3>
+              <Card className="rounded-lg shadow-sm border border-red-200 bg-red-50">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 shrink-0">
+                    <HiExclamationCircle className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-red-700">Pengajuan Perlu Direvisi</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Admin meminta Anda memperbaiki pengajuan clearing Anda sebelum bisa dilanjutkan.
+                    </p>
+
+                    {pengajuan.catatan_revisi && (
+                      <div className="mt-3 rounded border border-red-200 bg-white p-3 text-sm text-red-800">
+                        <strong>Catatan dari admin:</strong>
+                        <p className="mt-1">{pengajuan.catatan_revisi}</p>
+                      </div>
+                    )}
+
+                    <Button
+                      size="xs"
+                      color="failure"
+                      className="mt-3"
+                      onClick={() => navigate("/pengajuan-saya")}
+                    >
+                      Perbaiki Sekarang
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-xl font-bold mb-4">Status Pengajuan Clearing</h3>
               <Card className="rounded-lg shadow-sm border border-yellow-200 bg-yellow-50">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
@@ -322,14 +390,13 @@ export default function DashboardMahasiswa() {
                   <div>
                     <h3 className="font-bold text-yellow-700">Menunggu Verifikasi</h3>
                     <p className="text-sm text-gray-600">
-                      Dokumen Anda sedang dalam proses verifikasi oleh Admin dan Atasan.
+                      Pengajuan clearing Anda sedang diproses oleh Admin/Atasan.
                     </p>
                   </div>
                 </div>
               </Card>
             </div>
-          ) : null}
-
+          )}
         </div>
       </main>
     </div>

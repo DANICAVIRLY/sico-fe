@@ -20,7 +20,7 @@ export default function DashboardAdmin() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.64.238:8000/api/pengajuan-clearing", {
+      .get("http://10.6.65.93:8000/api/pengajuan-clearing", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",

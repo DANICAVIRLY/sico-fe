@@ -9,24 +9,26 @@ export default function VerifikasiMahasiswa() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Ambil data yang dikirim dari halaman tabel jika ada
+  // Data dari tabel dipakai sebagai render awal sementara (skeleton),
+  // BUKAN sebagai sumber kebenaran untuk catatan revisi.
   const [data, setData] = useState(location.state?.dataMahasiswa || null);
-  const [loading, setLoading] = useState(!location.state?.dataMahasiswa);
-  const [catatan, setCatatan] = useState(location.state?.dataMahasiswa?.catatan || "");
+  const [loading, setLoading] = useState(true);
+  const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Jika data tidak ada di state (misal user refresh browser), coba fetch ke API
-    if (!data) {
-      fetchDetailMahasiswa();
-    }
+    // Selalu fetch detail terbaru dari API — jangan andalkan data dari
+    // halaman tabel, karena itu cuma snapshot lama dan bisa saja tidak
+    // membawa field catatan_revisi.
+    fetchDetailMahasiswa();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchDetailMahasiswa = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get(`http://10.6.64.238:8000/api/pengajuan-clearing/${id}`, {
+      .get(`http://10.6.65.93:8000/api/pengajuan-clearing/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -35,7 +37,10 @@ export default function VerifikasiMahasiswa() {
       .then((response) => {
         const detail = response.data?.data || response.data;
         setData(detail);
-        if (detail.catatan) setCatatan(detail.catatan);
+        // FIXED: backend menyimpan & mengembalikan field "catatan_revisi",
+        // bukan "catatan". Sebelumnya field ini salah nama sehingga
+        // textarea selalu kosong walau catatan sudah tersimpan di DB.
+        setCatatan(detail.catatan_revisi || "");
         setLoading(false);
       })
       .catch((error) => {
@@ -44,15 +49,15 @@ export default function VerifikasiMahasiswa() {
       });
   };
 
-  // FIXED - manggil endpoint review-admin (bukan PUT /{id} yang gak ada),
-  // dan kirim "keputusan" (setuju/revisi/tolak), bukan "status"
+  // Manggil endpoint review-admin, kirim "keputusan" (setuju/revisi/tolak)
+  // beserta catatan_revisi.
   const handleUpdateStatus = (keputusan) => {
     const token = localStorage.getItem("token");
     setSubmitting(true);
 
     axios
       .post(
-        `http://10.6.64.238:8000/api/pengajuan-clearing/${id}/review-admin`,
+        `http://10.6.65.93:8000/api/pengajuan-clearing/${id}/review-admin`,
         { keputusan: keputusan, catatan_revisi: catatan },
         {
           headers: {
@@ -77,7 +82,7 @@ export default function VerifikasiMahasiswa() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://10.6.64.238:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
+        `http://10.6.65.93:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -99,7 +104,7 @@ export default function VerifikasiMahasiswa() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://10.6.64.238:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
+        `http://10.6.65.93:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -147,8 +152,6 @@ export default function VerifikasiMahasiswa() {
     );
   }
 
-  console.log("ISI DATA DOKUMEN:", data);
-
   return (
     <div className="min-h-screen bg-gray-100 flex">
       <SidebarAdminComp />
@@ -157,7 +160,7 @@ export default function VerifikasiMahasiswa() {
       <main className="flex-1 ml-64 p-8">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Data Mahasiswa</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Verifikasi Mahasiswa</h1>
             <p className="text-xs text-gray-500 mt-1">
               <span className="text-blue-600 cursor-pointer" onClick={() => navigate(-1)}>Dashboard</span>
               {" • "}
@@ -212,9 +215,9 @@ export default function VerifikasiMahasiswa() {
               <div className="flex items-center justify-between">
                 <span className="text-gray-800 font-medium">Spp</span>
                 <div className="flex items-center gap-4 text-indigo-950">
-                  <button 
-                    type="button" 
-                    onClick={() => previewDokumen("spp")} 
+                  <button
+                    type="button"
+                    onClick={() => previewDokumen("spp")}
                     className="hover:text-indigo-600 transition"
                     title="Lihat Dokumen"
                   >
@@ -224,9 +227,9 @@ export default function VerifikasiMahasiswa() {
                       <circle cx="12" cy="12" r="1" fill="currentColor" />
                     </svg>
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => downloadDokumen("spp", `spp-${data?.nim || id}`)} 
+                  <button
+                    type="button"
+                    onClick={() => downloadDokumen("spp", `spp-${data?.nim || id}`)}
                     className="hover:text-indigo-600 transition"
                     title="Unduh Dokumen"
                   >
@@ -243,9 +246,9 @@ export default function VerifikasiMahasiswa() {
               <div className="flex items-center justify-between">
                 <span className="text-gray-800 font-medium">Distribusi Skripsi</span>
                 <div className="flex items-center gap-4 text-indigo-950">
-                  <button 
-                    type="button" 
-                    onClick={() => previewDokumen("distribusi")} 
+                  <button
+                    type="button"
+                    onClick={() => previewDokumen("distribusi")}
                     className="hover:text-indigo-600 transition"
                     title="Lihat Dokumen"
                   >
@@ -255,9 +258,9 @@ export default function VerifikasiMahasiswa() {
                       <circle cx="12" cy="12" r="1" fill="currentColor" />
                     </svg>
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => downloadDokumen("distribusi", `distribusi-${data?.nim || id}`)} 
+                  <button
+                    type="button"
+                    onClick={() => downloadDokumen("distribusi", `distribusi-${data?.nim || id}`)}
                     className="hover:text-indigo-600 transition"
                     title="Unduh Dokumen"
                   >
@@ -274,9 +277,9 @@ export default function VerifikasiMahasiswa() {
               <div className="flex items-center justify-between">
                 <span className="text-gray-800 font-medium">KTM (Kartu Tanda Mahasiswa)</span>
                 <div className="flex items-center gap-4 text-indigo-950">
-                  <button 
-                    type="button" 
-                    onClick={() => previewDokumen("ktm")} 
+                  <button
+                    type="button"
+                    onClick={() => previewDokumen("ktm")}
                     className="hover:text-indigo-600 transition"
                     title="Lihat Dokumen"
                   >
@@ -286,9 +289,9 @@ export default function VerifikasiMahasiswa() {
                       <circle cx="12" cy="12" r="1" fill="currentColor" />
                     </svg>
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => downloadDokumen("ktm", `ktm-${data?.nim || id}`)} 
+                  <button
+                    type="button"
+                    onClick={() => downloadDokumen("ktm", `ktm-${data?.nim || id}`)}
                     className="hover:text-indigo-600 transition"
                     title="Unduh Dokumen"
                   >
