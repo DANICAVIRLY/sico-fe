@@ -10,8 +10,10 @@ import {
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
+
 const API_URL = "http://10.6.65.93:8000";
 const STORAGE_URL = `${API_URL}/storage`;
+
 
 export default function PengajuanSaya() {
   const [nama, setNama] = useState("");
@@ -111,7 +113,7 @@ export default function PengajuanSaya() {
       setError("");
 
       const response = await axios.get(
-        `${API_URL}/api/pengajuan-clearing`,
+        "http://10.6.65.93:8000/api/pengajuan-clearing",
         getConfig()
       );
 
@@ -251,7 +253,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.post(
-        `${API_URL}/api/pengajuan-clearing`,
+        "http://10.6.65.93:8000/api/pengajuan-clearing",
         formData,
         {
           headers: {
@@ -345,7 +347,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.post(
-        `${API_URL}/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
+        `http://10.6.65.93:8000/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
         formData,
         {
           headers: {
@@ -398,81 +400,73 @@ export default function PengajuanSaya() {
   };
 
   // =========================
-  // URL FILE
+  // PREVIEW & DOWNLOAD (lewat API, bukan langsung ke storage)
   // =========================
 
-  const getFileUrl = (file) => {
-    if (!file) {
-      return null;
-    }
-
-    if (file.startsWith("http://") || file.startsWith("https://")) {
-      return file;
-    }
-
-    if (file.startsWith("storage/")) {
-      return `${API_URL}/${file}`;
-    }
-
-    if (file.startsWith("/storage/")) {
-      return `${API_URL}${file}`;
-    }
-
-    return `${STORAGE_URL}/${file}`;
-  };
-
-  // =========================
-  // PREVIEW
-  // =========================
-
-  const handlePreview = (file) => {
-    const url = getFileUrl(file);
-
-    if (!url) {
-      alert("File tidak ditemukan.");
-      return;
-    }
-
-    window.open(url, "_blank");
-  };
-
-  // =========================
-  // DOWNLOAD
-  // =========================
-
-  const handleDownload = async (file) => {
-    const url = getFileUrl(file);
-
-    if (!url) {
-      alert("File tidak ditemukan.");
+  const handlePreview = async (pengajuanId, jenis) => {
+    if (!pengajuanId || !jenis) {
+      alert("Dokumen tidak ditemukan.");
       return;
     }
 
     try {
-      const response = await axios.get(url, {
-        responseType: "blob",
-      });
+      const token = getToken();
 
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const response = await axios.get(
+        `http://10.6.65.93:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
+        }
+      );
+
+      const contentType =
+        response.headers["content-type"] || "application/octet-stream";
+
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: contentType })
+      );
+
+      window.open(url, "_blank");
+    } catch (err) {
+      console.error("Gagal preview dokumen:", err);
+      alert("Gagal memuat dokumen.");
+    }
+  };
+
+  const handleDownload = async (pengajuanId, jenis, namaFile) => {
+    if (!pengajuanId || !jenis) {
+      alert("Dokumen tidak ditemukan.");
+      return;
+    }
+
+    try {
+      const token = getToken();
+
+      const response = await axios.get(
+        `http://10.6.65.93:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
+        }
+      );
+
+      const contentType =
+        response.headers["content-type"] || "application/octet-stream";
+
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: contentType })
+      );
 
       const link = document.createElement("a");
-
-      link.href = blobUrl;
-
-      const fileName = file.split("/").pop();
-
-      link.setAttribute("download", fileName || "dokumen");
-
+      link.href = url;
+      link.setAttribute("download", namaFile || "dokumen");
       document.body.appendChild(link);
-
       link.click();
-
       link.remove();
-
-      window.URL.revokeObjectURL(blobUrl);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Gagal download:", err);
-
       alert("Gagal mengunduh file.");
     }
   };
@@ -566,6 +560,7 @@ export default function PengajuanSaya() {
         rows.push({
           id: `${pengajuan.id}-ktm`,
           pengajuanId: pengajuan.id,
+          jenis: "ktm",
           nama: "Kartu Tanda Mahasiswa (KTM)",
           file: pengajuan.file_ktm || pengajuan.ktm || pengajuan.fileKtm,
           status: pengajuan.status_ktm || pengajuan.status || "Pending",
@@ -583,6 +578,7 @@ export default function PengajuanSaya() {
         rows.push({
           id: `${pengajuan.id}-spp`,
           pengajuanId: pengajuan.id,
+          jenis: "spp",
           nama: "Bukti Pembayaran SPP",
           file:
             pengajuan.file_bukti_spp ||
@@ -603,6 +599,7 @@ export default function PengajuanSaya() {
         rows.push({
           id: `${pengajuan.id}-distribusi`,
           pengajuanId: pengajuan.id,
+          jenis: "distribusi",
           nama: "Distribusi Skripsi",
           file:
             pengajuan.file_distribusi ||
@@ -658,11 +655,7 @@ export default function PengajuanSaya() {
               <h2 className="text-xl font-bold text-amber-800">
                 Pengajuan Anda Perlu Direvisi
               </h2>
-
-              <p className="mt-1 text-sm text-amber-700">
-                Admin meminta Anda memperbaiki pengajuan clearing #
-                {pengajuanRevisi.id}.
-              </p>
+              <p className="mt-1 text-sm text-amber-700"> Admin meminta Anda memperbaiki pengajuan clearing </p>
 
               {pengajuanRevisi.catatan_revisi && (
                 <div className="mt-3 rounded border border-amber-300 bg-white p-3 text-sm text-amber-800">
@@ -679,9 +672,36 @@ export default function PengajuanSaya() {
             )}
 
             <form onSubmit={handleAjukanUlang}>
+              {/* [ADDED] DATA MAHASISWA - Nama & NIM, fixed/readonly */}
               <div className="mb-5 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="revisiDepartemen" value="Departemen" />
+                  <Label htmlFor="revisiNama" value="Nama Mahasiswa" >Nama</Label>
+
+                  <input
+                    id="revisiNama"
+                    type="text"
+                    value={nama}
+                    disabled
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-3 text-sm text-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="revisiNim" value="NIM" >NIM</Label>
+
+                  <input
+                    id="revisiNim"
+                    type="text"
+                    value={nim}
+                    disabled
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-3 text-sm text-gray-500"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-5 grid gap-5 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="revisiDepartemen" value="Departemen" >Departemen</Label>
                   <input
                     id="revisiDepartemen"
                     type="text"
@@ -692,7 +712,7 @@ export default function PengajuanSaya() {
                 </div>
 
                 <div>
-                  <Label htmlFor="revisiProgramStudi" value="Program Studi" />
+                  <Label htmlFor="revisiProgramStudi" value="Program Studi" >Program Studi</Label>
                   <input
                     id="revisiProgramStudi"
                     type="text"
@@ -714,7 +734,7 @@ export default function PengajuanSaya() {
                     File saat ini:{" "}
                     <button
                       type="button"
-                      onClick={() => handlePreview(pengajuanRevisi.file_ktm)}
+                      onClick={() => handlePreview(pengajuanRevisi.id, "ktm")}
                       className="text-blue-600 underline hover:text-blue-800"
                     >
                       {getFileName(pengajuanRevisi.file_ktm)}
@@ -750,9 +770,7 @@ export default function PengajuanSaya() {
                     File saat ini:{" "}
                     <button
                       type="button"
-                      onClick={() =>
-                        handlePreview(pengajuanRevisi.file_bukti_spp)
-                      }
+                      onClick={() => handlePreview(pengajuanRevisi.id, "spp")}
                       className="text-blue-600 underline hover:text-blue-800"
                     >
                       {getFileName(pengajuanRevisi.file_bukti_spp)}
@@ -789,7 +807,7 @@ export default function PengajuanSaya() {
                     <button
                       type="button"
                       onClick={() =>
-                        handlePreview(pengajuanRevisi.file_distribusi)
+                        handlePreview(pengajuanRevisi.id, "distribusi")
                       }
                       className="text-blue-600 underline hover:text-blue-800"
                     >
@@ -852,7 +870,7 @@ export default function PengajuanSaya() {
               {/* DATA MAHASISWA */}
               <div className="mb-6 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="nama" value="Nama Mahasiswa" />
+                  <Label htmlFor="nama" value="Nama Mahasiswa" >Nama</Label>
 
                   <input
                     id="nama"
@@ -864,7 +882,7 @@ export default function PengajuanSaya() {
                 </div>
 
                 <div>
-                  <Label htmlFor="nim" value="NIM" />
+                  <Label htmlFor="nim" value="NIM" >NIM</Label>
 
                   <input
                     id="nim"
@@ -879,7 +897,7 @@ export default function PengajuanSaya() {
               {/* DEPARTEMEN & PRODI */}
               <div className="mb-6 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="departemen" value="Departemen" />
+                  <Label htmlFor="departemen" value="Departemen" >Departemen</Label>
 
                   <input
                     id="departemen"
@@ -892,7 +910,7 @@ export default function PengajuanSaya() {
                 </div>
 
                 <div>
-                  <Label htmlFor="programStudi" value="Program Studi" />
+                  <Label htmlFor="programStudi" value="Program Studi" >Program Studi</Label>
 
                   <input
                     id="programStudi"
@@ -1138,7 +1156,9 @@ export default function PengajuanSaya() {
                           <Button
                             size="xs"
                             color="light"
-                            onClick={() => handlePreview(doc.file)}
+                            onClick={() =>
+                              handlePreview(doc.pengajuanId, doc.jenis)
+                            }
                           >
                             Preview
                           </Button>
@@ -1146,7 +1166,13 @@ export default function PengajuanSaya() {
                           <Button
                             size="xs"
                             color="blue"
-                            onClick={() => handleDownload(doc.file)}
+                            onClick={() =>
+                              handleDownload(
+                                doc.pengajuanId,
+                                doc.jenis,
+                                getFileName(doc.file)
+                              )
+                            }
                           >
                             Unduh
                           </Button>

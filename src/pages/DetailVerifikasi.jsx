@@ -1,6 +1,6 @@
 import { Button, Card, Textarea, Select, Badge } from "flowbite-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { HiArrowLeft, HiCheckCircle, HiXCircle, HiExclamationCircle } from "react-icons/hi";
+import { HiArrowLeft, HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -16,8 +16,6 @@ export default function DetailVerifikasi() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Backend membungkus array di beberapa kemungkinan bentuk.
-  // Fungsi ini mencoba beberapa key umum sampai ketemu array-nya.
   const extractArray = (payload) => {
     if (Array.isArray(payload)) return payload;
     if (!payload || typeof payload !== "object") return null;
@@ -46,9 +44,6 @@ export default function DetailVerifikasi() {
     fetchDetail();
   }, [id]);
 
-  // Tidak ada endpoint "get satu detail by id" di backend, jadi kita
-  // ambil dari list yang sama seperti halaman Data Pengajuan,
-  // lalu cari row yang id-nya cocok dengan URL.
   const fetchDetail = async () => {
     try {
       setLoading(true);
@@ -86,7 +81,8 @@ export default function DetailVerifikasi() {
         nama: item.nama || item.user?.nama || item.mahasiswa?.nama || "-",
         nim: item.nim || item.user?.nim || item.mahasiswa?.nim || "-",
         departemen: item.departemen || item.user?.departemen || item.mahasiswa?.departemen || "-",
-        status: item.status || "Menunggu Verifikasi",
+        // Enum backend: 'menunggu' | 'disetujui' | 'revisi'
+        status: item.status || "menunggu",
         tanggal: item.created_at
           ? new Date(item.created_at).toLocaleDateString("id-ID", {
               day: "2-digit",
@@ -98,7 +94,7 @@ export default function DetailVerifikasi() {
           : "-",
         peminjamanBuku: item.status_peminjaman || item.peminjaman_buku || "Tidak ada",
         denda: item.status_denda || item.denda || "Tidak ada",
-        catatanAwal: item.catatan || item.catatan_pustakawan || "",
+        catatanAwal: item.catatan_revisi || "",
         diverifikasiOleh: item.reviewer?.nama || item.reviewed_by?.nama || item.diverifikasi_oleh || "-",
       };
 
@@ -119,7 +115,7 @@ export default function DetailVerifikasi() {
     }
   };
 
-  // Kirim keputusan verifikasi ke backend (endpoint /review butuh field "keputusan")
+  // Kirim keputusan verifikasi ke backend. keputusan: "setuju" | "revisi"
   const kirimKeputusan = async (keputusan) => {
     try {
       setSubmitting(true);
@@ -167,8 +163,8 @@ export default function DetailVerifikasi() {
     }
   };
 
-  // Status yang menandakan pengajuan sudah final (tidak perlu diproses lagi)
-  const statusFinal = ["disetujui", "ditolak", "revisi", "setuju", "tolak"];
+  // Status final: sudah diproses, tidak perlu form aktif lagi
+  const statusFinal = ["disetujui", "revisi"];
   const sudahDiproses = detail && statusFinal.includes(String(detail.status).toLowerCase());
 
   if (loading) {
@@ -193,19 +189,10 @@ export default function DetailVerifikasi() {
     );
   }
 
-  // Kalau pengajuan sudah final (disetujui/ditolak/revisi), tampilkan
-  // ringkasan hasil, bukan form verifikasi yang aktif.
   if (sudahDiproses) {
     const statusLower = String(detail.status).toLowerCase();
 
-    const tampilan = statusLower.includes("tolak")
-      ? {
-          icon: HiXCircle,
-          warna: "bg-red-500",
-          judul: "Pengajuan Ditolak",
-          sub: "Mahasiswa tidak memenuhi syarat bebas pustaka",
-        }
-      : statusLower.includes("revisi")
+    const tampilan = statusLower === "revisi"
       ? {
           icon: HiExclamationCircle,
           warna: "bg-yellow-500",
@@ -288,7 +275,6 @@ export default function DetailVerifikasi() {
       </div>
 
       <div className="flex flex-col gap-6">
-        {/* Kartu 1: Data Mahasiswa */}
         <Card>
           <div className="flex justify-between items-start">
             <div>
@@ -309,7 +295,6 @@ export default function DetailVerifikasi() {
           </div>
         </Card>
 
-        {/* Kartu 2: Syarat - Syarat */}
         <Card>
           <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Syarat-Syarat Untuk Bebas Pustaka</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -338,7 +323,6 @@ export default function DetailVerifikasi() {
           </div>
         </Card>
 
-        {/* Kartu 3: Catatan Pustakawan */}
         <Card>
           <h3 className="font-bold text-gray-800 mb-2">Catatan Pustakawan</h3>
           <Textarea
@@ -353,7 +337,6 @@ export default function DetailVerifikasi() {
 
         {errorMsg && <p className="text-red-500 text-sm">{errorMsg}</p>}
 
-        {/* Tombol Aksi */}
         <div className="flex justify-end gap-4 mt-2">
           <Link to="/data-pengajuan">
             <Button color="gray" className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50">
@@ -362,12 +345,12 @@ export default function DetailVerifikasi() {
             </Button>
           </Link>
           <Button
-            color="failure"
-            className="bg-red-500 hover:bg-red-600"
+            color="warning"
+            className="bg-yellow-500 hover:bg-yellow-600 text-white"
             disabled={submitting}
-            onClick={() => kirimKeputusan("tolak")}
+            onClick={() => kirimKeputusan("revisi")}
           >
-            Tolak
+            Revisi
           </Button>
           <Button
             className="bg-blue-800 hover:bg-blue-900"

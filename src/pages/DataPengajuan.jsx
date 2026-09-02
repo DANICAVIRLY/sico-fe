@@ -75,7 +75,7 @@ export default function DataPengajuan() {
             })
           : "-",
         departemen: item.departemen || item.user?.departemen || item.mahasiswa?.departemen || "-",
-        // Value asli dari App\Enums\BebasPustakaStatus: 'menunggu' | 'disetujui' | 'revisi'
+        // Enum backend: 'menunggu' | 'disetujui' | 'revisi'
         status: item.status || "menunggu",
       }));
 
@@ -92,7 +92,6 @@ export default function DataPengajuan() {
     }
   };
 
-  // Label tampilan, sama pola dengan DataMahasiswa.jsx
   const formatStatus = (status) => {
     const statusMap = {
       menunggu: "Menunggu Verifikasi",
@@ -102,7 +101,6 @@ export default function DataPengajuan() {
     return statusMap[status?.toLowerCase()] || "Menunggu Verifikasi";
   };
 
-  // Style badge, sama pola dengan getStatusStyle di DataMahasiswa.jsx
   const getStatusStyle = (status) => {
     const label = formatStatus(status);
 
@@ -112,10 +110,9 @@ export default function DataPengajuan() {
     if (label === "Revisi") {
       return "bg-red-100 text-red-700 border border-red-300";
     }
-    return "bg-yellow-100 text-yellow-700 border border-yellow-300"; // Menunggu Verifikasi
+    return "bg-yellow-100 text-yellow-700 border border-yellow-300";
   };
 
-  // Filter data
   const filteredData = allData.filter((item) => {
     const cocokStatus =
       selectedStatus === "Semua status" || formatStatus(item.status) === selectedStatus;
@@ -161,7 +158,6 @@ export default function DataPengajuan() {
         </p>
       </div>
 
-      {/* FILTER */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <select
           value={selectedStatus}
@@ -219,7 +215,6 @@ export default function DataPengajuan() {
         )}
       </div>
 
-      {/* TABLE */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -286,7 +281,6 @@ export default function DataPengajuan() {
         </div>
       </div>
 
-      {/* PAGINATION */}
       {filteredData.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
           <span className="text-sm text-gray-500">
