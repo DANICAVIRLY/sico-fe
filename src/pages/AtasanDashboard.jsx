@@ -8,6 +8,12 @@ import {
 import { useState, useEffect } from "react";
 import axios from "axios";
 
+// =====================================================================
+// PENTING: samain base URL ke satu tempat (sama seperti file lain).
+// Ganti kalau ternyata IP backend aktifnya beda.
+// =====================================================================
+const API_BASE_URL = "http://10.6.65.93:8000";
+
 export default function AtasanDashboard() {
   const [hasNotif, setHasNotif] = useState(true);
   const [data, setData] = useState({
@@ -23,41 +29,53 @@ export default function AtasanDashboard() {
     fetchNotifications();
   }, []);
 
+  // =====================================================================
+  // Sebelumnya component ini manggil GET /api/pengajuan-clearing lalu
+  // hitung total/disetujui/ditolak manual di frontend. Itu salah endpoint
+  // (base URL relatif, ga nyambung ke backend) dan salah baca struktur
+  // response (bukan array, tapi object pagination).
+  //
+  // Sekarang manggil GET /api/dashboard, endpoint yang emang udah
+  // disiapkan backend (DashboardService::atasanDashboard) buat ngitung
+  // statistik ini di sisi server.
+  // =====================================================================
   const fetchData = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get("/api/pengajuan-clearing", {
-        headers: { Authorization: `Bearer ${token}` },
+      .get(`${API_BASE_URL}/api/dashboard`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       })
       .then((response) => {
-        const items = Array.isArray(response.data) ? response.data : [];
+        const statistik = response.data?.data?.statistik || {};
 
         setData({
-          total: items.length,
-          disetujui: items.filter(
-            (item) =>
-              item.status === "diverifikasi" ||
-              item.status === "approved" ||
-              item.status === "selesai",
-          ).length,
-          ditolak: items.filter(
-            (item) => item.status === "ditolak" || item.status === "rejected",
-          ).length,
+          total: statistik.total_pengajuan ?? 0,
+          disetujui: statistik.sudah_disetujui ?? 0,
+          ditolak: statistik.sudah_ditolak ?? 0,
         });
         setLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data:", error.response?.data || error);
         setLoading(false);
       });
   };
 
+  // =====================================================================
+  // CATATAN: endpoint "/api/notifications" ini TIDAK ADA di route list
+  // backend yang pernah dikirim sebelumnya (cuma ada auth, bebas-pustaka,
+  // dashboard, laporan, pengajuan-clearing, surat/verify). Jadi request
+  // ini kemungkinan besar akan selalu gagal (404) sampai route & endpoint
+  // notifikasi ini beneran dibikin di backend. Dibiarkan apa adanya
+  // sesuai permintaan (tampilan/behavior lain jangan diubah), tapi
+  // ditandai di sini biar diketahui.
+  // =====================================================================
   const fetchNotifications = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get("/api/notifications", {
+      .get(`${API_BASE_URL}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((response) => {
@@ -76,7 +94,7 @@ export default function AtasanDashboard() {
     const token = localStorage.getItem("token");
     axios
       .post(
-        "/api/notifications/read-all",
+        `${API_BASE_URL}/api/notifications/read-all`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },

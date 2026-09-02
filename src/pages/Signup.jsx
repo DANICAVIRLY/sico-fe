@@ -28,7 +28,7 @@ export default function Signup() {
 
     try {
       const response = await axios.post(
-        "http://10.6.64.238:8000/api/auth/register",
+        "http://10.6.65.93:8000/api/auth/register",
         {
           nama: nama,
           nim: nim,

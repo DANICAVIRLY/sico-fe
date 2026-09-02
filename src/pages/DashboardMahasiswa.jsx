@@ -4,6 +4,12 @@ import SidebarMahaComp from '../components/SidebarMahaComp';
 import { HiCheckCircle, HiCheck, HiClock, HiQrcode, HiDeviceMobile } from 'react-icons/hi';
 import axios from 'axios';
 
+// =====================================================================
+// PENTING: samain base URL ke satu tempat.
+// Ganti ke '10.6.65.141' kalau ternyata itu yg jadi server aktif.
+// =====================================================================
+const API_BASE_URL = 'http://10.6.65.93:8000';
+
 const STEPPER_ITEMS = [
   { label: 'Surat Bebas Pustaka' },
   { label: 'Pengajuan Clearing' },
@@ -15,8 +21,8 @@ export default function DashboardMahasiswa() {
   const [nama, setNama] = useState("");
   const [loading, setLoading] = useState(true);
   const [pengajuan, setPengajuan] = useState(null);
-  const [surat, setSurat] = useState(null);
   const [tahapan, setTahapan] = useState(0);
+  const [qrImageSrc, setQrImageSrc] = useState(null);
   const totalTahapan = 4;
 
   useEffect(() => {
@@ -25,34 +31,43 @@ export default function DashboardMahasiswa() {
     fetchData();
   }, []);
 
+  // =====================================================================
+  // Endpoint asli backend: GET /api/pengajuan-clearing (index)
+  // Endpoint lama "/pengajuan-clearing/{id}/surat" TIDAK ADA di backend,
+  // jadi dihapus. Semua data (termasuk nomor_surat / qr_token, kalau ada)
+  // diasumsikan sudah ikut di object item dari endpoint index/show ini.
+  // Kalau field qr_token / nomor_surat belum ada di response,
+  // itu perlu ditambahin di backend (controller reviewAtasan) saat
+  // atasan approve dokumen.
+  // =====================================================================
   const fetchData = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.64.238:8000/api/pengajuan-clearing", {
+      .get(`${API_BASE_URL}/api/pengajuan-clearing`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
       })
       .then((response) => {
-        const items = response.data?.data || response.data || [];
+        // Backend mengembalikan hasil paginate Laravel:
+        // response.data.data = { current_page, data: [...], last_page, ... }
+        // jadi array asli ada di response.data.data.data
+        const items = response.data?.data?.data || [];
         const item = items[0] || null;
 
         if (item) {
           setPengajuan(item);
 
           // Hitung tahapan berdasarkan status
+          // Status asli dari backend: menunggu_ttd, disetujui, ditolak, dll.
           let step = 0;
           if (item.status === 'menunggu_ttd') step = 2;
-          else if (item.status === 'diverifikasi' || item.status === 'selesai') step = 4;
+          else if (item.status === 'disetujui') step = 4;
           else if (item.status === 'ditolak') step = 0;
+          else step = 1; // fallback: sudah diajukan tapi belum diproses admin/atasan
           setTahapan(step);
-
-          // Jika sudah diverifikasi, ambil surat
-          if (item.status === 'diverifikasi' || item.status === 'selesai') {
-            fetchSurat(item.id);
-          }
         }
         setLoading(false);
       })
@@ -62,58 +77,95 @@ export default function DashboardMahasiswa() {
       });
   };
 
-  const fetchSurat = (id) => {
+  const isSelesai = pengajuan && pengajuan.status === 'disetujui';
+
+  // =====================================================================
+  // Preview & Download pakai endpoint asli backend:
+  // GET /pengajuan-clearing/{id}/preview-surat
+  // GET /pengajuan-clearing/{id}/download-surat
+  // Dipanggil pakai axios (bukan window.open + ?token=) karena endpoint-nya
+  // butuh Authorization header, bukan query param.
+  // =====================================================================
+  const handlePreviewSurat = async () => {
+    if (!pengajuan?.id) return;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${API_BASE_URL}/api/pengajuan-clearing/${pengajuan.id}/preview-surat`,
+        {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/pdf" },
+          responseType: "blob",
+        }
+      );
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Gagal preview surat:", error.response?.data || error);
+      alert("Gagal memuat preview surat.");
+    }
+  };
+
+  const handleDownloadSurat = async () => {
+    if (!pengajuan?.id) return;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${API_BASE_URL}/api/pengajuan-clearing/${pengajuan.id}/download-surat`,
+        {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/pdf" },
+          responseType: "blob",
+        }
+      );
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `surat-clearing-${pengajuan?.nim || pengajuan.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Gagal download surat:", error.response?.data || error);
+      alert("Gagal mendownload surat.");
+    }
+  };
+
+  // =====================================================================
+  // QR pakai route asli backend (perhatikan path-nya dobel "pengajuan-clearing",
+  // ini kemungkinan bug di routes/api.php, tapi dipakai apa adanya dulu
+  // sesuai Opsi A). Kalau backend diperbaiki nanti, tinggal ganti path ini.
+  //
+  // PENTING: route ini kemungkinan besar dilindungi middleware auth,
+  // sedangkan tag <img src="..."> TIDAK bisa mengirim header Authorization.
+  // Makanya di-fetch pakai axios (blob) dulu, baru dikonversi ke object URL
+  // dan dipasang ke <img>, sama seperti pola preview/download PDF.
+  // =====================================================================
+  useEffect(() => {
+    if (!pengajuan?.id) return;
+
+    let objectUrl = null;
     const token = localStorage.getItem("token");
+
     axios
-      .get(`http://10.6.64.238:8000/api/pengajuan-clearing/${id}/surat`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
+      .get(`${API_BASE_URL}/api/pengajuan-clearing/pengajuan-clearing/${pengajuan.id}/qr`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
       })
       .then((response) => {
-        setSurat(response.data?.data || response.data);
+        objectUrl = URL.createObjectURL(response.data);
+        setQrImageSrc(objectUrl);
       })
       .catch((error) => {
-        console.error("Error fetching surat:", error);
+        console.error("Gagal memuat QR code:", error.response?.data || error);
+        setQrImageSrc(null);
       });
-  };
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      menunggu_ttd: { color: "warning", label: "Menunggu TTD" },
-      diverifikasi: { color: "success", label: "Selesai" },
-      selesai: { color: "success", label: "Selesai" },
-      ditolak: { color: "failure", label: "Ditolak" },
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-    const info = statusMap[status] || { color: "gray", label: status || "Diproses" };
-    return <Badge color={info.color}>{info.label}</Badge>;
-  };
-
-  const handlePreviewSurat = () => {
-    const token = localStorage.getItem("token");
-    if (pengajuan?.id) {
-      window.open(
-        `http://10.6.65.141:8000/api/pengajuan-clearing/${pengajuan.id}/surat?token=${token}`,
-        "_blank"
-      );
-    }
-  };
-
-  const handleDownloadSurat = () => {
-    const token = localStorage.getItem("token");
-    if (pengajuan?.id) {
-      window.open(
-        `http://10.6.65.141:8000/api/pengajuan-clearing/${pengajuan.id}/surat/download?token=${token}`,
-        "_blank"
-      );
-    }
-  };
-
-  // QR Code URL untuk verifikasi
-  const qrUrl = pengajuan?.id
-    ? `http://10.6.65.141:8000/api/surat/verify/${surat?.qr_token || pengajuan.id}`
-    : "#";
+  }, [pengajuan?.id]);
 
   if (loading) {
     return (
@@ -143,6 +195,7 @@ export default function DashboardMahasiswa() {
               Berikut Ringkasan Clearing Anda
             </p>
           </div>
+
           <div className="mb-6">
             <Card className="border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between mb-2">
@@ -160,10 +213,7 @@ export default function DashboardMahasiswa() {
                   const isLineFilled = tahapan >= totalTahapan ? true : stepNumber <= tahapan;
 
                   return (
-                    <div
-                      key={step.label}
-                      className="flex-1 flex flex-col items-center relative"
-                    >
+                    <div key={step.label} className="flex-1 flex flex-col items-center relative">
                       {index !== 0 && (
                         <div
                           className={`absolute top-4 right-1/2 w-full h-0.5 ${
@@ -171,7 +221,6 @@ export default function DashboardMahasiswa() {
                           }`}
                         />
                       )}
-
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center z-10 ${
                           isDone
@@ -181,22 +230,10 @@ export default function DashboardMahasiswa() {
                             : "bg-gray-100 border border-gray-300 text-gray-400"
                         }`}
                       >
-                        {isDone ? (
-                          <HiCheck className="w-4 h-4" />
-                        ) : (
-                          <HiDeviceMobile className="w-4 h-4" />
-                        )}
+                        {isDone ? <HiCheck className="w-4 h-4" /> : <HiDeviceMobile className="w-4 h-4" />}
                       </div>
-
-                      <p className="text-xs font-semibold text-gray-800 mt-2 text-center">
-                        {step.label}
-                      </p>
-
-                      <p
-                        className={`text-[11px] mt-0.5 ${
-                          isDone || isActive ? "text-indigo-600" : "text-gray-400"
-                        }`}
-                      >
+                      <p className="text-xs font-semibold text-gray-800 mt-2 text-center">{step.label}</p>
+                      <p className={`text-[11px] mt-0.5 ${isDone || isActive ? "text-indigo-600" : "text-gray-400"}`}>
                         {isDone ? "Selesai" : isActive ? "Sedang diproses" : "Belum"}
                       </p>
                     </div>
@@ -206,43 +243,7 @@ export default function DashboardMahasiswa() {
             </Card>
           </div>
 
-          <div className="mb-6">
-            <h3 className="text-xl font-bold mb-4">Dokumen Selesai</h3>
-            <Card className="rounded-lg shadow-sm border border-gray-200">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex-1">
-                  <h3 className="text-base font-bold text-gray-900">
-                    Clearing Perpustakaan
-                  </h3>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Selesai pada 15 Mei 2026
-                  </p>
-                  <div className="flex gap-2 mt-3">
-                    <Button size="xs" outline>
-                      Lihat PDF
-                    </Button>
-                    <Button size="xs" outline>
-                      Download
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 flex items-center justify-center bg-white rounded-lg border border-gray-200 p-1">
-                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 font-mono bg-gray-50 rounded">
-                      QR Code
-                    </div>
-                  </div>
-                  <div className="w-28">
-                    <p className="text-xs font-bold text-gray-900 leading-tight">
-                      Scan untuk verifikasi dokumen ini
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {surat ? (
+          {isSelesai ? (
             <div>
               <h3 className="text-xl font-bold mb-4">Dokumen Selesai</h3>
               <Card className="rounded-lg shadow-sm border border-green-200 bg-green-50">
@@ -250,18 +251,23 @@ export default function DashboardMahasiswa() {
 
                   {/* KIRI - Info Dokumen */}
                   <div className="flex-1">
-                    <h3 className="text-base font-bold text-gray-900">
-                      Clearing Perpustakaan
-                    </h3>
+                    <h3 className="text-base font-bold text-gray-900">Clearing Perpustakaan</h3>
                     <p className="text-xs text-gray-500 mt-1">
-                      Selesai pada {surat.tanggal_terbit || new Date().toLocaleDateString("id-ID", {
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                      Selesai pada{" "}
+                      {pengajuan.disetujui_atasan_at
+                        ? new Date(pengajuan.disetujui_atasan_at).toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : new Date().toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                          })}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Nomor Surat: {surat.nomor_surat || "-"}
+                      Nomor Surat: {pengajuan.nomor_surat || "-"}
                     </p>
                     <div className="flex gap-2 mt-3">
                       <Button size="xs" outline onClick={handlePreviewSurat}>
@@ -276,21 +282,11 @@ export default function DashboardMahasiswa() {
                   {/* KANAN - QR CODE */}
                   <div className="flex items-center gap-4">
                     <div className="w-24 h-24 flex items-center justify-center bg-white rounded-lg border border-gray-200 p-1">
-                      {surat.qr_token ? (
+                      {qrImageSrc ? (
                         <img
-                          src={`http://10.6.65.141:8000/api/surat/qr/${surat.qr_token}`}
+                          src={qrImageSrc}
                           alt="QR Code"
                           className="w-full h-full object-contain"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = "";
-                            e.target.alt = "QR Code";
-                            e.target.parentElement.innerHTML = `
-                              <div class="w-full h-full flex items-center justify-center text-xs text-gray-400 font-mono bg-gray-50 rounded">
-                                QR
-                              </div>
-                            `;
-                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 font-mono bg-gray-50 rounded">
@@ -301,9 +297,6 @@ export default function DashboardMahasiswa() {
                     <div className="w-28">
                       <p className="text-xs font-bold text-gray-900 leading-tight">
                         Scan untuk verifikasi dokumen ini
-                      </p>
-                      <p className="text-[10px] text-gray-400 mt-1 break-all">
-                        {surat.qr_token || "QR Token"}
                       </p>
                     </div>
                   </div>
