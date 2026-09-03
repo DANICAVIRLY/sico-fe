@@ -20,7 +20,7 @@ export default function DashboardAdmin() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.65.93:8000/api/pengajuan-clearing", {
+      .get("http://10.6.65.73:8000/api/pengajuan-clearing", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -35,14 +35,11 @@ export default function DashboardAdmin() {
 
         setData({
           total: items.length,
-          // "Menunggu Verifikasi" sekarang HANYA untuk status yang benar-benar
-          // menunggu tindakan admin (belum pernah direview sama sekali).
           menunggu: items.filter((item) =>
             ["diajukan", "menunggu", "pending"].includes(
               item.status?.toLowerCase()
             )
           ).length,
-          // "Revisi" untuk status yang sedang menunggu mahasiswa memperbaiki.
           revisi: items.filter((item) =>
             ["revisi_admin", "perbaikan", "revision"].includes(
               item.status?.toLowerCase()
@@ -86,9 +83,7 @@ export default function DashboardAdmin() {
           <p className="text-sm text-gray-500 mt-1">Ringkasan pengajuan</p>
         </div>
 
-        {/* Card statistik dengan border di ATAS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
-          {/* Total Pengajuan */}
           <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-indigo-500">
             <div className="flex items-center justify-between">
               <div>
@@ -101,7 +96,6 @@ export default function DashboardAdmin() {
             </div>
           </div>
 
-          {/* Menunggu Verifikasi */}
           <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-yellow-500">
             <div className="flex items-center justify-between">
               <div>
@@ -114,7 +108,6 @@ export default function DashboardAdmin() {
             </div>
           </div>
 
-          {/* Revisi */}
           <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-red-500">
             <div className="flex items-center justify-between">
               <div>
@@ -127,7 +120,6 @@ export default function DashboardAdmin() {
             </div>
           </div>
 
-          {/* Selesai */}
           <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>

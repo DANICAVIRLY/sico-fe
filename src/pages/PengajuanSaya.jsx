@@ -11,7 +11,7 @@ import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
 
-const API_URL = "http://10.6.65.93:8000";
+const API_URL = "http://10.6.65.73:8000";
 const STORAGE_URL = `${API_URL}/storage`;
 
 
@@ -113,7 +113,7 @@ export default function PengajuanSaya() {
       setError("");
 
       const response = await axios.get(
-        "http://10.6.65.93:8000/api/pengajuan-clearing",
+        "http://10.6.65.73:8000/api/pengajuan-clearing",
         getConfig()
       );
 
@@ -253,7 +253,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.post(
-        "http://10.6.65.93:8000/api/pengajuan-clearing",
+        "http://10.6.65.73:8000/api/pengajuan-clearing",
         formData,
         {
           headers: {
@@ -347,7 +347,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.post(
-        `http://10.6.65.93:8000/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
+        `http://10.6.65.73:8000/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
         formData,
         {
           headers: {
@@ -413,7 +413,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.get(
-        `http://10.6.65.93:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        `http://10.6.65.73:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -444,7 +444,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.get(
-        `http://10.6.65.93:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        `http://10.6.65.73:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",

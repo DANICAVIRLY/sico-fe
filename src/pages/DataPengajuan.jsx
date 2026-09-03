@@ -45,7 +45,7 @@ export default function DataPengajuan() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://10.6.65.93:8000/api/bebas-pustaka", {
+      const response = await axios.get("http://10.6.65.73:8000/api/bebas-pustaka", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -75,7 +75,6 @@ export default function DataPengajuan() {
             })
           : "-",
         departemen: item.departemen || item.user?.departemen || item.mahasiswa?.departemen || "-",
-        // Enum backend: 'menunggu' | 'disetujui' | 'revisi'
         status: item.status || "menunggu",
       }));
 

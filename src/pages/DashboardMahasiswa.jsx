@@ -5,12 +5,7 @@ import SidebarMahaComp from '../components/SidebarMahaComp';
 import { HiCheckCircle, HiCheck, HiClock, HiQrcode, HiDeviceMobile, HiExclamationCircle } from 'react-icons/hi';
 import axios from 'axios';
 
-// =====================================================================
-// PENTING: samain base URL ke satu tempat.
-// IP ini beberapa kali berubah di project ini — pastikan ini IP
-// backend yang aktif sekarang.
-// =====================================================================
-const API_BASE_URL = 'http://10.6.65.93:8000';
+const API_BASE_URL = 'http://10.6.65.73:8000';
 
 const STEPPER_ITEMS = [
   { label: 'Surat Bebas Pustaka' },
@@ -34,24 +29,6 @@ export default function DashboardMahasiswa() {
     setNama(userData?.nama || "Mahasiswa");
     fetchData();
   }, []);
-
-  // =====================================================================
-  // Cek status Bebas Pustaka DULU, baru status Pengajuan Clearing.
-  // Endpoint index (baik bebas-pustaka maupun pengajuan-clearing)
-  // dibungkus pagination Laravel: response.data.data.data adalah array
-  // aslinya (dengan fallback ke response.data.data kalau backend
-  // suatu saat berubah gak dipaginate).
-  //
-  // CATATAN PENTING (sudah dikonfirmasi lewat console.log data asli,
-  // lihat riwayat perbaikan sebelumnya): field "status" pada
-  // pengajuan-clearing TIDAK berubah lagi setelah admin menyetujui —
-  // tetap "disetujui" walau atasan belum/sudah tanda tangan sama sekali.
-  // Progres verifikasi admin & atasan yang sebenarnya WAJIB dilacak
-  // lewat timestamp direview_admin_at dan disetujui_atasan_at, bukan
-  // dari string status. (Nilai status seperti "diverifikasi_admin" yang
-  // sempat diasumsikan di versi lain kode ini tidak pernah benar-benar
-  // muncul di data asli.)
-  // =====================================================================
   const fetchData = async () => {
     const token = localStorage.getItem("token");
     const headers = {
@@ -61,7 +38,6 @@ export default function DashboardMahasiswa() {
     const userData = JSON.parse(localStorage.getItem("user") || "null");
 
     try {
-      // 1. Cek status Bebas Pustaka
       const bebasPustakaRes = await axios.get(
         `${API_BASE_URL}/api/bebas-pustaka`,
         { headers }
@@ -99,8 +75,6 @@ export default function DashboardMahasiswa() {
 
       if (item) setPengajuan(item);
 
-      // 3. Hitung tahapan gabungan (lihat catatan di atas soal kenapa
-      // pakai timestamp, bukan string status)
       let step = 0;
       if (bpSelesai) step = 1;
 
@@ -110,21 +84,14 @@ export default function DashboardMahasiswa() {
         const sudahDisetujuiAtasan = Boolean(item.disetujui_atasan_at);
 
         if (statusClearing === "ditolak") {
-          // Ditolak atasan/admin: tetap di step 1 (bebas pustaka beres),
-          // clearing perlu diajukan ulang.
           step = bpSelesai ? 1 : 0;
         } else if (statusClearing === "revisi_admin") {
-          // Perlu revisi: masih di tahap Pengajuan Clearing, belum lolos
-          // verifikasi admin.
           step = bpSelesai ? 1 : 0;
         } else if (sudahDisetujuiAtasan) {
-          // Atasan sudah menyetujui/menandatangani -> proses selesai total
           step = 4;
         } else if (sudahDireviewAdmin) {
-          // Admin sudah approve & kirim ke atasan, tapi atasan belum tanda tangan
           step = 3;
         } else {
-          // Baru diajukan, belum direview admin sama sekali
           step = 2;
         }
       }
@@ -137,24 +104,10 @@ export default function DashboardMahasiswa() {
     }
   };
 
-  // =====================================================================
-  // STATUS
-  // =====================================================================
-  // "Selesai total" ditentukan dari timestamp disetujui_atasan_at (bukan
-  // status === "disetujui", karena status itu udah keisi "disetujui" dari
-  // sejak admin approve, sebelum atasan tanda tangan sama sekali).
   const isSelesai = Boolean(pengajuan?.disetujui_atasan_at);
   const statusPengajuan = String(pengajuan?.status ?? "").toLowerCase();
   const perluDirevisi = statusPengajuan === "revisi_admin";
 
-  // =====================================================================
-  // Preview & Download pakai endpoint asli backend:
-  // GET /pengajuan-clearing/{id}/preview-surat
-  // GET /pengajuan-clearing/{id}/download-surat
-  // Dipanggil pakai axios (bukan window.open + ?token=) karena endpoint-nya
-  // butuh Authorization header, bukan query param. Endpoint "/surat" dan
-  // "/surat/download" TIDAK ADA di backend — sudah dikonfirmasi sebelumnya.
-  // =====================================================================
   const handlePreviewSurat = async () => {
     if (!pengajuan?.id) return;
     try {
@@ -201,15 +154,6 @@ export default function DashboardMahasiswa() {
     }
   };
 
-  // =====================================================================
-  // QR pakai route asli backend (path-nya dobel "pengajuan-clearing",
-  // sesuai routes/api.php yang sudah dikonfirmasi). Endpoint teman
-  // "/surat/qr/{token}" TIDAK ADA di backend, jadi tidak dipakai.
-  //
-  // Route ini dilindungi middleware auth, sedangkan <img src="..."> TIDAK
-  // bisa mengirim header Authorization. Makanya di-fetch pakai axios
-  // (blob) dulu, baru dikonversi ke object URL dan dipasang ke <img>.
-  // =====================================================================
   useEffect(() => {
     if (!pengajuan?.id) return;
 
@@ -436,9 +380,6 @@ export default function DashboardMahasiswa() {
               </Card>
             </div>
           ) : (
-            /* ==========================================================
-               MENUNGGU VERIFIKASI / MENUNGGU TTD ATASAN
-            =========================================================== */
             <div>
               <h3 className="text-xl font-bold mb-4">Status Pengajuan Clearing</h3>
               <Card className="rounded-lg shadow-sm border border-yellow-200 bg-yellow-50">

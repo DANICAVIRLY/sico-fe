@@ -45,7 +45,7 @@ export default function DataMahasiswaAtasan() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.65.93:8000/api/pengajuan-clearing", {
+      .get("http://10.6.65.73:8000/api/pengajuan-clearing", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -228,7 +228,6 @@ export default function DataMahasiswaAtasan() {
           )}
         </div>
 
-        {/* Table - Full Width */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -288,7 +287,6 @@ export default function DataMahasiswaAtasan() {
           </div>
         </div>
 
-        {/* Pagination - Full Width */}
         {filteredData.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
             <span className="text-sm text-gray-500">

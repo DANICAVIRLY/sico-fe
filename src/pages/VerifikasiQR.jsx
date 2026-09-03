@@ -8,7 +8,7 @@ import axios from "axios";
 // PENTING: samain base URL ke satu tempat.
 // Ganti ke '10.6.65.141' kalau ternyata itu yg jadi server aktif.
 // =====================================================================
-const API_BASE_URL = "http://10.6.65.93:8000";
+const API_BASE_URL = "http://10.6.65.73:8000";
 
 export default function VerifikasiQR() {
   const { id } = useParams();

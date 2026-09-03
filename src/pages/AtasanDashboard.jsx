@@ -24,24 +24,7 @@ export default function AtasanDashboard() {
     fetchData();
     fetchNotifications();
   }, []);
-
-  // =====================================================================
-  // Sebelumnya component ini manggil GET /api/pengajuan-clearing lalu
-  // hitung total/disetujui/ditolak manual di frontend. Itu salah endpoint
-  // (base URL relatif, ga nyambung ke backend) dan salah baca struktur
-  // response (bukan array, tapi object pagination).
-  //
-  // Sekarang manggil GET /api/dashboard, endpoint yang emang udah
-  // disiapkan backend (DashboardService::atasanDashboard) buat ngitung
-  // statistik ini di sisi server.
-  //
-  // CATATAN: nama field statistik di bawah ini (menunggu_ttd /
-  // sudah_ditandatangani, dst) masih tebakan berdasarkan pola penamaan
-  // backend (snake_case, mirip total_pengajuan/sudah_disetujui/
-  // sudah_ditolak). console.log di bawah dipasang supaya struktur
-  // response asli bisa dicek di DevTools dan nama field disesuaikan
-  // kalau ternyata beda.
-  // =====================================================================
+  
   const fetchData = () => {
     const token = localStorage.getItem("token");
 
@@ -60,13 +43,11 @@ export default function AtasanDashboard() {
 
         setData({
           total: statistik.total_pengajuan ?? 0,
-          // "Menunggu Tanda Tangan": sudah direview admin, atasan belum ttd.
           menungguTtd:
             statistik.menunggu_ttd ??
             statistik.menunggu_tanda_tangan ??
             statistik.sudah_disetujui ??
             0,
-          // "Sudah Ditandatangani": atasan sudah approve/ttd.
           sudahDitandatangani:
             statistik.sudah_ditandatangani ??
             statistik.selesai_ditandatangani ??
@@ -81,14 +62,6 @@ export default function AtasanDashboard() {
       });
   };
 
-  // =====================================================================
-  // Endpoint asli backend ada di prefix "/notifikasi" (bukan
-  // "/notifications"), lewat NotifikasiController + NotifikasiResource.
-  // GET /api/notifikasi mengembalikan SEMUA notifikasi (paginated,
-  // format Laravel Resource Collection: { data: [...], links, meta }),
-  // bukan cuma yang belum dibaca. Jadi filter "belum dibaca" dilakukan
-  // di sisi frontend di sini.
-  // =====================================================================
   const fetchNotifications = () => {
     const token = localStorage.getItem("token");
 
@@ -219,10 +192,7 @@ export default function AtasanDashboard() {
           </Dropdown>
         </div>
       </div>
-
-      {/* Card dengan border di ATAS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Pengajuan */}
         <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-blue-500">
           <div className="flex items-center justify-between">
             <div>
@@ -238,8 +208,6 @@ export default function AtasanDashboard() {
             </div>
           </div>
         </div>
-
-        {/* Menunggu Tanda Tangan */}
         <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-yellow-500">
           <div className="flex items-center justify-between">
             <div>
@@ -255,8 +223,6 @@ export default function AtasanDashboard() {
             </div>
           </div>
         </div>
-
-        {/* Sudah Ditandatangani */}
         <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>

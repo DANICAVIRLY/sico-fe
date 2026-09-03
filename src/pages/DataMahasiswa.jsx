@@ -46,7 +46,7 @@ export default function DataMahasiswa() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.65.93:8000/api/pengajuan-clearing", {
+      .get("http://10.6.65.73:8000/api/pengajuan-clearing", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -60,7 +60,7 @@ export default function DataMahasiswa() {
             : response.data?.data?.data || [];
 
         const data = rawItems.map((item) => ({
-          ...item, // Menyertakan seluruh properti file (file_spp, file_skripsi, ktm, dll)
+          ...item, 
           id: item.id,
           nama: item.user?.nama || item.nama || "-",
           nim: item.user?.nim || item.nim || "-",
@@ -85,7 +85,6 @@ export default function DataMahasiswa() {
       });
   };
 
-  // Filter data
   const filteredData = mahasiswaData.filter((mahasiswa) => {
     const cocokStatus =
       statusFilter === "Semua status" || mahasiswa.status === statusFilter;
@@ -121,7 +120,7 @@ export default function DataMahasiswa() {
     if (status === "Revisi") {
       return "bg-red-100 text-red-700 border border-red-300";
     }
-    return "bg-yellow-100 text-yellow-700 border border-yellow-300"; // Menunggu Verifikasi
+    return "bg-yellow-100 text-yellow-700 border border-yellow-300";
   };
 
   const toggleSidebar = () => {
@@ -179,7 +178,6 @@ export default function DataMahasiswa() {
           </p>
         </div>
 
-        {/* FILTER */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <select
             value={statusFilter}
@@ -335,7 +333,6 @@ export default function DataMahasiswa() {
           </div>
         </div>
 
-        {/* PAGINATION */}
         {filteredData.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
             <span className="text-sm text-gray-500">

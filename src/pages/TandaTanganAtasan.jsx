@@ -17,10 +17,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 // =====================================================================
 // PENTING: samain base URL ke satu tempat. IP ini beberapa kali berubah
-// di file-file lain project ini (10.6.64.238, 10.6.65.141, 10.6.65.93).
+// di file-file lain project ini (10.6.64.238, 10.6.65.141, 10.6.65.73).
 // Pastikan ini benar-benar IP backend yang aktif sekarang.
 // =====================================================================
-const API_BASE_URL = "http://10.6.65.93:8000";
+const API_BASE_URL = "http://10.6.65.73:8000";
 
 export default function TandaTangan() {
   const { id } = useParams();
@@ -90,7 +90,7 @@ export default function TandaTangan() {
 
         `${API_BASE_URL}/api/pengajuan-clearing/${id}`,
 
-        `http://10.6.65.93:8000/api/pengajuan-clearing/${id}`,
+        `http://10.6.65.73:8000/api/pengajuan-clearing/${id}`,
 
         {
           headers: {
@@ -150,7 +150,7 @@ export default function TandaTangan() {
 
         `${API_BASE_URL}/api/pengajuan-clearing/${id}/preview-surat`,
 
-        `http://10.6.65.93:8000/api/pengajuan-clearing/${id}/preview-surat`,
+        `http://10.6.65.73:8000/api/pengajuan-clearing/${id}/preview-surat`,
 
         {
           headers: {
@@ -208,7 +208,7 @@ export default function TandaTangan() {
 
         `${API_BASE_URL}/api/pengajuan-clearing/${id}/download-surat`,
 
-        `http://10.6.65.93:8000/api/pengajuan-clearing/${id}/download-surat`,
+        `http://10.6.65.73:8000/api/pengajuan-clearing/${id}/download-surat`,
 
         {
           headers: {
@@ -268,7 +268,7 @@ export default function TandaTangan() {
 
         `${API_BASE_URL}/api/pengajuan-clearing/${id}/review-atasan`,
 
-        `http://10.6.65.93:8000/api/pengajuan-clearing/${id}/review-atasan`,
+        `http://10.6.65.73:8000/api/pengajuan-clearing/${id}/review-atasan`,
 
         {
           keputusan: "setuju",
@@ -320,7 +320,7 @@ export default function TandaTangan() {
 
         `${API_BASE_URL}/api/pengajuan-clearing/${id}/review-atasan`,
 
-        `http://10.6.65.93:8000/api/pengajuan-clearing/${id}/review-atasan`,
+        `http://10.6.65.73:8000/api/pengajuan-clearing/${id}/review-atasan`,
 
         {
           keputusan: "tolak",
