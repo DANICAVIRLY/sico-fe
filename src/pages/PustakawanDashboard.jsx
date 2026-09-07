@@ -17,7 +17,7 @@ export default function PustakawanDashboard() {
         const token = localStorage.getItem("token");
 
         const response = await axios.get(
-          "http://10.6.65.73:8000/api/bebas-pustaka",
+          "http://10.6.65.43:8000/api/bebas-pustaka?per_page=1000",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -47,21 +47,30 @@ export default function PustakawanDashboard() {
 
         console.log("DATA PENGAJUAN:", items);
 
-        // Value ini persis sesuai App\Enums\BebasPustakaStatus:
-        // DIAJUKAN = 'menunggu', DISETUJUI = 'disetujui', REVISI = 'revisi'
+        // Kategori status disamakan dengan formatStatus() di DataPengajuan.jsx:
+        // status "disetujui" -> Diverifikasi
+        // status "revisi" -> Revisi
+        // selain itu (termasuk value tak dikenal/null) -> dianggap Menunggu Verifikasi
+        const getKategori = (status) => {
+          const s = status?.toLowerCase();
+          if (s === "disetujui") return "diverifikasi";
+          if (s === "revisi") return "revisi";
+          return "menunggu";
+        };
+
         setData({
           total: items.length,
 
           diverifikasi: items.filter(
-            (item) => item.status?.toLowerCase() === "disetujui"
+            (item) => getKategori(item.status) === "diverifikasi"
           ).length,
 
           menunggu: items.filter(
-            (item) => item.status?.toLowerCase() === "menunggu"
+            (item) => getKategori(item.status) === "menunggu"
           ).length,
 
           revisi: items.filter(
-            (item) => item.status?.toLowerCase() === "revisi"
+            (item) => getKategori(item.status) === "revisi"
           ).length,
         });
 

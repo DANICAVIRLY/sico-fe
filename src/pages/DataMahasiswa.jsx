@@ -36,8 +36,8 @@ export default function DataMahasiswa() {
       approved: "Diverifikasi",
       selesai: "Diverifikasi",
 
-      ditolak: "Ditolak",
-      rejected: "Ditolak",
+      ditolak: "Revisi",
+      rejected: "Revisi",
     };
     return statusMap[status?.toLowerCase()] || "Menunggu Verifikasi";
   };
@@ -46,7 +46,7 @@ export default function DataMahasiswa() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.65.73:8000/api/pengajuan-clearing", {
+      .get("http://10.6.65.43:8000/api/pengajuan-clearing?per_page=1000", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -60,7 +60,7 @@ export default function DataMahasiswa() {
             : response.data?.data?.data || [];
 
         const data = rawItems.map((item) => ({
-          ...item, 
+          ...item,
           id: item.id,
           nama: item.user?.nama || item.nama || "-",
           nim: item.user?.nim || item.nim || "-",
@@ -189,8 +189,8 @@ export default function DataMahasiswa() {
           >
             <option>Semua status</option>
             <option>Menunggu Verifikasi</option>
+            <option>Revisi</option>
             <option>Diverifikasi</option>
-            <option>Ditolak</option>
           </select>
 
           <div className="relative">

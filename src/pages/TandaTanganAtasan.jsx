@@ -9,7 +9,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 // Worker PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
-const API_BASE_URL = "http://10.6.65.73:8000";
+const API_BASE_URL = "http://10.6.65.43:8000";
 
 const TandaTanganAtasan = () => {
   const { id } = useParams();

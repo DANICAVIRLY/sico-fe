@@ -20,7 +20,7 @@ export default function DashboardAdmin() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://10.6.65.73:8000/api/pengajuan-clearing", {
+      .get("http://10.6.65.43:8000/api/pengajuan-clearing?per_page=1000", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -41,7 +41,7 @@ export default function DashboardAdmin() {
             )
           ).length,
           revisi: items.filter((item) =>
-            ["revisi_admin", "perbaikan", "revision"].includes(
+            ["revisi_admin", "perbaikan", "revision", "ditolak", "rejected"].includes(
               item.status?.toLowerCase()
             )
           ).length,
