@@ -11,7 +11,7 @@ import axios from "axios";
 // PENTING: samain base URL ke satu tempat (sama seperti file lain).
 // Ganti kalau ternyata IP backend aktifnya beda.
 // =====================================================================
-const API_BASE_URL = "http://10.6.65.73:8000";
+const API_BASE_URL = "http://10.6.65.80:8000";
 
 export default function AtasanDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);

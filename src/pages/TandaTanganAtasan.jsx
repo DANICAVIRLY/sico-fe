@@ -1,7 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Document, Page, pdfjs } from "react-pdf";
+import {
+  HiArrowLeft,
+  HiDocumentText,
+} from "react-icons/hi";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -17,7 +21,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-const API_BASE_URL = "http://10.6.65.43:8000";
+// =====================================================================
+// PENTING: satu tempat buat base URL. IP ini beberapa kali berubah di
+// project ini — pastikan ini IP backend yang aktif sekarang, dan samakan
+// di semua file lain yang manggil backend yang sama.
+// =====================================================================
+const API_BASE_URL = "http://10.6.65.80:8000";
 
 const TandaTanganAtasan = () => {
   const { id } = useParams();
@@ -37,51 +46,37 @@ const TandaTanganAtasan = () => {
   const [showTolak, setShowTolak] = useState(false);
   const [alasan, setAlasan] = useState("");
 
-  // =====================================================================
-  // Ganti window.confirm() -> modal konfirmasi custom.
-  // confirmModal: null | "setuju"
-  // (Tolak sudah punya konfirmasi sendiri lewat form + tombol
-  // "Konfirmasi Tolak", jadi tidak perlu modal tambahan.)
-  // =====================================================================
-  const [confirmModal, setConfirmModal] = useState(null);
+  // Modal konfirmasi custom (pengganti window.confirm)
+  const [confirmModal, setConfirmModal] = useState(null); // null | "setuju"
 
-  // =====================================================================
-  // Ganti window.alert() -> toast custom, auto-hilang sendiri.
-  // =====================================================================
-  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message: string }
-
+  // Toast notifikasi custom (pengganti window.alert)
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message }
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Buat ngukur lebar container preview supaya PDF di-render pas,
-  // tanpa celah/letterbox di kiri-kanan, dan responsive ke ukuran layar.
+  // Lebar container preview, diukur otomatis biar PDF pas ngisi penuh
+  // tanpa celah/letterbox dan tetap responsive.
   const pdfContainerRef = useRef(null);
   const [pdfWidth, setPdfWidth] = useState(0);
 
   useEffect(() => {
     const updateWidth = () => {
       if (pdfContainerRef.current) {
-        setPdfWidth(pdfContainerRef.current.clientWidth - 40);
+        setPdfWidth(pdfContainerRef.current.clientWidth);
       }
     };
-
     updateWidth();
     window.addEventListener("resize", updateWidth);
     return () => window.removeEventListener("resize", updateWidth);
   }, [pdfUrl]);
 
-  // =========================================================
-  // AMBIL TOKEN
-  // =========================================================
   const getToken = () => {
     const token = localStorage.getItem("token");
-
     if (!token) {
       throw new Error("Anda belum login atau token tidak ditemukan.");
     }
-
     return token;
   };
 
@@ -150,7 +145,6 @@ const TandaTanganAtasan = () => {
 
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = window.URL.createObjectURL(blob);
-
       setPdfUrl(url);
     } catch (err) {
       console.error("Error preview PDF:", err);
@@ -193,7 +187,6 @@ const TandaTanganAtasan = () => {
       const link = document.createElement("a");
       link.href = url;
       link.download = `surat-clearing-${id}.pdf`;
-
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -216,9 +209,7 @@ const TandaTanganAtasan = () => {
   };
 
   // =========================================================
-  // SETUJUI PENGAJUAN
-  // Klik tombol -> validasi -> buka modal konfirmasi custom ->
-  // baru submit beneran setelah user klik "Ya, Setujui" di modal.
+  // SETUJUI PENGAJUAN (validasi -> modal custom -> submit)
   // =========================================================
   const handleSetujuiClick = () => {
     if (!ttd.trim()) {
@@ -279,9 +270,8 @@ const TandaTanganAtasan = () => {
 
   // =========================================================
   // TOLAK PENGAJUAN
-  // Form "Alasan Penolakan" + tombol "Konfirmasi Tolak" itu sendiri
-  // sudah berfungsi sebagai langkah konfirmasi, jadi tidak perlu
-  // window.confirm() tambahan.
+  // Form alasan + tombol "Konfirmasi Tolak" sudah jadi langkah
+  // konfirmasinya sendiri, jadi tidak perlu window.confirm tambahan.
   // =========================================================
   const handleTolak = async () => {
     if (!alasan.trim()) {
@@ -312,8 +302,7 @@ const TandaTanganAtasan = () => {
 
       setShowTolak(false);
       setAlasan("");
-
-      navigate("/dashboard-atasan");
+      navigate("/data-mahasiswa-atasan");
     } catch (err) {
       console.error("Error reject:", err);
 
@@ -337,16 +326,10 @@ const TandaTanganAtasan = () => {
     }
   };
 
-  // =========================================================
-  // PDF LOADED
-  // =========================================================
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
   };
 
-  // =========================================================
-  // INITIAL LOAD
-  // =========================================================
   useEffect(() => {
     if (!id) {
       setError("ID pengajuan tidak ditemukan.");
@@ -364,286 +347,335 @@ const TandaTanganAtasan = () => {
     };
   }, [id]);
 
+  // Kalau pengajuan sudah diproses (disetujui/ditolak), form
+  // "Tindakan" tidak perlu ditampilkan lagi.
+  const statusPengajuan = String(pengajuan?.status ?? "").toLowerCase();
+  const sudahDiproses = ["disetujui", "ditolak"].includes(statusPengajuan);
+
   // =========================================================
   // LOADING
   // =========================================================
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Memuat data pengajuan...</p>
+      <div className="max-w-6xl mx-auto p-4">
+        <div className="flex justify-center items-center h-64">
+          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <span className="ml-3 text-gray-500">Loading...</span>
         </div>
       </div>
     );
   }
 
   // =========================================================
-  // ERROR
+  // ERROR (data gagal diambil sama sekali)
   // =========================================================
   if (error && !pengajuan) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-        <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full text-center">
-          <div className="text-red-500 text-4xl mb-4">!</div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Terjadi Kesalahan
-          </h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-5 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+      <div className="max-w-6xl mx-auto p-4">
+        <div className="text-center py-12">
+          <p className="text-gray-500">{error}</p>
+          <Link
+            to="/data-mahasiswa-atasan"
+            className="text-indigo-600 hover:underline mt-2 inline-block"
           >
             Kembali
-          </button>
+          </Link>
         </div>
       </div>
     );
   }
 
   // =========================================================
-  // MAIN
+  // UI
   // =========================================================
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-6xl mx-auto p-4">
 
-        {/* DATA PENGAJUAN */}
-        {pengajuan && (
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Informasi Pengajuan
-            </h2>
+      {/* BREADCRUMB */}
+      <div className="text-sm text-gray-500 mb-4 flex gap-2">
+        <Link to="/dashboard-atasan" className="hover:underline">
+          Dashboard
+        </Link>
+        <span>›</span>
+        <Link to="/data-mahasiswa-atasan" className="hover:underline">
+          Menunggu Tanda Tangan
+        </Link>
+        <span>›</span>
+        <span className="text-gray-900 font-medium">Tanda Tangan</span>
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Nama Mahasiswa</p>
-                <p className="font-medium text-gray-800">
-                  {pengajuan.user?.nama ||
-                    pengajuan.mahasiswa?.nama ||
-                    pengajuan.nama ||
-                    "-"}
-                </p>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        Tanda Tangan Atasan
+      </h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* KIRI - PREVIEW SURAT */}
+        <div className="bg-[#e6f6e9] p-6 rounded-xl border border-green-200">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-white rounded-lg border border-green-200">
+                <HiDocumentText className="w-5 h-5 text-green-600" />
               </div>
-
               <div>
-                <p className="text-sm text-gray-500">NIM</p>
-                <p className="font-medium text-gray-800">
-                  {pengajuan.user?.nim ||
-                    pengajuan.mahasiswa?.nim ||
-                    pengajuan.nim ||
-                    "-"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">Status</p>
-                <span className="inline-block mt-1 px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700">
-                  {pengajuan.status || "-"}
-                </span>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-500">ID Pengajuan</p>
-                <p className="font-medium text-gray-800">
-                  #{pengajuan.id || id}
+                <h3 className="text-lg font-bold text-gray-800">
+                  Surat Keterangan
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Preview dokumen clearing
                 </p>
               </div>
             </div>
+
+            <button
+              onClick={handleDownloadSurat}
+              disabled={!pdfUrl || loadingPdf}
+              className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Download
+            </button>
           </div>
-        )}
 
-        {/* ERROR */}
-        {error && pengajuan && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-6">
-            {error}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* PREVIEW SURAT */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800">
-                  Preview Surat Clearing
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Pratinjau surat sebelum disetujui
-                </p>
-              </div>
-
-              <button
-                onClick={handleDownloadSurat}
-                disabled={!pdfUrl || loadingPdf}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                Download
-              </button>
-            </div>
-
+          <div className="bg-gray-100 p-4 rounded-2xl border border-gray-200">
             <div
               ref={pdfContainerRef}
-              className="border border-gray-300 rounded-xl overflow-hidden bg-gray-50"
+              className="bg-white rounded-xl border border-gray-300 shadow-md overflow-hidden relative"
             >
               {loadingPdf ? (
-                <div className="h-[500px] flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-3 text-gray-500 text-sm">
-                      Memuat surat...
-                    </p>
-                  </div>
+                <div
+                  className="flex flex-col justify-center items-center text-gray-500"
+                  style={{ aspectRatio: "208 / 295" }}
+                >
+                  <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
+                  <span className="text-sm">Memuat surat...</span>
                 </div>
               ) : pdfUrl ? (
-                <div className="max-h-[850px] overflow-y-auto p-5">
+                <div className="max-h-[850px] overflow-y-auto">
                   <Document
                     file={pdfUrl}
                     onLoadSuccess={onDocumentLoadSuccess}
                     loading={
-                      <div className="h-[500px] flex items-center justify-center">
-                        <p className="text-gray-500">Memuat PDF...</p>
+                      <div
+                        className="flex flex-col justify-center items-center text-gray-500"
+                        style={{ aspectRatio: "208 / 295" }}
+                      >
+                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
+                        <span className="text-sm">Merender surat...</span>
                       </div>
                     }
                     error={
-                      <div className="h-[500px] flex items-center justify-center">
-                        <p className="text-red-500">Gagal menampilkan PDF.</p>
+                      <div
+                        className="flex flex-col justify-center items-center text-gray-400"
+                        style={{ aspectRatio: "208 / 295" }}
+                      >
+                        <HiDocumentText className="w-12 h-12 mb-3" />
+                        <p className="text-sm">Gagal merender surat.</p>
                       </div>
                     }
                   >
                     {pdfWidth > 0 &&
                       Array.from(new Array(numPages || 1), (_, index) => (
-                        <div
+                        <Page
                           key={`page_${index + 1}`}
-                          className="flex justify-center mb-5 last:mb-0"
-                        >
-                          <div className="shadow-md rounded-sm overflow-hidden">
-                            <Page
-                              pageNumber={index + 1}
-                              width={pdfWidth}
-                              renderAnnotationLayer={false}
-                              renderTextLayer={false}
-                            />
-                          </div>
-                        </div>
+                          pageNumber={index + 1}
+                          width={pdfWidth}
+                          renderAnnotationLayer={false}
+                          renderTextLayer={false}
+                        />
                       ))}
                   </Document>
                 </div>
               ) : (
-                <div className="h-[500px] flex items-center justify-center">
-                  <p className="text-gray-500">Preview surat tidak tersedia.</p>
+                <div
+                  className="flex flex-col justify-center items-center text-gray-400"
+                  style={{ aspectRatio: "208 / 295" }}
+                >
+                  <HiDocumentText className="w-12 h-12 mb-3" />
+                  <p className="text-sm">Preview surat tidak tersedia.</p>
                 </div>
               )}
             </div>
+          </div>
+        </div>
 
-            {pdfUrl && numPages && (
-              <p className="text-xs text-gray-500 text-center mt-3">
-                {numPages} halaman
-              </p>
-            )}
+        {/* KANAN */}
+        <div className="space-y-6">
+
+          {/* INFORMASI DOKUMEN */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+              Informasi Dokumen
+            </h3>
+
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between border-b pb-2 gap-4">
+                <span className="text-gray-500 font-medium">
+                  Jenis Pengajuan
+                </span>
+                <span className="text-gray-900">Clearing</span>
+              </div>
+
+              <div className="flex justify-between border-b pb-2 gap-4">
+                <span className="text-gray-500 font-medium">Nama</span>
+                <span className="text-gray-900 text-right">
+                  {pengajuan?.user?.nama ||
+                    pengajuan?.mahasiswa?.nama ||
+                    pengajuan?.nama ||
+                    "-"}
+                </span>
+              </div>
+
+              <div className="flex justify-between border-b pb-2 gap-4">
+                <span className="text-gray-500 font-medium">NIM</span>
+                <span className="text-gray-900">
+                  {pengajuan?.user?.nim ||
+                    pengajuan?.mahasiswa?.nim ||
+                    pengajuan?.nim ||
+                    "-"}
+                </span>
+              </div>
+
+              <div className="flex justify-between border-b pb-2 gap-4">
+                <span className="text-gray-500 font-medium">
+                  Tanggal Pengajuan
+                </span>
+                <span className="text-gray-900 text-right">
+                  {pengajuan?.created_at
+                    ? new Date(pengajuan.created_at).toLocaleDateString(
+                        "id-ID",
+                        { day: "2-digit", month: "long", year: "numeric" }
+                      )
+                    : "-"}
+                </span>
+              </div>
+
+              <div className="flex justify-between border-b pb-2 gap-4">
+                <span className="text-gray-500 font-medium">Departemen</span>
+                <span className="text-gray-900 text-right">
+                  {pengajuan?.departemen || "-"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center border-b pb-2 gap-4">
+                <span className="text-gray-500 font-medium">Status</span>
+                <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
+                  {pengajuan?.status || "Menunggu TTD"}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* FORM TANDA TANGAN */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              Persetujuan Atasan
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Masukkan nama lengkap sebagai tanda tangan persetujuan.
-            </p>
+          {/* TINDAKAN — disembunyikan kalau sudah disetujui/ditolak */}
+          {!sudahDiproses && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Tindakan
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Dengan menandatangani dokumen ini, Anda menyetujui dokumen
+                tersebut.
+              </p>
 
-            <div className="mb-6">
-              <label
-                htmlFor="ttd"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Nama Lengkap
-              </label>
-              <input
-                id="ttd"
-                type="text"
-                value={ttd}
-                onChange={(e) => setTtd(e.target.value)}
-                placeholder="Ketik nama lengkap sebagai tanda tangan"
-                disabled={processing}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={handleSetujuiClick}
-                disabled={processing}
-                className="w-full px-5 py-3 bg-blue-900 text-white rounded-lg font-medium hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {processing ? "Memproses..." : "Setujui & Tanda Tangani"}
-              </button>
-
-              <button
-                onClick={() => setShowTolak(!showTolak)}
-                disabled={processing}
-                className="w-full px-5 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                Tolak Pengajuan
-              </button>
-            </div>
-
-            {showTolak && (
-              <div className="mt-6 pt-6 border-t">
+              <div className="mb-4">
                 <label
-                  htmlFor="alasan"
+                  htmlFor="ttd"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Alasan Penolakan
+                  Nama Lengkap
                 </label>
-                <textarea
-                  id="alasan"
-                  value={alasan}
-                  onChange={(e) => setAlasan(e.target.value)}
-                  placeholder="Masukkan alasan penolakan..."
-                  rows={5}
+                <input
+                  id="ttd"
+                  type="text"
+                  value={ttd}
+                  onChange={(e) => setTtd(e.target.value)}
+                  placeholder="Ketik nama lengkap sebagai tanda tangan"
                   disabled={processing}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 />
-
-                <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={handleTolak}
-                    disabled={processing}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400"
-                  >
-                    {processing ? "Memproses..." : "Konfirmasi Tolak"}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setShowTolak(false);
-                      setAlasan("");
-                    }}
-                    disabled={processing}
-                    className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                  >
-                    Batal
-                  </button>
-                </div>
               </div>
-            )}
 
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                <strong>Perhatian:</strong> Setelah pengajuan disetujui,
-                sistem akan membuat surat clearing final dan QR Code
-                verifikasi.
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleSetujuiClick}
+                  disabled={processing}
+                  className="w-full bg-[#2e1a7a] hover:bg-[#1e1260] text-white font-bold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {processing ? "Memproses..." : "Setujui & Tandatangani"}
+                </button>
+
+              </div>
+
+              {showTolak && (
+                <div className="mt-6 pt-6 border-t">
+                  <label
+                    htmlFor="alasan"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Alasan Penolakan
+                  </label>
+                  <textarea
+                    id="alasan"
+                    value={alasan}
+                    onChange={(e) => setAlasan(e.target.value)}
+                    placeholder="Masukkan alasan penolakan..."
+                    rows={4}
+                    disabled={processing}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"
+                  />
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={handleTolak}
+                      disabled={processing}
+                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400"
+                    >
+                      {processing ? "Memproses..." : "Konfirmasi Tolak"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowTolak(false);
+                        setAlasan("");
+                      }}
+                      disabled={processing}
+                      className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Kalau sudah diproses, tampilkan status singkat sebagai gantinya */}
+          {sudahDiproses && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Tindakan
+              </h3>
+              <p className="text-sm text-gray-600">
+                Pengajuan ini sudah{" "}
+                <strong>
+                  {statusPengajuan === "disetujui" ? "disetujui" : "ditolak"}
+                </strong>
+                . Tidak ada tindakan lanjutan yang diperlukan.
               </p>
             </div>
+          )}
+
+          {/* KEMBALI */}
+          <div className="pt-2">
+            <Link to="/data-mahasiswa-atasan">
+              <button className="flex items-center bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg w-full lg:w-auto">
+                <HiArrowLeft className="mr-2 h-4 w-4" />
+                Kembali
+              </button>
+            </Link>
           </div>
+
         </div>
       </div>
 
-      {/* =====================================================
-          MODAL KONFIRMASI CUSTOM (pengganti window.confirm)
-      ===================================================== */}
+      {/* MODAL KONFIRMASI CUSTOM (pengganti window.confirm) */}
       {confirmModal === "setuju" && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
@@ -663,7 +695,7 @@ const TandaTanganAtasan = () => {
               </button>
               <button
                 onClick={doSetujui}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                className="flex-1 px-4 py-2 bg-[#2e1a7a] hover:bg-[#1e1260] text-white rounded-lg font-medium"
               >
                 Ya, Setujui
               </button>
@@ -672,9 +704,7 @@ const TandaTanganAtasan = () => {
         </div>
       )}
 
-      {/* =====================================================
-          TOAST NOTIFIKASI CUSTOM (pengganti window.alert)
-      ===================================================== */}
+      {/* TOAST NOTIFIKASI CUSTOM (pengganti window.alert) */}
       {toast && (
         <div
           className={`fixed top-6 right-6 z-50 max-w-sm px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white ${

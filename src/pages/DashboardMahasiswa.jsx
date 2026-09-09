@@ -5,7 +5,7 @@ import SidebarMahaComp from '../components/SidebarMahaComp';
 import { HiCheckCircle, HiCheck, HiClock, HiQrcode, HiDeviceMobile, HiExclamationCircle } from 'react-icons/hi';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://10.6.65.43:8000';
+const API_BASE_URL = 'http://10.6.65.80:8000';
 
 const STEPPER_ITEMS = [
   { label: 'Surat Bebas Pustaka' },

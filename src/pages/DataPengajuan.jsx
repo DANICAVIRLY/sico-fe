@@ -45,7 +45,7 @@ export default function DataPengajuan() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://10.6.65.43:8000/api/bebas-pustaka?per_page=1000", {
+      const response = await axios.get("http://10.6.65.80:8000/api/bebas-pustaka?per_page=1000", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
