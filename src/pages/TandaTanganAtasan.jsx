@@ -405,7 +405,7 @@ const TandaTanganAtasan = () => {
       </div>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        Tanda Tangan Atasan
+        Tanda Tangan Kepala Bagian Tata Usaha
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

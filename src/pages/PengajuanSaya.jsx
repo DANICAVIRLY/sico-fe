@@ -1,25 +1,16 @@
 import { useEffect, useState } from "react";
-import {
-  Badge,
-  Button,
-  Card,
-  FileInput,
-  Label,
-  Spinner,
-} from "flowbite-react";
+import { Badge, Button, Card, FileInput, Label, Spinner } from "flowbite-react";
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
-
 const API_URL = "http://172.18.160.93:8000";
 const STORAGE_URL = `${API_URL}/storage`;
-
 
 export default function PengajuanSaya() {
   const [nama, setNama] = useState("");
   const [nim, setNim] = useState("");
   const [departemen, setDepartemen] = useState("");
-  const [programStudi, setProgramStudi] = useState("");
+  
 
   const [fileKtm, setFileKtm] = useState(null);
   const [fileSpp, setFileSpp] = useState(null);
@@ -38,14 +29,13 @@ export default function PengajuanSaya() {
   const [revisiFileSpp, setRevisiFileSpp] = useState(null);
   const [revisiFileDistribusi, setRevisiFileDistribusi] = useState(null);
   const [revisiDepartemen, setRevisiDepartemen] = useState("");
-  const [revisiProgramStudi, setRevisiProgramStudi] = useState("");
   const [ajukanUlangLoading, setAjukanUlangLoading] = useState(false);
   const [ajukanUlangError, setAjukanUlangError] = useState("");
 
   const [pengajuanList, setPengajuanList] = useState([]);
 
   const pengajuanRevisi = pengajuanList.find(
-    (p) => String(p.status).toUpperCase() === "REVISI_ADMIN"
+    (p) => String(p.status).toUpperCase() === "REVISI_ADMIN",
   );
 
   // =========================
@@ -83,16 +73,13 @@ export default function PengajuanSaya() {
         const user = JSON.parse(storedUser);
 
         setNama(
-          user.nama || user.name || user.nama_lengkap || user.full_name || ""
+          user.nama || user.name || user.nama_lengkap || user.full_name || "",
         );
 
         setNim(user.nim || user.NIM || user.nim_mahasiswa || "");
 
         setDepartemen(user.departemen || user.department || "");
 
-        setProgramStudi(
-          user.program_studi || user.programStudi || user.prodi || ""
-        );
       } catch (err) {
         console.error("Gagal membaca data user:", err);
       }
@@ -135,12 +122,11 @@ export default function PengajuanSaya() {
       setPengajuanList(data);
 
       const revisi = data.find(
-        (p) => String(p.status).toUpperCase() === "REVISI_ADMIN"
+        (p) => String(p.status).toUpperCase() === "REVISI_ADMIN",
       );
 
       if (revisi) {
         setRevisiDepartemen(revisi.departemen || "");
-        setRevisiProgramStudi(revisi.program_studi || "");
       }
     } catch (err) {
       console.error("Gagal mengambil pengajuan:", err);
@@ -188,7 +174,9 @@ export default function PengajuanSaya() {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      alert(`File ${file.name} tidak didukung.\nGunakan PDF, JPG, JPEG, atau PNG.`);
+      alert(
+        `File ${file.name} tidak didukung.\nGunakan PDF, JPG, JPEG, atau PNG.`,
+      );
       return false;
     }
 
@@ -206,11 +194,6 @@ export default function PengajuanSaya() {
 
     if (!departemen.trim()) {
       alert("Departemen wajib diisi.");
-      return;
-    }
-
-    if (!programStudi.trim()) {
-      alert("Program Studi wajib diisi.");
       return;
     }
 
@@ -239,7 +222,7 @@ export default function PengajuanSaya() {
       const formData = new FormData();
 
       formData.append("departemen", departemen);
-      formData.append("program_studi", programStudi);
+    
       formData.append("file_ktm", fileKtm);
       formData.append("file_bukti_spp", fileSpp);
       formData.append("file_distribusi", fileDistribusi);
@@ -261,7 +244,7 @@ export default function PengajuanSaya() {
             Accept: "application/json",
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       console.log("UPLOAD RESPONSE:", response.data);
@@ -331,13 +314,6 @@ export default function PengajuanSaya() {
         formData.append("departemen", revisiDepartemen);
       }
 
-      if (
-        revisiProgramStudi &&
-        revisiProgramStudi !== pengajuanRevisi.program_studi
-      ) {
-        formData.append("program_studi", revisiProgramStudi);
-      }
-
       if (revisiFileKtm) formData.append("file_ktm", revisiFileKtm);
       if (revisiFileSpp) formData.append("file_bukti_spp", revisiFileSpp);
       if (revisiFileDistribusi) {
@@ -355,7 +331,7 @@ export default function PengajuanSaya() {
             Accept: "application/json",
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       console.log("AJUKAN ULANG RESPONSE:", response.data);
@@ -417,14 +393,14 @@ export default function PengajuanSaya() {
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
-        }
+        },
       );
 
       const contentType =
         response.headers["content-type"] || "application/octet-stream";
 
       const url = window.URL.createObjectURL(
-        new Blob([response.data], { type: contentType })
+        new Blob([response.data], { type: contentType }),
       );
 
       window.open(url, "_blank");
@@ -448,14 +424,14 @@ export default function PengajuanSaya() {
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
-        }
+        },
       );
 
       const contentType =
         response.headers["content-type"] || "application/octet-stream";
 
       const url = window.URL.createObjectURL(
-        new Blob([response.data], { type: contentType })
+        new Blob([response.data], { type: contentType }),
       );
 
       const link = document.createElement("a");
@@ -605,8 +581,7 @@ export default function PengajuanSaya() {
             pengajuan.file_distribusi ||
             pengajuan.distribusi ||
             pengajuan.fileDistribusi,
-          status:
-            pengajuan.status_distribusi || pengajuan.status || "Pending",
+          status: pengajuan.status_distribusi || pengajuan.status || "Pending",
           upload: pengajuan.created_at || pengajuan.tanggal_upload,
           validasi: pengajuan.validated_at || pengajuan.tanggal_validasi,
           catatan: pengajuan.catatan_distribusi || pengajuan.catatan || "-",
@@ -630,9 +605,7 @@ export default function PengajuanSaya() {
             Sistem Informasi Clearing Online
           </p>
 
-          <h1 className="text-3xl font-bold text-gray-800">
-            Pengajuan Saya
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800">Pengajuan Saya</h1>
 
           <p className="mt-2 text-gray-500">
             Kelola dan unggah dokumen persyaratan clearing Anda.
@@ -655,7 +628,10 @@ export default function PengajuanSaya() {
               <h2 className="text-xl font-bold text-amber-800">
                 Pengajuan Anda Perlu Direvisi
               </h2>
-              <p className="mt-1 text-sm text-amber-700"> Admin meminta Anda memperbaiki pengajuan clearing </p>
+              <p className="mt-1 text-sm text-amber-700">
+                {" "}
+                Admin meminta Anda memperbaiki pengajuan clearing{" "}
+              </p>
 
               {pengajuanRevisi.catatan_revisi && (
                 <div className="mt-3 rounded border border-amber-300 bg-white p-3 text-sm text-amber-800">
@@ -675,7 +651,9 @@ export default function PengajuanSaya() {
               {/* [ADDED] DATA MAHASISWA - Nama & NIM, fixed/readonly */}
               <div className="mb-5 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="revisiNama" value="Nama Mahasiswa" >Nama</Label>
+                  <Label htmlFor="revisiNama" value="Nama Mahasiswa">
+                    Nama
+                  </Label>
 
                   <input
                     id="revisiNama"
@@ -687,7 +665,9 @@ export default function PengajuanSaya() {
                 </div>
 
                 <div>
-                  <Label htmlFor="revisiNim" value="NIM" >NIM</Label>
+                  <Label htmlFor="revisiNim" value="NIM">
+                    NIM
+                  </Label>
 
                   <input
                     id="revisiNim"
@@ -701,23 +681,14 @@ export default function PengajuanSaya() {
 
               <div className="mb-5 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="revisiDepartemen" value="Departemen" >Departemen</Label>
+                  <Label htmlFor="revisiDepartemen" value="Departemen">
+                    Departemen
+                  </Label>
                   <input
                     id="revisiDepartemen"
                     type="text"
                     value={revisiDepartemen}
                     onChange={(e) => setRevisiDepartemen(e.target.value)}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="revisiProgramStudi" value="Program Studi" >Program Studi</Label>
-                  <input
-                    id="revisiProgramStudi"
-                    type="text"
-                    value={revisiProgramStudi}
-                    onChange={(e) => setRevisiProgramStudi(e.target.value)}
                     className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -752,9 +723,7 @@ export default function PengajuanSaya() {
                 {revisiFileKtm && (
                   <p className="mt-2 text-sm text-gray-600">
                     File baru dipilih:{" "}
-                    <span className="font-semibold">
-                      {revisiFileKtm.name}
-                    </span>
+                    <span className="font-semibold">{revisiFileKtm.name}</span>
                   </p>
                 )}
               </div>
@@ -788,9 +757,7 @@ export default function PengajuanSaya() {
                 {revisiFileSpp && (
                   <p className="mt-2 text-sm text-gray-600">
                     File baru dipilih:{" "}
-                    <span className="font-semibold">
-                      {revisiFileSpp.name}
-                    </span>
+                    <span className="font-semibold">{revisiFileSpp.name}</span>
                   </p>
                 )}
               </div>
@@ -870,7 +837,9 @@ export default function PengajuanSaya() {
               {/* DATA MAHASISWA */}
               <div className="mb-6 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="nama" value="Nama Mahasiswa" >Nama</Label>
+                  <Label htmlFor="nama" value="Nama Mahasiswa">
+                    Nama
+                  </Label>
 
                   <input
                     id="nama"
@@ -882,7 +851,9 @@ export default function PengajuanSaya() {
                 </div>
 
                 <div>
-                  <Label htmlFor="nim" value="NIM" >NIM</Label>
+                  <Label htmlFor="nim" value="NIM">
+                    NIM
+                  </Label>
 
                   <input
                     id="nim"
@@ -897,29 +868,28 @@ export default function PengajuanSaya() {
               {/* DEPARTEMEN & PRODI */}
               <div className="mb-6 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="departemen" value="Departemen" >Departemen</Label>
+                  <Label htmlFor="departemen" value="Departemen">
+                    Departemen
+                  </Label>
 
-                  <input
+                  <select
                     id="departemen"
-                    type="text"
                     value={departemen}
                     onChange={(e) => setDepartemen(e.target.value)}
-                    placeholder="Masukkan Departemen"
                     className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="programStudi" value="Program Studi" >Program Studi</Label>
-
-                  <input
-                    id="programStudi"
-                    type="text"
-                    value={programStudi}
-                    onChange={(e) => setProgramStudi(e.target.value)}
-                    placeholder="Masukkan Program Studi"
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="" disabled>
+                      Pilih Departemen
+                    </option>
+                    <option value="Manajemen Hutan (MNH)">
+                      Manajemen Hutan (MNH)
+                    </option>
+                    <option value="Hasil Hutan (HH)">Hasil Hutan (HH)</option>
+                    <option value="Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
+                      Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
+                    </option>
+                    <option value="Silvikultur (SVK)">Silvikultur (SVK)</option>
+                  </select>
                 </div>
               </div>
 
@@ -939,9 +909,7 @@ export default function PengajuanSaya() {
                 <FileInput
                   id="fileKtm"
                   accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) =>
-                    setFileKtm(e.target.files?.[0] || null)
-                  }
+                  onChange={(e) => setFileKtm(e.target.files?.[0] || null)}
                 />
 
                 {fileKtm && (
@@ -968,9 +936,7 @@ export default function PengajuanSaya() {
                 <FileInput
                   id="fileSpp"
                   accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) =>
-                    setFileSpp(e.target.files?.[0] || null)
-                  }
+                  onChange={(e) => setFileSpp(e.target.files?.[0] || null)}
                 />
 
                 {fileSpp && (
@@ -1005,9 +971,7 @@ export default function PengajuanSaya() {
                 {fileDistribusi && (
                   <p className="mt-2 text-sm text-gray-600">
                     File dipilih:{" "}
-                    <span className="font-semibold">
-                      {fileDistribusi.name}
-                    </span>
+                    <span className="font-semibold">{fileDistribusi.name}</span>
                   </p>
                 )}
               </div>
@@ -1088,9 +1052,7 @@ export default function PengajuanSaya() {
                   <tr>
                     <th className="px-5 py-4 font-semibold">Dokumen</th>
                     <th className="px-5 py-4 font-semibold">Status</th>
-                    <th className="px-5 py-4 font-semibold">
-                      Tanggal Upload
-                    </th>
+                    <th className="px-5 py-4 font-semibold">Tanggal Upload</th>
                     <th className="px-5 py-4 font-semibold">Validasi</th>
                     <th className="px-5 py-4 font-semibold">Catatan</th>
                     <th className="px-5 py-4 text-center font-semibold">
@@ -1170,7 +1132,7 @@ export default function PengajuanSaya() {
                               handleDownload(
                                 doc.pengajuanId,
                                 doc.jenis,
-                                getFileName(doc.file)
+                                getFileName(doc.file),
                               )
                             }
                           >
@@ -1201,8 +1163,8 @@ export default function PengajuanSaya() {
               <p className="mt-1 text-sm leading-6 text-blue-700">
                 Pastikan seluruh dokumen yang diunggah merupakan dokumen yang
                 benar dan dapat terbaca dengan jelas. Dokumen dengan status{" "}
-                <strong>Rejected</strong> dapat diperbarui melalui
-                pengunggahan ulang.
+                <strong>Rejected</strong> dapat diperbarui melalui pengunggahan
+                ulang.
               </p>
             </div>
           </div>

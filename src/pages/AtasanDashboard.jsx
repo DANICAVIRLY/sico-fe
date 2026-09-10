@@ -161,7 +161,7 @@ export default function AtasanDashboard() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Dashboard Atasan
+              Dashboard Kepala Bagian Tata Usaha
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               Pantau kinerja dan data clearing online
@@ -180,7 +180,7 @@ export default function AtasanDashboard() {
     <div className="w-full relative">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Atasan</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard Kepala Bagian Tata Usaha</h1>
           <p className="text-sm text-gray-500 mt-1">
             Pantau kinerja dan data clearing online
           </p>
