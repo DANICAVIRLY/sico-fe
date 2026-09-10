@@ -1,7 +1,7 @@
 import {
   HiDocumentText,
   HiCheckCircle,
-  HiXCircle,
+  HiClock,
   HiBell,
 } from "react-icons/hi";
 import { useState, useEffect, useRef } from "react";
@@ -11,14 +11,14 @@ import axios from "axios";
 // PENTING: samain base URL ke satu tempat (sama seperti file lain).
 // Ganti kalau ternyata IP backend aktifnya beda.
 // =====================================================================
-const API_BASE_URL = "http://10.6.65.80:8000";
+const API_BASE_URL = "http://172.18.160.93:8000";
 
 export default function AtasanDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [data, setData] = useState({
     total: 0,
-    disetujui: 0,
-    ditolak: 0,
+    ditandatangani: 0,
+    menungguTtd: 0,
   });
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
@@ -44,30 +44,62 @@ export default function AtasanDashboard() {
   }, []);
 
   // =====================================================================
-  // Sebelumnya component ini manggil GET /api/pengajuan-clearing lalu
-  // hitung total/disetujui/ditolak manual di frontend. Itu salah endpoint
-  // (base URL relatif, ga nyambung ke backend) dan salah baca struktur
-  // response (bukan array, tapi object pagination).
+  // Endpoint /api/dashboard cuma nyediain field total_pengajuan /
+  // sudah_disetujui / sudah_ditolak — nggak ada field "belum
+  // ditandatangani" yang sesuai sama status di halaman
+  // DataMahasiswaAtasan.jsx (yang punya beberapa status mentah:
+  // menunggu, diajukan, pending, diverifikasi_admin, diverifikasi, dll).
   //
-  // Sekarang manggil GET /api/dashboard, endpoint yang emang udah
-  // disiapkan backend (DashboardService::atasanDashboard) buat ngitung
-  // statistik ini di sisi server.
+  // Supaya angka di dashboard ini SINKRON dengan tabel di
+  // DataMahasiswaAtasan, kita ambil data mentah yang sama dari
+  // GET /api/pengajuan-clearing, lalu hitung sendiri di frontend pakai
+  // mapping status yang identik dengan formatStatus() di halaman itu.
   // =====================================================================
+  const formatStatus = (status) => {
+    const statusMap = {
+      menunggu: "Belum Ditandatangani",
+      diajukan: "Belum Ditandatangani",
+      pending: "Belum Ditandatangani",
+      diverifikasi_admin: "Belum Ditandatangani",
+      diverifikasi: "Belum Ditandatangani",
+      disetujui: "Selesai Ditandatangani",
+      approved: "Selesai Ditandatangani",
+      selesai: "Selesai Ditandatangani",
+      ttd_atasan: "Selesai Ditandatangani",
+      ditolak: "Ditolak",
+      rejected: "Ditolak",
+      revisi_admin: "Perlu Perbaikan",
+      perbaikan: "Perlu Perbaikan",
+      revision: "Perlu Perbaikan",
+    };
+    return statusMap[status?.toLowerCase()] || status || "Belum Ditandatangani";
+  };
+
   const fetchData = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get(`${API_BASE_URL}/api/dashboard`, {
+      .get(`${API_BASE_URL}/api/pengajuan-clearing`, {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       })
       .then((response) => {
-        const statistik = response.data?.data?.statistik || {};
+        const rawItems = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.data)
+          ? response.data.data
+          : response.data?.data?.data || [];
 
-        setData({
-          total: statistik.total_pengajuan ?? 0,
-          disetujui: statistik.sudah_disetujui ?? 0,
-          ditolak: statistik.sudah_ditolak ?? 0,
-        });
+        const statuses = rawItems.map((item) => formatStatus(item.status));
+
+        const total = statuses.length;
+        const ditandatangani = statuses.filter(
+          (s) => s === "Selesai Ditandatangani",
+        ).length;
+        const menungguTtd = statuses.filter(
+          (s) => s === "Belum Ditandatangani",
+        ).length;
+
+        setData({ total, ditandatangani, menungguTtd });
         setLoading(false);
       })
       .catch((error) => {
@@ -229,15 +261,15 @@ export default function AtasanDashboard() {
           </div>
         </div>
 
-        {/* Sudah Disetujui */}
+        {/* Sudah Ditandatangani */}
         <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-green-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500 font-medium">
-                Sudah Disetujui
+                Sudah Ditandatangani
               </p>
               <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                {data.disetujui}
+                {data.ditandatangani}
               </h2>
             </div>
             <div className="p-3 bg-green-100 rounded-full text-green-600">
@@ -246,17 +278,19 @@ export default function AtasanDashboard() {
           </div>
         </div>
 
-        {/* Sudah Ditolak */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-red-500">
+        {/* Belum Ditandatangani */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-yellow-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500 font-medium">Sudah Ditolak</p>
+              <p className="text-sm text-gray-500 font-medium">
+                Belum Ditandatangani
+              </p>
               <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                {data.ditolak}
+                {data.menungguTtd}
               </h2>
             </div>
-            <div className="p-3 bg-red-100 rounded-full text-red-600">
-              <HiXCircle className="w-6 h-6" />
+            <div className="p-3 bg-yellow-100 rounded-full text-yellow-600">
+              <HiClock className="w-6 h-6" />
             </div>
           </div>
         </div>

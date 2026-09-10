@@ -27,7 +27,7 @@ export default function Login() {
       console.log("DATA YANG DIKIRIM:", payload);
 
       const response = await axios.post(
-        "http://10.6.65.80:8000/api/auth/login",
+        "http://172.18.160.93:8000/api/auth/login",
         payload,
         {
           headers: {
@@ -178,6 +178,14 @@ export default function Login() {
             >
               {loading ? "Sedang Login..." : "Login"}
             </Button>
+
+            <p className="text-center text-sm text-gray-500 mt-4">
+                Belum punya akun?{" "}
+                <Link to="/"
+                 className="text-indigo-600 hover:underline">
+                  Sign Up di sini
+                </Link>
+            </p>
           </form>
         </div>
       </div>

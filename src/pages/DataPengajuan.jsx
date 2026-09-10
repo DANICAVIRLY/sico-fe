@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HiSearch, HiCalendar } from "react-icons/hi";
+import { HiSearch, HiCalendar, HiX } from "react-icons/hi";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -45,7 +45,7 @@ export default function DataPengajuan() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://10.6.65.80:8000/api/bebas-pustaka?per_page=1000", {
+      const response = await axios.get("http://172.18.160.93:8000/api/bebas-pustaka?per_page=1000", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -131,15 +131,11 @@ export default function DataPengajuan() {
   const endIndex = startIndex + itemsPerPage;
   const currentData = filteredData.slice(startIndex, endIndex);
 
+  const hasActiveFilter = searchTerm || selectedDate || selectedStatus !== "Semua status";
+
   if (loading) {
     return (
-      <div className="w-full">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Data Pengajuan</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Kelola data pengajuan mahasiswa untuk pembersihan clearing
-          </p>
-        </div>
+      <div className="w-full relative">
         <div className="flex justify-center items-center h-64">
           <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
           <span className="ml-3 text-gray-500">Loading...</span>
@@ -149,104 +145,111 @@ export default function DataPengajuan() {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full relative">
+      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Data Pengajuan</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Data Pengajuan</h1>
+        <p className="text-sm sm:text-base text-gray-500 mt-1">
           Kelola data pengajuan mahasiswa untuk pembersihan clearing
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <select
-          value={selectedStatus}
-          onChange={(e) => {
-            setSelectedStatus(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-        >
-          <option>Semua status</option>
-          <option>Menunggu Verifikasi</option>
-          <option>Diverifikasi</option>
-          <option>Revisi</option>
-        </select>
-
-        <div className="relative">
-          <input
-            type="date"
-            value={selectedDate}
+      {/* Filter Bar */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+          <select
+            value={selectedStatus}
             onChange={(e) => {
-              setSelectedDate(e.target.value);
+              setSelectedStatus(e.target.value);
               setCurrentPage(1);
             }}
-            className="h-10 px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          />
-          <HiCalendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        </div>
-
-        <div className="relative flex-1 min-w-[200px]">
-          <input
-            type="text"
-            placeholder="Cari Nama, NIM, atau Departemen..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="h-10 w-full px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-          />
-          <HiSearch className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        </div>
-
-        {(searchTerm || selectedDate || selectedStatus !== "Semua status") && (
-          <button
-            onClick={() => {
-              setSearchTerm("");
-              setSelectedDate("");
-              setSelectedStatus("Semua status");
-              setCurrentPage(1);
-            }}
-            className="h-10 px-4 rounded-lg border border-red-300 bg-red-50 text-sm text-red-600 hover:bg-red-100 transition"
+            className="h-11 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:w-56"
           >
-            Reset Filter
-          </button>
-        )}
+            <option>Semua status</option>
+            <option>Menunggu Verifikasi</option>
+            <option>Diverifikasi</option>
+            <option>Revisi</option>
+          </select>
+
+          <div className="relative sm:w-48">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-11 w-full px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+            <HiCalendar className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          </div>
+
+          <div className="relative flex-1 min-w-[220px]">
+            <input
+              type="text"
+              placeholder="Cari Nama, NIM, atau Departemen..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-11 w-full px-4 pr-10 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+            <HiSearch className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          </div>
+
+          {/* Tombol Reset Filter */}
+          {hasActiveFilter && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedDate("");
+                setSelectedStatus("Semua status");
+                setCurrentPage(1);
+              }}
+              className="h-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-4 rounded-lg border border-red-300 bg-red-50 text-sm font-medium text-red-600 hover:bg-red-100 transition"
+            >
+              <HiX className="h-4 w-4" />
+              Reset Filter
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left font-semibold text-gray-700 w-12">No</th>
-                <th className="px-6 py-3 text-left font-semibold text-gray-700">Nama</th>
-                <th className="px-6 py-3 text-left font-semibold text-gray-700">NIM</th>
-                <th className="px-6 py-3 text-left font-semibold text-gray-700">Tanggal</th>
-                <th className="px-6 py-3 text-left font-semibold text-gray-700">Departemen</th>
-                <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
-                <th className="px-6 py-3 text-center font-semibold text-gray-700">Aksi</th>
+                <th className="px-3 py-3 text-left font-semibold text-gray-700 w-12">No</th>
+                <th className="px-3 py-3 text-left font-semibold text-gray-700">Nama</th>
+                <th className="px-3 py-3 text-left font-semibold text-gray-700">NIM</th>
+                <th className="px-3 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">Tanggal</th>
+                <th className="px-3 py-3 text-left font-semibold text-gray-700">Departemen</th>
+                <th className="px-3 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">Status</th>
+                <th className="px-3 py-3 text-center font-semibold text-gray-700 w-28">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {currentData.length > 0 ? (
                 currentData.map((data, index) => (
                   <tr key={data.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 text-gray-500">{startIndex + index + 1}</td>
-                    <td className="px-6 py-3 font-medium text-gray-800">{data.nama}</td>
-                    <td className="px-6 py-3 text-gray-600">{data.nim}</td>
-                    <td className="px-6 py-3 text-gray-600">{data.tanggal}</td>
-                    <td className="px-6 py-3 text-gray-600">{data.departemen}</td>
-                    <td className="px-6 py-3">
+                    <td className="px-3 py-3 text-gray-500">{startIndex + index + 1}</td>
+                    <td className="px-3 py-3 font-medium text-gray-800">{data.nama}</td>
+                    <td className="px-3 py-3 text-gray-600">{data.nim}</td>
+                    <td className="px-3 py-3 text-gray-600 whitespace-nowrap">{data.tanggal}</td>
+                    <td className="px-3 py-3 text-gray-600">{data.departemen}</td>
+                    <td className="px-3 py-3">
                       <span
-                        className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getStatusStyle(data.status)}`}
+                        className={`inline-block px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusStyle(data.status)}`}
                       >
                         {formatStatus(data.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-3 text-center">
+                    <td className="px-3 py-3 text-center">
                       <Link to={`/detail-verifikasi/${data.id}`}>
-                        <button className="px-4 py-1.5 text-sm font-medium text-indigo-600 bg-white border border-indigo-300 rounded-full hover:bg-indigo-50 transition">
+                        <button className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-white border border-indigo-300 rounded-full hover:bg-indigo-50 whitespace-nowrap transition">
                           Lihat Detail
                         </button>
                       </Link>
@@ -280,18 +283,18 @@ export default function DataPengajuan() {
         </div>
       </div>
 
+      {/* Pagination */}
       {filteredData.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
-          <span className="text-sm text-gray-500">
-            Menampilkan <span className="font-medium">{startIndex + 1}</span>{" "}
-            -{" "}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+          <span className="text-sm text-gray-500 order-2 sm:order-1">
+            Menampilkan <span className="font-medium">{startIndex + 1}</span> -{" "}
             <span className="font-medium">
               {Math.min(endIndex, filteredData.length)}
             </span>{" "}
             dari <span className="font-medium">{filteredData.length}</span>{" "}
             data
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center justify-center gap-1 order-1 sm:order-2">
             <button
               className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
                 currentPage === 1
