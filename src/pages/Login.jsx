@@ -178,6 +178,14 @@ export default function Login() {
             >
               {loading ? "Sedang Login..." : "Login"}
             </Button>
+
+            <p className="text-center text-sm text-gray-500 mt-4">
+                Belum punya akun?{" "}
+                <Link to="/"
+                 className="text-indigo-600 hover:underline">
+                  Sign Up di sini
+                </Link>
+            </p>
           </form>
         </div>
       </div>

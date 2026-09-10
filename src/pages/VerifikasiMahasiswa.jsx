@@ -16,6 +16,10 @@ export default function VerifikasiMahasiswa() {
   const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Modal konfirmasi custom (pengganti langsung eksekusi tanpa konfirmasi),
+  // dipakai sebelum submit keputusan "setuju".
+  const [confirmModal, setConfirmModal] = useState(false);
+
   useEffect(() => {
     // Selalu fetch detail terbaru dari API — jangan andalkan data dari
     // halaman tabel, karena itu cuma snapshot lama dan bisa saja tidak
@@ -75,6 +79,17 @@ export default function VerifikasiMahasiswa() {
         alert(err.response?.data?.message || "Gagal memperbarui status.");
       })
       .finally(() => setSubmitting(false));
+  };
+
+  // Tombol "Setuju & kirim ke atasan" tidak langsung submit — buka modal
+  // konfirmasi dulu, baru submit beneran setelah user klik "Ya, Setujui".
+  const handleSetujuiClick = () => {
+    setConfirmModal(true);
+  };
+
+  const doSetuju = () => {
+    setConfirmModal(false);
+    handleUpdateStatus("setuju");
   };
 
   // Preview dokumen (buka tab baru)
@@ -337,7 +352,7 @@ export default function VerifikasiMahasiswa() {
             </button>
             <button
               disabled={submitting}
-              onClick={() => handleUpdateStatus("setuju")}
+              onClick={handleSetujuiClick}
               className="px-8 py-2.5 bg-[#4c51bf] hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
             >
               Setuju & kirim ke atasan
@@ -345,6 +360,40 @@ export default function VerifikasiMahasiswa() {
           </div>
         </div>
       </main>
+
+      {/* =====================================================
+          MODAL KONFIRMASI CUSTOM
+          Muncul sebelum keputusan "setuju" beneran dikirim ke backend.
+          Style-nya disamakan dengan modal "Setujui Pengajuan?" di
+          halaman Tanda Tangan Atasan.
+      ===================================================== */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Setujui Pengajuan?
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Apakah Anda yakin ingin menyetujui pengajuan ini? Pengajuan
+              akan dikirim ke atasan untuk tanda tangan.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+              >
+                Batal
+              </button>
+              <button
+                onClick={doSetuju}
+                className="flex-1 px-4 py-2 bg-[#4c51bf] hover:bg-indigo-700 text-white rounded-lg font-medium"
+              >
+                Ya, Setujui
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

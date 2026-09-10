@@ -1,19 +1,10 @@
 import { useEffect, useState } from "react";
-import {
-  Badge,
-  Button,
-  Card,
-  FileInput,
-  Label,
-  Spinner,
-} from "flowbite-react";
+import { Badge, Button, Card, FileInput, Label, Spinner } from "flowbite-react";
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
-
 const API_URL = "http://172.18.160.93:8000";
 const STORAGE_URL = `${API_URL}/storage`;
-
 
 export default function PengajuanSaya() {
   const [nama, setNama] = useState("");
@@ -43,7 +34,7 @@ export default function PengajuanSaya() {
   const [pengajuanList, setPengajuanList] = useState([]);
 
   const pengajuanRevisi = pengajuanList.find(
-    (p) => String(p.status).toUpperCase() === "REVISI_ADMIN"
+    (p) => String(p.status).toUpperCase() === "REVISI_ADMIN",
   );
 
   // =========================
@@ -81,7 +72,7 @@ export default function PengajuanSaya() {
         const user = JSON.parse(storedUser);
 
         setNama(
-          user.nama || user.name || user.nama_lengkap || user.full_name || ""
+          user.nama || user.name || user.nama_lengkap || user.full_name || "",
         );
 
         setNim(user.nim || user.NIM || user.nim_mahasiswa || "");
@@ -129,7 +120,7 @@ export default function PengajuanSaya() {
       setPengajuanList(data);
 
       const revisi = data.find(
-        (p) => String(p.status).toUpperCase() === "REVISI_ADMIN"
+        (p) => String(p.status).toUpperCase() === "REVISI_ADMIN",
       );
 
       if (revisi) {
@@ -169,7 +160,7 @@ export default function PengajuanSaya() {
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      alert(`File ${file.name} terlalu besar. Maksimal 5 MB.`);
+      alert(`File ${file.name} terlalu besar. Maksimal 1 MB.`);
       return false;
     }
 
@@ -181,7 +172,9 @@ export default function PengajuanSaya() {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      alert(`File ${file.name} tidak didukung.\nGunakan PDF, JPG, JPEG, atau PNG.`);
+      alert(
+        `File ${file.name} tidak didukung.\nGunakan PDF, JPG, JPEG, atau PNG.`,
+      );
       return false;
     }
 
@@ -248,7 +241,7 @@ export default function PengajuanSaya() {
             Accept: "application/json",
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       console.log("UPLOAD RESPONSE:", response.data);
@@ -335,7 +328,7 @@ export default function PengajuanSaya() {
             Accept: "application/json",
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       console.log("AJUKAN ULANG RESPONSE:", response.data);
@@ -397,14 +390,14 @@ export default function PengajuanSaya() {
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
-        }
+        },
       );
 
       const contentType =
         response.headers["content-type"] || "application/octet-stream";
 
       const url = window.URL.createObjectURL(
-        new Blob([response.data], { type: contentType })
+        new Blob([response.data], { type: contentType }),
       );
 
       window.open(url, "_blank");
@@ -428,14 +421,14 @@ export default function PengajuanSaya() {
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
-        }
+        },
       );
 
       const contentType =
         response.headers["content-type"] || "application/octet-stream";
 
       const url = window.URL.createObjectURL(
-        new Blob([response.data], { type: contentType })
+        new Blob([response.data], { type: contentType }),
       );
 
       const link = document.createElement("a");
@@ -585,8 +578,7 @@ export default function PengajuanSaya() {
             pengajuan.file_distribusi ||
             pengajuan.distribusi ||
             pengajuan.fileDistribusi,
-          status:
-            pengajuan.status_distribusi || pengajuan.status || "Pending",
+          status: pengajuan.status_distribusi || pengajuan.status || "Pending",
           upload: pengajuan.created_at || pengajuan.tanggal_upload,
           validasi: pengajuan.validated_at || pengajuan.tanggal_validasi,
           catatan: pengajuan.catatan_distribusi || pengajuan.catatan || "-",
@@ -610,9 +602,7 @@ export default function PengajuanSaya() {
             Sistem Informasi Clearing Online
           </p>
 
-          <h1 className="text-3xl font-bold text-gray-800">
-            Pengajuan Saya
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800">Pengajuan Saya</h1>
 
           <p className="mt-2 text-gray-500">
             Kelola dan unggah dokumen persyaratan clearing Anda.
@@ -635,7 +625,10 @@ export default function PengajuanSaya() {
               <h2 className="text-xl font-bold text-amber-800">
                 Pengajuan Anda Perlu Direvisi
               </h2>
-              <p className="mt-1 text-sm text-amber-700"> Admin meminta Anda memperbaiki pengajuan clearing </p>
+              <p className="mt-1 text-sm text-amber-700">
+                {" "}
+                Admin meminta Anda memperbaiki pengajuan clearing{" "}
+              </p>
 
               {pengajuanRevisi.catatan_revisi && (
                 <div className="mt-3 rounded border border-amber-300 bg-white p-3 text-sm text-amber-800">
@@ -655,7 +648,9 @@ export default function PengajuanSaya() {
               {/* [ADDED] DATA MAHASISWA - Nama & NIM, fixed/readonly */}
               <div className="mb-5 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="revisiNama" value="Nama Mahasiswa" >Nama</Label>
+                  <Label htmlFor="revisiNama" value="Nama Mahasiswa">
+                    Nama
+                  </Label>
 
                   <input
                     id="revisiNama"
@@ -667,7 +662,9 @@ export default function PengajuanSaya() {
                 </div>
 
                 <div>
-                  <Label htmlFor="revisiNim" value="NIM" >NIM</Label>
+                  <Label htmlFor="revisiNim" value="NIM">
+                    NIM
+                  </Label>
 
                   <input
                     id="revisiNim"
@@ -680,42 +677,29 @@ export default function PengajuanSaya() {
               </div>
 
               <div className="mb-5">
-                <Label htmlFor="revisiDepartemen" value="Departemen" >Departemen</Label>
-                <div className="relative mt-2">
-                  <select
-                    id="revisiDepartemen"
-                    value={revisiDepartemen}
-                    onChange={(e) => setRevisiDepartemen(e.target.value)}
-                    className="block w-full appearance-none rounded-lg border border-gray-300 bg-white p-3 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Pilih Departemen</option>
-                    <option value="Departemen Manajemen Hutan (MNH)">
-                      Departemen Manajemen Hutan (MNH)
-                    </option>
-                    <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
-                      Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
-                    </option>
-                    <option value="Departemen Silvikultur (SVK)">
-                      Departemen Silvikultur (SVK)
-                    </option>
-                    <option value="Departemen Hasil Hutan (HH / DHH)">
-                      Departemen Hasil Hutan (HH / DHH)
-                    </option>
-                  </select>
-                  <svg
-                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
+                <Label htmlFor="revisiDepartemen" value="Departemen">
+                  Departemen
+                </Label>
+                <select
+                  id="revisiDepartemen"
+                  value={revisiDepartemen}
+                  onChange={(e) => setRevisiDepartemen(e.target.value)}
+                  className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">Pilih Departemen</option>
+                  <option value="Departemen Manajemen Hutan (MNH)">
+                    Departemen Manajemen Hutan (MNH)
+                  </option>
+                  <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
+                    Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
+                  </option>
+                  <option value="Departemen Silvikultur (SVK)">
+                    Departemen Silvikultur (SVK)
+                  </option>
+                  <option value="Departemen Hasil Hutan (HH / DHH)">
+                    Departemen Hasil Hutan (HH / DHH)
+                  </option>
+                </select>
               </div>
 
               {/* KTM */}
@@ -747,9 +731,7 @@ export default function PengajuanSaya() {
                 {revisiFileKtm && (
                   <p className="mt-2 text-sm text-gray-600">
                     File baru dipilih:{" "}
-                    <span className="font-semibold">
-                      {revisiFileKtm.name}
-                    </span>
+                    <span className="font-semibold">{revisiFileKtm.name}</span>
                   </p>
                 )}
               </div>
@@ -783,9 +765,7 @@ export default function PengajuanSaya() {
                 {revisiFileSpp && (
                   <p className="mt-2 text-sm text-gray-600">
                     File baru dipilih:{" "}
-                    <span className="font-semibold">
-                      {revisiFileSpp.name}
-                    </span>
+                    <span className="font-semibold">{revisiFileSpp.name}</span>
                   </p>
                 )}
               </div>
@@ -865,7 +845,9 @@ export default function PengajuanSaya() {
               {/* DATA MAHASISWA */}
               <div className="mb-6 grid gap-5 md:grid-cols-2">
                 <div>
-                  <Label htmlFor="nama" value="Nama Mahasiswa" >Nama</Label>
+                  <Label htmlFor="nama" value="Nama Mahasiswa">
+                    Nama
+                  </Label>
 
                   <input
                     id="nama"
@@ -877,7 +859,9 @@ export default function PengajuanSaya() {
                 </div>
 
                 <div>
-                  <Label htmlFor="nim" value="NIM" >NIM</Label>
+                  <Label htmlFor="nim" value="NIM">
+                    NIM
+                  </Label>
 
                   <input
                     id="nim"
@@ -891,43 +875,30 @@ export default function PengajuanSaya() {
 
               {/* DEPARTEMEN */}
               <div className="mb-6">
-                <Label htmlFor="departemen" value="Departemen" >Departemen</Label>
+                <Label htmlFor="departemen" value="Departemen">
+                  Departemen
+                </Label>
 
-                <div className="relative mt-2">
-                  <select
-                    id="departemen"
-                    value={departemen}
-                    onChange={(e) => setDepartemen(e.target.value)}
-                    className="block w-full appearance-none rounded-lg border border-gray-300 bg-white p-3 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="">Pilih Departemen</option>
-                    <option value="Departemen Manajemen Hutan (MNH)">
-                      Departemen Manajemen Hutan (MNH)
-                    </option>
-                    <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
-                      Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
-                    </option>
-                    <option value="Departemen Silvikultur (SVK)">
-                      Departemen Silvikultur (SVK)
-                    </option>
-                    <option value="Departemen Hasil Hutan (HH / DHH)">
-                      Departemen Hasil Hutan (HH / DHH)
-                    </option>
-                  </select>
-                  <svg
-                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
+                <select
+                  id="departemen"
+                  value={departemen}
+                  onChange={(e) => setDepartemen(e.target.value)}
+                  className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">Pilih Departemen</option>
+                  <option value="Departemen Manajemen Hutan (MNH)">
+                    Departemen Manajemen Hutan (MNH)
+                  </option>
+                  <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
+                    Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
+                  </option>
+                  <option value="Departemen Silvikultur (SVK)">
+                    Departemen Silvikultur (SVK)
+                  </option>
+                  <option value="Departemen Hasil Hutan (HH / DHH)">
+                    Departemen Hasil Hutan (HH / DHH)
+                  </option>
+                </select>
               </div>
 
               {/* KTM */}
@@ -939,16 +910,14 @@ export default function PengajuanSaya() {
 
                   <p className="mt-1 text-xs text-gray-500">
                     Upload KTM dalam format PDF, JPG, JPEG, atau PNG.
-                    Maksimal 5 MB.
+                    Maksimal 1 MB.
                   </p>
                 </div>
 
                 <FileInput
                   id="fileKtm"
                   accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) =>
-                    setFileKtm(e.target.files?.[0] || null)
-                  }
+                  onChange={(e) => setFileKtm(e.target.files?.[0] || null)}
                 />
 
                 {fileKtm && (
@@ -968,16 +937,14 @@ export default function PengajuanSaya() {
 
                   <p className="mt-1 text-xs text-gray-500">
                     Upload bukti pembayaran SPP dalam format PDF, JPG, JPEG,
-                    atau PNG. Maksimal 5 MB.
+                    atau PNG. Maksimal 1 MB.
                   </p>
                 </div>
 
                 <FileInput
                   id="fileSpp"
                   accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) =>
-                    setFileSpp(e.target.files?.[0] || null)
-                  }
+                  onChange={(e) => setFileSpp(e.target.files?.[0] || null)}
                 />
 
                 {fileSpp && (
@@ -997,7 +964,7 @@ export default function PengajuanSaya() {
 
                   <p className="mt-1 text-xs text-gray-500">
                     Upload dokumen distribusi skripsi dalam format PDF, JPG,
-                    JPEG, atau PNG. Maksimal 5 MB.
+                    JPEG, atau PNG. Maksimal 1 MB.
                   </p>
                 </div>
 
@@ -1012,9 +979,7 @@ export default function PengajuanSaya() {
                 {fileDistribusi && (
                   <p className="mt-2 text-sm text-gray-600">
                     File dipilih:{" "}
-                    <span className="font-semibold">
-                      {fileDistribusi.name}
-                    </span>
+                    <span className="font-semibold">{fileDistribusi.name}</span>
                   </p>
                 )}
               </div>
@@ -1095,9 +1060,7 @@ export default function PengajuanSaya() {
                   <tr>
                     <th className="px-5 py-4 font-semibold">Dokumen</th>
                     <th className="px-5 py-4 font-semibold">Status</th>
-                    <th className="px-5 py-4 font-semibold">
-                      Tanggal Upload
-                    </th>
+                    <th className="px-5 py-4 font-semibold">Tanggal Upload</th>
                     <th className="px-5 py-4 font-semibold">Validasi</th>
                     <th className="px-5 py-4 font-semibold">Catatan</th>
                     <th className="px-5 py-4 text-center font-semibold">
@@ -1177,7 +1140,7 @@ export default function PengajuanSaya() {
                               handleDownload(
                                 doc.pengajuanId,
                                 doc.jenis,
-                                getFileName(doc.file)
+                                getFileName(doc.file),
                               )
                             }
                           >
@@ -1208,8 +1171,8 @@ export default function PengajuanSaya() {
               <p className="mt-1 text-sm leading-6 text-blue-700">
                 Pastikan seluruh dokumen yang diunggah merupakan dokumen yang
                 benar dan dapat terbaca dengan jelas. Dokumen dengan status{" "}
-                <strong>Rejected</strong> dapat diperbarui melalui
-                pengunggahan ulang.
+                <strong>Rejected</strong> dapat diperbarui melalui pengunggahan
+                ulang.
               </p>
             </div>
           </div>

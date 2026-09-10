@@ -212,15 +212,6 @@ export default function Signup() {
                 Sign Up
               </Button>
 
-              {/* Login */}
-              <div className="text-center mt-5">
-                <Link
-                  to="/login-admin"
-                  className="text-sm text-blue-600 hover:underline font-medium"
-                >
-                  Login sebagai Admin / Atasan / Pustakawan
-                </Link>
-              </div>
               <p className="text-center text-sm text-gray-500 mt-4">
                 Sudah punya akun?{" "}
                 <Link to="/login-admin"

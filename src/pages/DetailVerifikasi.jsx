@@ -16,6 +16,10 @@ export default function DetailVerifikasi() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Modal konfirmasi custom (pengganti langsung eksekusi tanpa konfirmasi),
+  // dipakai sebelum submit keputusan "setuju".
+  const [confirmModal, setConfirmModal] = useState(false);
+
   const extractArray = (payload) => {
     if (Array.isArray(payload)) return payload;
     if (!payload || typeof payload !== "object") return null;
@@ -163,6 +167,17 @@ export default function DetailVerifikasi() {
     }
   };
 
+  // Tombol "Verifikasi Lulus" tidak langsung submit — buka modal konfirmasi
+  // dulu, baru submit beneran setelah user klik "Ya, Setujui" di modal.
+  const handleVerifikasiLulusClick = () => {
+    setConfirmModal(true);
+  };
+
+  const doVerifikasiLulus = () => {
+    setConfirmModal(false);
+    kirimKeputusan("setuju");
+  };
+
   // Status final: sudah diproses, tidak perlu form aktif lagi
   const statusFinal = ["disetujui", "revisi"];
   const sudahDiproses = detail && statusFinal.includes(String(detail.status).toLowerCase());
@@ -296,31 +311,15 @@ export default function DetailVerifikasi() {
         </Card>
 
         <Card>
-          <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Syarat-Syarat Untuk Bebas Pustaka</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-              <span className="text-sm text-gray-700">Tidak ada peminjaman buku</span>
-              <Select
-                className="w-32"
-                value={statusPeminjaman}
-                onChange={(e) => setStatusPeminjaman(e.target.value)}
-              >
-                <option>Tidak ada</option>
-                <option>Ada</option>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-              <span className="text-sm text-gray-700">Tidak ada denda</span>
-              <Select
-                className="w-32"
-                value={statusDenda}
-                onChange={(e) => setStatusDenda(e.target.value)}
-              >
-                <option>Ada</option>
-                <option>Tidak ada</option>
-              </Select>
-            </div>
-          </div>
+          <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Syarat Bebas Pustaka</h3>
+          <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
+            <li>Tidak memiliki buku yang masih dipinjam.</li>
+            <li>Tidak memiliki tanggungan denda perpustakaan.</li>
+            <li>
+              Jika persyaratan belum terpenuhi, silakan lengkapi sesuai
+              catatan syarat yang belum terpenuhi.
+            </li>
+          </ol>
         </Card>
 
         <Card>
@@ -355,12 +354,47 @@ export default function DetailVerifikasi() {
           <Button
             className="bg-blue-800 hover:bg-blue-900"
             disabled={submitting}
-            onClick={() => kirimKeputusan("setuju")}
+            onClick={handleVerifikasiLulusClick}
           >
             Verifikasi Lulus
           </Button>
         </div>
       </div>
+
+      {/* =====================================================
+          MODAL KONFIRMASI CUSTOM
+          Muncul sebelum keputusan "setuju" beneran dikirim ke backend
+          & sebelum pindah ke halaman /verifikasi-berhasil.
+          Style-nya disamakan dengan modal konfirmasi di halaman lain
+          (Tanda Tangan Atasan, Verifikasi Mahasiswa).
+      ===================================================== */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Verifikasi Lulus?
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Apakah Anda yakin ingin meluluskan verifikasi bebas pustaka
+              mahasiswa ini?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+              >
+                Batal
+              </button>
+              <button
+                onClick={doVerifikasiLulus}
+                className="flex-1 px-4 py-2 bg-blue-800 hover:bg-blue-900 text-white rounded-lg font-medium"
+              >
+                Ya, Setujui
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
