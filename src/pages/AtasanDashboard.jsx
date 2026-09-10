@@ -1,299 +1,185 @@
-import {
-  HiDocumentText,
-  HiCheckCircle,
-  HiClock,
-  HiBell,
-} from "react-icons/hi";
-import { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import { useState, useEffect } from 'react';
+import { HiDocumentText, HiCheckCircle, HiClock, HiBell } from 'react-icons/hi';
+import axios from 'axios';
+import AtasanSidebar from '../components/AtasanSidebar';
 
-// =====================================================================
-// PENTING: samain base URL ke satu tempat (sama seperti file lain).
-// Ganti kalau ternyata IP backend aktifnya beda.
-// =====================================================================
-const API_BASE_URL = "http://172.18.160.93:8000";
+const API_BASE_URL = 'http://172.18.160.93:8000';
 
-export default function AtasanDashboard() {
-  const [unreadCount, setUnreadCount] = useState(0);
+export default function DashboardAtasan() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState({
     total: 0,
-    ditandatangani: 0,
-    menungguTtd: 0,
+    sudahTtd: 0,
+    belumTtd: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState([]);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const notifRef = useRef(null);
 
   useEffect(() => {
-    fetchData();
-    fetchNotifications();
+    fetchDashboardData();
   }, []);
 
-  // =====================================================================
-  // Klik di luar area popup notifikasi -> otomatis tertutup.
-  // =====================================================================
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setNotifOpen(false);
+  const extractArray = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (!payload || typeof payload !== "object") return null;
+
+    const commonKeys = ["data", "items", "result", "results", "bebas_pustaka", "pengajuan", "list"];
+
+    for (const key of commonKeys) {
+      if (Array.isArray(payload[key])) return payload[key];
+    }
+
+    for (const key of commonKeys) {
+      if (payload[key] && typeof payload[key] === "object") {
+        const nested = extractArray(payload[key]);
+        if (Array.isArray(nested)) return nested;
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    }
 
-  // =====================================================================
-  // Endpoint /api/dashboard cuma nyediain field total_pengajuan /
-  // sudah_disetujui / sudah_ditolak — nggak ada field "belum
-  // ditandatangani" yang sesuai sama status di halaman
-  // DataMahasiswaAtasan.jsx (yang punya beberapa status mentah:
-  // menunggu, diajukan, pending, diverifikasi_admin, diverifikasi, dll).
-  //
-  // Supaya angka di dashboard ini SINKRON dengan tabel di
-  // DataMahasiswaAtasan, kita ambil data mentah yang sama dari
-  // GET /api/pengajuan-clearing, lalu hitung sendiri di frontend pakai
-  // mapping status yang identik dengan formatStatus() di halaman itu.
-  // =====================================================================
-  const formatStatus = (status) => {
-    const statusMap = {
-      menunggu: "Belum Ditandatangani",
-      diajukan: "Belum Ditandatangani",
-      pending: "Belum Ditandatangani",
-      diverifikasi_admin: "Belum Ditandatangani",
-      diverifikasi: "Belum Ditandatangani",
-      disetujui: "Selesai Ditandatangani",
-      approved: "Selesai Ditandatangani",
-      selesai: "Selesai Ditandatangani",
-      ttd_atasan: "Selesai Ditandatangani",
-      ditolak: "Ditolak",
-      rejected: "Ditolak",
-      revisi_admin: "Perlu Perbaikan",
-      perbaikan: "Perlu Perbaikan",
-      revision: "Perlu Perbaikan",
-    };
-    return statusMap[status?.toLowerCase()] || status || "Belum Ditandatangani";
+    for (const value of Object.values(payload)) {
+      if (Array.isArray(value)) return value;
+    }
+
+    return null;
   };
 
-  const fetchData = () => {
-    const token = localStorage.getItem("token");
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
 
-    axios
-      .get(`${API_BASE_URL}/api/pengajuan-clearing`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      })
-      .then((response) => {
-        const rawItems = Array.isArray(response.data)
-          ? response.data
-          : Array.isArray(response.data?.data)
-          ? response.data.data
-          : response.data?.data?.data || [];
-
-        const statuses = rawItems.map((item) => formatStatus(item.status));
-
-        const total = statuses.length;
-        const ditandatangani = statuses.filter(
-          (s) => s === "Selesai Ditandatangani",
-        ).length;
-        const menungguTtd = statuses.filter(
-          (s) => s === "Belum Ditandatangani",
-        ).length;
-
-        setData({ total, ditandatangani, menungguTtd });
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error.response?.data || error);
-        setLoading(false);
-      });
-  };
-
-  // =====================================================================
-  // Endpoint asli backend ada di prefix "/notifikasi" (bukan
-  // "/notifications"), lewat NotifikasiController + NotifikasiResource.
-  // GET /api/notifikasi mengembalikan SEMUA notifikasi (paginated,
-  // format Laravel Resource Collection: { data: [...], links, meta }),
-  // bukan cuma yang belum dibaca. Jadi filter "belum dibaca" dilakukan
-  // di sisi frontend di sini.
-  // =====================================================================
-  const fetchNotifications = () => {
-    const token = localStorage.getItem("token");
-
-    axios
-      .get(`${API_BASE_URL}/api/notifikasi`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((response) => {
-        const allNotif = response.data?.data || [];
-        const belumDibaca = allNotif.filter((n) => !n.dibaca);
-        setNotifications(belumDibaca);
-        setUnreadCount(belumDibaca.length);
-      })
-      .catch((error) => {
-        console.error("Error fetching notifications:", error);
-        setNotifications([]);
-        setUnreadCount(0);
-      });
-  };
-
-  const markAllAsRead = () => {
-    const token = localStorage.getItem("token");
-    axios
-      .post(
-        `${API_BASE_URL}/api/notifikasi/read-all`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
+      const response = await axios.get(`${API_BASE_URL}/api/pengajuan-clearing?per_page=1000`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
         },
-      )
-      .then(() => {
-        setUnreadCount(0);
-        setNotifications([]);
-      })
-      .catch((error) => {
-        console.error("Error marking notifications:", error);
       });
-  };
 
-  if (loading) {
-    return (
-      <div className="w-full relative">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Dashboard Kepala Bagian Tata Usaha
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Pantau kinerja dan data clearing online
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-center items-center h-64">
-          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-3 text-gray-500">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+      const rawItems = extractArray(response.data) || [];
+
+      // Debug: Cek status asli yang dikirim backend di Console Browser (F12)
+      const uniqueStatuses = [...new Set(rawItems.map((item) => item.status))];
+      console.log("LIST STATUS DARI BACKEND:", uniqueStatuses);
+
+      let total = rawItems.length;
+      let sudahTtd = 0;
+      let belumTtd = 0;
+
+      rawItems.forEach((item) => {
+        const s = String(item.status || "").trim().toLowerCase();
+
+        // Kriteria status yang dianggap sudah ditandatangani/selesai/disetujui
+        if (
+          s.includes("ttd") || 
+          s.includes("selesai") || 
+          s.includes("approved") ||
+          s.includes("diverifikasi") ||
+          s.includes("disetujui") ||
+          s.includes("sudah") ||
+          s.includes("signed")
+        ) {
+          sudahTtd++;
+        } else {
+          belumTtd++;
+        }
+      });
+
+      setData({
+        total,
+        sudahTtd,
+        belumTtd,
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="w-full relative">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Kepala Bagian Tata Usaha</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Pantau kinerja dan data clearing online
-          </p>
-        </div>
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* Sidebar Atasan Component */}
+      <AtasanSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        onOpen={() => setSidebarOpen(true)} 
+      />
 
-        <div className="relative" ref={notifRef}>
-          <button
-            onClick={() => setNotifOpen((prev) => !prev)}
-            className="relative p-2 text-gray-600 bg-white rounded-full hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm"
-          >
-            <HiBell className="w-6 h-6" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 min-w-[1.25rem] px-1 rounded-full bg-red-500 text-white text-xs font-bold ring-2 ring-white">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </button>
-
-          {notifOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <span className="block text-sm font-semibold text-gray-900">
-                  Notifikasi
-                </span>
-              </div>
-
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.length > 0 ? (
-                  notifications.map((notif) => (
-                    <div
-                      key={notif.id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-b-0"
-                    >
-                      <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-500">
-                        <HiBell className="w-4 h-4" />
-                      </span>
-                      <span className="text-sm text-gray-800">
-                        {notif.judul || "Notifikasi"}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-6 text-center">
-                    <span className="text-sm text-gray-500">
-                      Belum ada notifikasi
+      {/* Main Content Area */}
+      <div className="flex-1 min-w-0">
+        <main className="p-6 md:p-8">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-3 text-gray-500">Loading...</span>
+            </div>
+          ) : (
+            <div className="w-full">
+              {/* Header Title & Notification */}
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+                    Dashboard Kepala Bagian Tata Usaha
+                  </h1>
+                  <p className="text-xs md:text-sm text-gray-500 mt-1">
+                    Pantau kinerja dan data clearing online
+                  </p>
+                </div>
+                
+                {/* Lonceng Notifikasi */}
+                <div className="relative">
+                  <button className="p-2.5 bg-white rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm relative">
+                    <HiBell className="w-6 h-6" />
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                      1
                     </span>
-                  </div>
-                )}
+                  </button>
+                </div>
               </div>
 
-              <button
-                onClick={markAllAsRead}
-                className="w-full text-center text-blue-600 font-medium text-sm py-3 border-t border-gray-100 hover:bg-gray-50 transition-colors"
-              >
-                Tandai semua telah dibaca
-              </button>
+              {/* Grid 3 Kartu Stat */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Card 1: Total Pengajuan */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-t-4 border-t-blue-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500 font-medium">Total Pengajuan</p>
+                      <h2 className="text-3xl font-bold text-gray-800 mt-2">{data.total}</h2>
+                    </div>
+                    <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
+                      <HiDocumentText className="w-7 h-7" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2: Sudah Ditandatangani */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-t-4 border-t-emerald-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500 font-medium">Sudah Ditandatangani</p>
+                      <h2 className="text-3xl font-bold text-gray-800 mt-2">{data.sudahTtd}</h2>
+                    </div>
+                    <div className="p-3 bg-emerald-100 rounded-2xl text-emerald-600">
+                      <HiCheckCircle className="w-7 h-7" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 3: Belum Ditandatangani */}
+                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-t-4 border-t-amber-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-500 font-medium">Belum Ditandatangani</p>
+                      <h2 className="text-3xl font-bold text-gray-800 mt-2">{data.belumTtd}</h2>
+                    </div>
+                    <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
+                      <HiClock className="w-7 h-7" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Card dengan border di ATAS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Pengajuan */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">
-                Total Pengajuan
-              </p>
-              <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                {data.total}
-              </h2>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-full text-blue-600">
-              <HiDocumentText className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        {/* Sudah Ditandatangani */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-green-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">
-                Sudah Ditandatangani
-              </p>
-              <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                {data.ditandatangani}
-              </h2>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full text-green-600">
-              <HiCheckCircle className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        {/* Belum Ditandatangani */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-yellow-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">
-                Belum Ditandatangani
-              </p>
-              <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                {data.menungguTtd}
-              </h2>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-full text-yellow-600">
-              <HiClock className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   );
