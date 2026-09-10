@@ -176,7 +176,7 @@ export default function PengajuanSaya() {
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      alert(`File ${file.name} terlalu besar. Maksimal 5 MB.`);
+      alert(`File ${file.name} terlalu besar. Maksimal 1 MB.`);
       return false;
     }
 
@@ -932,7 +932,7 @@ export default function PengajuanSaya() {
 
                   <p className="mt-1 text-xs text-gray-500">
                     Upload KTM dalam format PDF, JPG, JPEG, atau PNG.
-                    Maksimal 5 MB.
+                    Maksimal 1 MB.
                   </p>
                 </div>
 
@@ -961,7 +961,7 @@ export default function PengajuanSaya() {
 
                   <p className="mt-1 text-xs text-gray-500">
                     Upload bukti pembayaran SPP dalam format PDF, JPG, JPEG,
-                    atau PNG. Maksimal 5 MB.
+                    atau PNG. Maksimal 1 MB.
                   </p>
                 </div>
 
@@ -990,7 +990,7 @@ export default function PengajuanSaya() {
 
                   <p className="mt-1 text-xs text-gray-500">
                     Upload dokumen distribusi skripsi dalam format PDF, JPG,
-                    JPEG, atau PNG. Maksimal 5 MB.
+                    JPEG, atau PNG. Maksimal 1 MB.
                   </p>
                 </div>
 
