@@ -3,7 +3,7 @@ import SidebarMahaComp from "../components/SidebarMahaComp";
 import { Label, TextInput, Button } from "flowbite-react";
 import axios from "axios";
 
-const API_BASE = "http://10.6.65.80:8000/api/bebas-pustaka";
+const API_BASE = "http://172.18.160.93:8000/api/bebas-pustaka";
 
 export default function BuatPengajuan() {
   const userData = JSON.parse(localStorage.getItem("user") || "null");
@@ -188,7 +188,7 @@ export default function BuatPengajuan() {
                 CATATAN REVISI
             ========================== */}
             {isRevisi && (
-              <div className="mb-5 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
+              <div className="mb-5 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
                 <p className="font-semibold mb-1">
                   Pengajuan perlu direvisi
                 </p>
@@ -251,9 +251,9 @@ export default function BuatPengajuan() {
                     PERLU REVISI
                 ========================== */
                 <div className="flex flex-col items-center space-y-3">
-                  <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center shadow-sm">
+                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center shadow-sm">
                     <svg
-                      className="w-12 h-12 text-yellow-600"
+                      className="w-12 h-12 text-red-600"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2.5"
@@ -267,7 +267,7 @@ export default function BuatPengajuan() {
                     </svg>
                   </div>
 
-                  <span className="text-yellow-600 font-semibold text-lg">
+                  <span className="text-red-600 font-semibold text-lg">
                     Perlu Revisi
                   </span>
                 </div>

@@ -11,7 +11,7 @@ import SidebarMahaComp from "../components/SidebarMahaComp";
 import axios from "axios";
 
 
-const API_URL = "http://10.6.65.80:8000";
+const API_URL = "http://172.18.160.93:8000";
 const STORAGE_URL = `${API_URL}/storage`;
 
 
@@ -19,7 +19,6 @@ export default function PengajuanSaya() {
   const [nama, setNama] = useState("");
   const [nim, setNim] = useState("");
   const [departemen, setDepartemen] = useState("");
-  const [programStudi, setProgramStudi] = useState("");
 
   const [fileKtm, setFileKtm] = useState(null);
   const [fileSpp, setFileSpp] = useState(null);
@@ -38,7 +37,6 @@ export default function PengajuanSaya() {
   const [revisiFileSpp, setRevisiFileSpp] = useState(null);
   const [revisiFileDistribusi, setRevisiFileDistribusi] = useState(null);
   const [revisiDepartemen, setRevisiDepartemen] = useState("");
-  const [revisiProgramStudi, setRevisiProgramStudi] = useState("");
   const [ajukanUlangLoading, setAjukanUlangLoading] = useState(false);
   const [ajukanUlangError, setAjukanUlangError] = useState("");
 
@@ -89,10 +87,6 @@ export default function PengajuanSaya() {
         setNim(user.nim || user.NIM || user.nim_mahasiswa || "");
 
         setDepartemen(user.departemen || user.department || "");
-
-        setProgramStudi(
-          user.program_studi || user.programStudi || user.prodi || ""
-        );
       } catch (err) {
         console.error("Gagal membaca data user:", err);
       }
@@ -113,7 +107,7 @@ export default function PengajuanSaya() {
       setError("");
 
       const response = await axios.get(
-        "http://10.6.65.80:8000/api/pengajuan-clearing",
+        "http://172.18.160.93:8000/api/pengajuan-clearing",
         getConfig()
       );
 
@@ -140,7 +134,6 @@ export default function PengajuanSaya() {
 
       if (revisi) {
         setRevisiDepartemen(revisi.departemen || "");
-        setRevisiProgramStudi(revisi.program_studi || "");
       }
     } catch (err) {
       console.error("Gagal mengambil pengajuan:", err);
@@ -209,11 +202,6 @@ export default function PengajuanSaya() {
       return;
     }
 
-    if (!programStudi.trim()) {
-      alert("Program Studi wajib diisi.");
-      return;
-    }
-
     if (!fileKtm) {
       alert("File KTM wajib diupload.");
       return;
@@ -239,7 +227,6 @@ export default function PengajuanSaya() {
       const formData = new FormData();
 
       formData.append("departemen", departemen);
-      formData.append("program_studi", programStudi);
       formData.append("file_ktm", fileKtm);
       formData.append("file_bukti_spp", fileSpp);
       formData.append("file_distribusi", fileDistribusi);
@@ -253,7 +240,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.post(
-        "http://10.6.65.80:8000/api/pengajuan-clearing",
+        "http://172.18.160.93:8000/api/pengajuan-clearing",
         formData,
         {
           headers: {
@@ -331,13 +318,6 @@ export default function PengajuanSaya() {
         formData.append("departemen", revisiDepartemen);
       }
 
-      if (
-        revisiProgramStudi &&
-        revisiProgramStudi !== pengajuanRevisi.program_studi
-      ) {
-        formData.append("program_studi", revisiProgramStudi);
-      }
-
       if (revisiFileKtm) formData.append("file_ktm", revisiFileKtm);
       if (revisiFileSpp) formData.append("file_bukti_spp", revisiFileSpp);
       if (revisiFileDistribusi) {
@@ -347,7 +327,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.post(
-        `http://10.6.65.80:8000/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
+        `http://172.18.160.93:8000/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
         formData,
         {
           headers: {
@@ -413,7 +393,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.get(
-        `http://10.6.65.80:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        `http://172.18.160.93:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -444,7 +424,7 @@ export default function PengajuanSaya() {
       const token = getToken();
 
       const response = await axios.get(
-        `http://10.6.65.80:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        `http://172.18.160.93:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -699,27 +679,42 @@ export default function PengajuanSaya() {
                 </div>
               </div>
 
-              <div className="mb-5 grid gap-5 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="revisiDepartemen" value="Departemen" >Departemen</Label>
-                  <input
+              <div className="mb-5">
+                <Label htmlFor="revisiDepartemen" value="Departemen" >Departemen</Label>
+                <div className="relative mt-2">
+                  <select
                     id="revisiDepartemen"
-                    type="text"
                     value={revisiDepartemen}
                     onChange={(e) => setRevisiDepartemen(e.target.value)}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="revisiProgramStudi" value="Program Studi" >Program Studi</Label>
-                  <input
-                    id="revisiProgramStudi"
-                    type="text"
-                    value={revisiProgramStudi}
-                    onChange={(e) => setRevisiProgramStudi(e.target.value)}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  />
+                    className="block w-full appearance-none rounded-lg border border-gray-300 bg-white p-3 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Pilih Departemen</option>
+                    <option value="Departemen Manajemen Hutan (MNH)">
+                      Departemen Manajemen Hutan (MNH)
+                    </option>
+                    <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
+                      Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
+                    </option>
+                    <option value="Departemen Silvikultur (SVK)">
+                      Departemen Silvikultur (SVK)
+                    </option>
+                    <option value="Departemen Hasil Hutan (HH / DHH)">
+                      Departemen Hasil Hutan (HH / DHH)
+                    </option>
+                  </select>
+                  <svg
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </div>
               </div>
 
@@ -894,32 +889,44 @@ export default function PengajuanSaya() {
                 </div>
               </div>
 
-              {/* DEPARTEMEN & PRODI */}
-              <div className="mb-6 grid gap-5 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="departemen" value="Departemen" >Departemen</Label>
+              {/* DEPARTEMEN */}
+              <div className="mb-6">
+                <Label htmlFor="departemen" value="Departemen" >Departemen</Label>
 
-                  <input
+                <div className="relative mt-2">
+                  <select
                     id="departemen"
-                    type="text"
                     value={departemen}
                     onChange={(e) => setDepartemen(e.target.value)}
-                    placeholder="Masukkan Departemen"
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="programStudi" value="Program Studi" >Program Studi</Label>
-
-                  <input
-                    id="programStudi"
-                    type="text"
-                    value={programStudi}
-                    onChange={(e) => setProgramStudi(e.target.value)}
-                    placeholder="Masukkan Program Studi"
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  />
+                    className="block w-full appearance-none rounded-lg border border-gray-300 bg-white p-3 pr-10 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Pilih Departemen</option>
+                    <option value="Departemen Manajemen Hutan (MNH)">
+                      Departemen Manajemen Hutan (MNH)
+                    </option>
+                    <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
+                      Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
+                    </option>
+                    <option value="Departemen Silvikultur (SVK)">
+                      Departemen Silvikultur (SVK)
+                    </option>
+                    <option value="Departemen Hasil Hutan (HH / DHH)">
+                      Departemen Hasil Hutan (HH / DHH)
+                    </option>
+                  </select>
+                  <svg
+                    className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </div>
               </div>
 
