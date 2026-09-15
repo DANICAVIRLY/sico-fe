@@ -3,7 +3,7 @@ import { HiDocumentText, HiCheckCircle, HiClock, HiPencilAlt, HiMenu, HiRefresh,
 import axios from 'axios';
 import SidebarAdminComp from '../components/SidebarAdminComp';
 
-const API_BASE_URL = 'http://172.18.160.93:8000';
+const API_BASE_URL = 'http://172.18.160.133:8000';
 
 export default function DashboardAdmin() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -174,10 +174,13 @@ export default function DashboardAdmin() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-slate-50 flex">
       <SidebarAdminComp isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 lg:ml-64 min-w-0">
+      {/* lg:ml-64 karena SidebarAdminComp posisinya "fixed" (keluar dari flow
+          normal), jadi konten digeser manual selebar sidebar (256px) di
+          layar >= lg. Disamakan persis dengan pola di halaman Pustakawan. */}
+      <div className="flex-1 lg:ml-64 flex flex-col min-w-0 overflow-x-hidden">
         <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
           <button onClick={() => setSidebarOpen(true)} className="p-1 focus:outline-none">
             <HiMenu className="w-6 h-6" />
@@ -186,7 +189,7 @@ export default function DashboardAdmin() {
           <div className="w-6" />
         </div>
 
-        <main className="p-6 md:p-8">
+        <main className="p-4 sm:p-6 md:p-8 flex-1">
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
@@ -207,24 +210,24 @@ export default function DashboardAdmin() {
             </div>
           ) : (
             <div className="w-full">
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard Admin</h1>
+              <div className="mb-6 flex flex-row items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <h1 className="text-xl md:text-2xl font-bold text-gray-900 truncate">Dashboard Admin</h1>
                   <p className="text-xs md:text-sm text-gray-500 mt-1">
                     Ringkasan pengajuan
                   </p>
                 </div>
                 <button
                   onClick={fetchDashboardData}
-                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+                  className="shrink-0 p-2 rounded-lg hover:bg-gray-100 text-gray-500"
                   title="Refresh data"
                 >
                   <HiRefresh className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
-                <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-blue-500">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mt-6">
+                <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border-t-4 border-blue-500">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-500 font-medium">Total Pengajuan</p>
@@ -236,7 +239,7 @@ export default function DashboardAdmin() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-yellow-500">
+                <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border-t-4 border-yellow-500">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-500 font-medium">Menunggu Verifikasi</p>
@@ -248,7 +251,7 @@ export default function DashboardAdmin() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-red-500">
+                <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border-t-4 border-red-500">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-500 font-medium">Revisi</p>
@@ -260,7 +263,7 @@ export default function DashboardAdmin() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-5 shadow-sm border-t-4 border-green-500">
+                <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border-t-4 border-green-500">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-500 font-medium">Selesai</p>

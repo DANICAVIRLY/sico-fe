@@ -70,15 +70,26 @@ export default function RouteApp() {
           path="/detail-selesai/:id"
           element={<DetailSelesai />}
         />
+
+        {/* Halaman ini sudah punya sidebar & layout (lg:ml-64) sendiri di
+            dalam komponennya, jadi TIDAK dibungkus PustakawanLayout lagi.
+            Kalau tetap dibungkus, sidebar & margin jadi dobel (itu penyebab
+            tampilan "berjarak"/kepotong yang dilaporkan). */}
+        <Route
+          path="/pustakawan-dashboard"
+          element={<PustakawanDashboard />}
+        />
+        <Route
+          path="/data-pengajuan"
+          element={<DataPengajuan />}
+        />
+
+        {/* Halaman di bawah ini masih pakai PustakawanLayout (asumsi mereka
+            BELUM punya sidebar sendiri). Kalau ternyata DetailVerifikasi
+            atau VerifikasiBerhasil juga sudah punya sidebar sendiri
+            (mirip DataPengajuan), keluarkan juga route-nya dari sini
+            seperti dua route di atas. */}
         <Route element={<PustakawanLayout />}>
-          <Route
-            path="/pustakawan-dashboard"
-            element={<PustakawanDashboard />}
-          />
-          <Route
-            path="/data-pengajuan"
-            element={<DataPengajuan />}
-          />
           <Route
             path="/detail-verifikasi/:id"
             element={<DetailVerifikasi />}
@@ -88,6 +99,7 @@ export default function RouteApp() {
             element={<VerifikasiBerhasil />}
           />
         </Route>
+
         <Route element={<AtasanLayout />}>
           <Route
             path="/dashboard-atasan"

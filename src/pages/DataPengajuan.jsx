@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { HiSearch, HiCalendar, HiX, HiMenu } from "react-icons/hi";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import PustakawanSidebar from "../components/PustakawanSidebar"; // Sesuaikan path jika berbeda
+import PustakawanSidebar from "../components/PustakawanSidebar";
 
 export default function DataPengajuan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -47,19 +47,16 @@ export default function DataPengajuan() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://172.18.160.93:8000/api/bebas-pustaka?per_page=1000", {
+      const response = await axios.get("http://172.18.160.133:8000/api/bebas-pustaka?per_page=1000", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
       });
 
-      console.log("RESPONSE DATA PENGAJUAN:", response.data);
-
       const responseData = extractArray(response.data?.data);
 
       if (!Array.isArray(responseData)) {
-        console.error("Data pengajuan bukan array:", response.data);
         setAllData([]);
         return;
       }
@@ -82,11 +79,6 @@ export default function DataPengajuan() {
 
       setAllData(data);
     } catch (error) {
-      console.error("Error fetching data:", error);
-      if (error.response) {
-        console.error("STATUS:", error.response.status);
-        console.error("RESPONSE:", error.response.data);
-      }
       setAllData([]);
     } finally {
       setLoading(false);
@@ -135,13 +127,22 @@ export default function DataPengajuan() {
 
   const hasActiveFilter = searchTerm || selectedDate || selectedStatus !== "Semua status";
 
+  const getPageNumbers = () => {
+    const maxButtons = 5;
+    if (totalPages <= maxButtons) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxButtons - 1);
+    start = Math.max(1, end - maxButtons + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
-      {/* Sidebar Pustakawan */}
+    <div className="min-h-screen bg-slate-50 flex">
       <PustakawanSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 lg:ml-64 min-w-0">
-        {/* Topbar Mobile (Sticky) */}
+      <div className="flex-1 lg:ml-64 flex flex-col min-w-0 overflow-x-hidden">
         <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
           <button onClick={() => setSidebarOpen(true)} className="p-1 focus:outline-none">
             <HiMenu className="w-6 h-6" />
@@ -150,15 +151,14 @@ export default function DataPengajuan() {
           <div className="w-6" />
         </div>
 
-        <main className="p-6 md:p-8">
+        <main className="p-4 sm:p-6 md:p-8 flex-1">
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
               <span className="ml-3 text-gray-500">Loading...</span>
             </div>
           ) : (
-            <div className="w-full relative">
-              {/* Header */}
+            <div className="w-full max-w-7xl mx-auto">
               <div className="mb-6">
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900">Data Pengajuan</h1>
                 <p className="text-xs md:text-sm text-gray-500 mt-1">
@@ -166,16 +166,16 @@ export default function DataPengajuan() {
                 </p>
               </div>
 
-              {/* Filter Bar */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
-                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+              {/* Filter Section */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-6">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <select
                     value={selectedStatus}
                     onChange={(e) => {
                       setSelectedStatus(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="h-11 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:w-56"
+                    className="h-11 px-4 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:w-48"
                   >
                     <option>Semua status</option>
                     <option>Menunggu Verifikasi</option>
@@ -183,7 +183,7 @@ export default function DataPengajuan() {
                     <option>Revisi</option>
                   </select>
 
-                  <div className="relative sm:w-48">
+                  <div className="relative sm:w-44">
                     <input
                       type="date"
                       value={selectedDate}
@@ -196,7 +196,7 @@ export default function DataPengajuan() {
                     <HiCalendar className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   </div>
 
-                  <div className="relative flex-1 min-w-[220px]">
+                  <div className="relative flex-1">
                     <input
                       type="text"
                       placeholder="Cari Nama, NIM, atau Departemen..."
@@ -210,7 +210,6 @@ export default function DataPengajuan() {
                     <HiSearch className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                   </div>
 
-                  {/* Tombol Reset Filter */}
                   {hasActiveFilter && (
                     <button
                       onClick={() => {
@@ -219,7 +218,7 @@ export default function DataPengajuan() {
                         setSelectedStatus("Semua status");
                         setCurrentPage(1);
                       }}
-                      className="h-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-4 rounded-lg border border-red-300 bg-red-50 text-sm font-medium text-red-600 hover:bg-red-100 transition"
+                      className="h-11 inline-flex items-center justify-center gap-1.5 px-4 rounded-lg border border-red-300 bg-red-50 text-sm font-medium text-red-600 hover:bg-red-100 transition whitespace-nowrap"
                     >
                       <HiX className="h-4 w-4" />
                       Reset Filter
@@ -228,40 +227,76 @@ export default function DataPengajuan() {
                 </div>
               </div>
 
-              {/* Table */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {currentData.length > 0 ? (
+                  currentData.map((data, index) => (
+                    <div
+                      key={data.id}
+                      className="bg-white rounded-xl border border-gray-200 shadow-sm p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-400">#{startIndex + index + 1} • {data.tanggal}</p>
+                          <p className="font-semibold text-gray-800 truncate">{data.nama}</p>
+                          <p className="text-sm text-gray-500">{data.nim}</p>
+                        </div>
+                        <span
+                          className={`shrink-0 inline-block px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusStyle(data.status)}`}
+                        >
+                          {formatStatus(data.status)}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <p className="text-sm text-gray-600 truncate">{data.departemen}</p>
+                        <Link to={`/detail-verifikasi/${data.id}`} className="shrink-0">
+                          <button className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-white border border-indigo-300 rounded-full hover:bg-indigo-50 whitespace-nowrap transition">
+                            Lihat Detail
+                          </button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-12 text-center text-gray-400">
+                    Data pengajuan tidak ditemukan.
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Table View - markup disamakan dengan DataMahasiswa.jsx (tanpa inline display style) */}
+              <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-3 py-3 text-left font-semibold text-gray-700 w-12">No</th>
-                        <th className="px-3 py-3 text-left font-semibold text-gray-700">Nama</th>
-                        <th className="px-3 py-3 text-left font-semibold text-gray-700">NIM</th>
-                        <th className="px-3 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">Tanggal</th>
-                        <th className="px-3 py-3 text-left font-semibold text-gray-700">Departemen</th>
-                        <th className="px-3 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">Status</th>
-                        <th className="px-3 py-3 text-center font-semibold text-gray-700 w-28">Aksi</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700 w-12">No</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">Nama</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">NIM</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">Tanggal</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700">Departemen</th>
+                        <th className="px-6 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">Status</th>
+                        <th className="px-6 py-3 text-center font-semibold text-gray-700">Aksi</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {currentData.length > 0 ? (
                         currentData.map((data, index) => (
-                          <tr key={data.id} className="hover:bg-gray-50">
-                            <td className="px-3 py-3 text-gray-500">{startIndex + index + 1}</td>
-                            <td className="px-3 py-3 font-medium text-gray-800">{data.nama}</td>
-                            <td className="px-3 py-3 text-gray-600">{data.nim}</td>
-                            <td className="px-3 py-3 text-gray-600 whitespace-nowrap">{data.tanggal}</td>
-                            <td className="px-3 py-3 text-gray-600">{data.departemen}</td>
-                            <td className="px-3 py-3">
-                              <span
-                                className={`inline-block px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusStyle(data.status)}`}
-                              >
+                          <tr key={data.id} className="hover:bg-gray-50 transition">
+                            <td className="px-6 py-3 text-gray-500">{startIndex + index + 1}</td>
+                            <td className="px-6 py-3 font-medium text-gray-800">{data.nama}</td>
+                            <td className="px-6 py-3 text-gray-600">{data.nim}</td>
+                            <td className="px-6 py-3 text-gray-600 whitespace-nowrap">{data.tanggal}</td>
+                            <td className="px-6 py-3 text-gray-600">{data.departemen}</td>
+                            <td className="px-6 py-3 whitespace-nowrap">
+                              <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${getStatusStyle(data.status)}`}>
                                 {formatStatus(data.status)}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-center">
+                            <td className="px-6 py-3 text-center whitespace-nowrap">
                               <Link to={`/detail-verifikasi/${data.id}`}>
-                                <button className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-white border border-indigo-300 rounded-full hover:bg-indigo-50 whitespace-nowrap transition">
+                                <button className="px-4 py-1.5 text-sm font-medium text-indigo-600 bg-white border border-indigo-300 rounded-full hover:bg-indigo-50 transition shadow-sm">
                                   Lihat Detail
                                 </button>
                               </Link>
@@ -297,16 +332,15 @@ export default function DataPengajuan() {
 
               {/* Pagination */}
               {filteredData.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
-                  <span className="text-sm text-gray-500 order-2 sm:order-1">
+                <div className="flex flex-col items-center gap-3 mt-4 sm:flex-row sm:justify-between">
+                  <span className="text-sm text-gray-500 text-center sm:text-left">
                     Menampilkan <span className="font-medium">{startIndex + 1}</span> -{" "}
                     <span className="font-medium">
                       {Math.min(endIndex, filteredData.length)}
                     </span>{" "}
-                    dari <span className="font-medium">{filteredData.length}</span>{" "}
-                    data
+                    dari <span className="font-medium">{filteredData.length}</span> data
                   </span>
-                  <div className="flex flex-wrap items-center justify-center gap-1 order-1 sm:order-2">
+                  <div className="flex flex-wrap items-center justify-center gap-1">
                     <button
                       className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
                         currentPage === 1
@@ -316,13 +350,10 @@ export default function DataPengajuan() {
                       onClick={() => setCurrentPage(currentPage - 1)}
                       disabled={currentPage === 1}
                     >
-                      ← Previous
+                      ← <span className="hidden sm:inline">Previous</span>
                     </button>
 
-                    {Array.from(
-                      { length: Math.min(totalPages, 5) },
-                      (_, i) => i + 1
-                    ).map((num) => (
+                    {getPageNumbers().map((num) => (
                       <button
                         key={num}
                         onClick={() => setCurrentPage(num)}
@@ -336,18 +367,6 @@ export default function DataPengajuan() {
                       </button>
                     ))}
 
-                    {totalPages > 5 && (
-                      <>
-                        <span className="text-gray-400">...</span>
-                        <button
-                          onClick={() => setCurrentPage(totalPages)}
-                          className="w-8 h-8 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100"
-                        >
-                          {totalPages}
-                        </button>
-                      </>
-                    )}
-
                     <button
                       className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
                         currentPage === totalPages || totalPages === 0
@@ -357,7 +376,7 @@ export default function DataPengajuan() {
                       onClick={() => setCurrentPage(currentPage + 1)}
                       disabled={currentPage === totalPages || totalPages === 0}
                     >
-                      Next →
+                      <span className="hidden sm:inline">Next</span> →
                     </button>
                   </div>
                 </div>

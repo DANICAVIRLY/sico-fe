@@ -14,64 +14,66 @@ export default function VerifikasiBerhasil() {
     catatanPustakawan = "-",
   } = location.state || {};
 
+  const rows = [
+    { label: "Nama", value: nama },
+    { label: "NIM", value: nim },
+    { label: "Tanggal", value: tanggal },
+    { label: "Diverifikasi Oleh", value: diverifikasiOleh },
+    { label: "Departemen", value: departemen },
+    { label: "Catatan", value: catatanPustakawan },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
       {/* Judul Halaman */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-blue-800">Hasil Verifikasi</h1>
-        <p className="text-sm text-gray-500 mt-1">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-blue-800">Hasil Verifikasi</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1">
           data mahasiswa - detail - surat bebas clearing
         </p>
       </div>
 
       {/* Kartu Utama */}
       <Card className="w-full shadow-md">
-        <div className="flex flex-col items-center p-6">
+        <div className="flex flex-col items-center p-3 sm:p-6">
           {/* 1. Ikon Centang Hijau Besar */}
-          <div className="bg-green-500 rounded-full p-4 mb-4 text-white">
-            <HiCheckCircle className="w-12 h-12" />
+          <div className="bg-green-500 rounded-full p-3 sm:p-4 mb-4 text-white">
+            <HiCheckCircle className="w-9 h-9 sm:w-12 sm:h-12" />
           </div>
 
           {/* 2. Judul Status */}
-          <h2 className="text-2xl font-bold text-gray-900 text-center">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-900 text-center px-2">
             Verifikasi Perpustakaan Berhasil
           </h2>
-          <p className="text-gray-600 text-center mb-6">
+          <p className="text-sm sm:text-base text-gray-600 text-center mb-6 px-2">
             Mahasiswa dinyatakan bebas pustaka
           </p>
 
-          {/* 3. Tabel Data Mahasiswa (2 Kolom dengan Border) */}
+          {/* 3. Data Mahasiswa - stack di mobile, 2 kolom di layar >= sm */}
           <div className="w-full border border-gray-200 rounded-lg overflow-hidden mb-6">
-            <div className="grid grid-cols-2 border-b border-gray-200">
-              <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Nama</div>
-              <div className="p-4 text-gray-800">{nama}</div>
-            </div>
-            <div className="grid grid-cols-2 border-b border-gray-200">
-              <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">NIM</div>
-              <div className="p-4 text-gray-800">{nim}</div>
-            </div>
-            <div className="grid grid-cols-2 border-b border-gray-200">
-              <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Tanggal</div>
-              <div className="p-4 text-gray-800">{tanggal}</div>
-            </div>
-            <div className="grid grid-cols-2 border-b border-gray-200">
-              <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Diverifikasi Oleh</div>
-              <div className="p-4 text-gray-800">{diverifikasiOleh}</div>
-            </div>
-            <div className="grid grid-cols-2 border-b border-gray-200">
-              <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Departemen</div>
-              <div className="p-4 text-gray-800">{departemen}</div>
-            </div>
-            {/* 4. Baris Catatan (Dinamis dari input sebelumnya) */}
-            <div className="grid grid-cols-2">
-              <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Catatan</div>
-              <div className="p-4 text-gray-800">{catatanPustakawan}</div>
-            </div>
+            {rows.map((row, index) => (
+              <div
+                key={row.label}
+                className={`grid grid-cols-1 sm:grid-cols-2 ${
+                  index !== rows.length - 1 ? "border-b border-gray-200" : ""
+                }`}
+              >
+                <div className="p-3 sm:p-4 bg-gray-50 font-bold text-gray-700 border-b sm:border-b-0 sm:border-r border-gray-200 text-sm sm:text-base">
+                  {row.label}
+                </div>
+                <div className="p-3 sm:p-4 text-gray-800 text-sm sm:text-base break-words">
+                  {row.value}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* 5. Tombol Kembali */}
-          <Link to="/data-pengajuan">
-            <Button color="light" className="border border-gray-300 text-blue-600 font-medium hover:bg-gray-50">
+          <Link to="/data-pengajuan" className="w-full sm:w-auto">
+            <Button
+              color="light"
+              className="w-full sm:w-auto border border-gray-300 text-blue-600 font-medium hover:bg-gray-50"
+            >
               <HiArrowLeft className="mr-2 h-5 w-5" />
               Kembali Ke Dashboard
             </Button>
