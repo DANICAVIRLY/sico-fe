@@ -1,20 +1,28 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { HiMenu } from 'react-icons/hi';
 import PustakawanSidebar from '../components/PustakawanSidebar';
-import { HiChartPie, HiDocumentText } from "react-icons/hi";
-
-// Daftar menu khusus Pustakawan
-const pustakawanMenus = [
-  { label: "Dashboard", path: "/dashboard-pustakawan", icon: <HiChartPie className="w-6 h-6" /> },
-  { label: "Data Pengajuan", path: "/data-pengajuan", icon: <HiDocumentText className="w-6 h-6" /> },
-];
 
 export default function PustakawanLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-[#f9fafb]">
-      {/* Kirim menuItems ke Sidebar */}
-      <PustakawanSidebar menuItems={pustakawanMenus} />
-      <div className="ml-64 p-8">
-        <Outlet />
+    <div className="min-h-screen bg-[#f9fafb] flex">
+      <PustakawanSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="flex-1 lg:ml-64 flex flex-col min-w-0">
+        {/* Topbar mobile (sticky) - sama seperti di DataPengajuan.jsx */}
+        <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
+          <button onClick={() => setSidebarOpen(true)} className="p-1 focus:outline-none">
+            <HiMenu className="w-6 h-6" />
+          </button>
+          <span className="font-bold">Clearing Online</span>
+          <div className="w-6" />
+        </div>
+
+        <main className="p-4 sm:p-6 md:p-8 flex-1">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

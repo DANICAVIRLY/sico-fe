@@ -55,7 +55,7 @@ export default function DetailVerifikasi() {
 
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://172.18.160.93:8000/api/bebas-pustaka", {
+      const response = await axios.get("http://172.18.160.133:8000/api/bebas-pustaka", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -126,7 +126,7 @@ export default function DetailVerifikasi() {
       const token = localStorage.getItem("token");
 
       await axios.post(
-        `http://172.18.160.93:8000/api/bebas-pustaka/${id}/review`,
+        `http://172.18.160.133:8000/api/bebas-pustaka/${id}/review`,
         {
           keputusan,
           catatan_revisi: catatan,
@@ -192,7 +192,7 @@ export default function DetailVerifikasi() {
 
   if (errorMsg || !detail) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto px-4 sm:px-0">
         <p className="text-red-500 mb-4">{errorMsg || "Data tidak ditemukan."}</p>
         <Link to="/data-pengajuan">
           <Button color="gray">
@@ -223,53 +223,61 @@ export default function DetailVerifikasi() {
 
     const Icon = tampilan.icon;
 
+    const rows = [
+      { label: "Nama", value: detail.nama },
+      { label: "NIM", value: detail.nim },
+      { label: "Tanggal", value: detail.tanggal },
+      { label: "Diverifikasi Oleh", value: detail.diverifikasiOleh },
+      { label: "Departemen", value: detail.departemen },
+      { label: "Catatan", value: detail.catatanAwal || "-" },
+    ];
+
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-blue-800">Hasil Verifikasi</h1>
-          <p className="text-sm text-gray-500 mt-1">
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-blue-800">Hasil Verifikasi</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
             Data mahasiswa - detail - surat bebas clearing
           </p>
         </div>
 
         <Card className="w-full shadow-md">
-          <div className="flex flex-col items-center p-6">
-            <div className={`${tampilan.warna} rounded-full p-4 mb-4 text-white`}>
-              <Icon className="w-12 h-12" />
+          <div className="flex flex-col items-center p-3 sm:p-6">
+            <div className={`${tampilan.warna} rounded-full p-3 sm:p-4 mb-4 text-white`}>
+              <Icon className="w-9 h-9 sm:w-12 sm:h-12" />
             </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 text-center">{tampilan.judul}</h2>
-            <p className="text-gray-600 text-center mb-6">{tampilan.sub}</p>
+            <h2 className="text-lg sm:text-2xl font-bold text-gray-900 text-center px-2">
+              {tampilan.judul}
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 text-center mb-6 px-2">
+              {tampilan.sub}
+            </p>
 
+            {/* Data mahasiswa - stack di mobile, 2 kolom di layar >= sm */}
             <div className="w-full border border-gray-200 rounded-lg overflow-hidden mb-6">
-              <div className="grid grid-cols-2 border-b border-gray-200">
-                <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Nama</div>
-                <div className="p-4 text-gray-800">{detail.nama}</div>
-              </div>
-              <div className="grid grid-cols-2 border-b border-gray-200">
-                <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">NIM</div>
-                <div className="p-4 text-gray-800">{detail.nim}</div>
-              </div>
-              <div className="grid grid-cols-2 border-b border-gray-200">
-                <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Tanggal</div>
-                <div className="p-4 text-gray-800">{detail.tanggal}</div>
-              </div>
-              <div className="grid grid-cols-2 border-b border-gray-200">
-                <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Diverifikasi Oleh</div>
-                <div className="p-4 text-gray-800">{detail.diverifikasiOleh}</div>
-              </div>
-              <div className="grid grid-cols-2 border-b border-gray-200">
-                <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Departemen</div>
-                <div className="p-4 text-gray-800">{detail.departemen}</div>
-              </div>
-              <div className="grid grid-cols-2">
-                <div className="p-4 bg-gray-50 font-bold text-gray-700 border-r border-gray-200">Catatan</div>
-                <div className="p-4 text-gray-800">{detail.catatanAwal || "-"}</div>
-              </div>
+              {rows.map((row, index) => (
+                <div
+                  key={row.label}
+                  className={`grid grid-cols-1 sm:grid-cols-2 ${
+                    index !== rows.length - 1 ? "border-b border-gray-200" : ""
+                  }`}
+                >
+                  <div className="p-3 sm:p-4 bg-gray-50 font-bold text-gray-700 border-b sm:border-b-0 sm:border-r border-gray-200 text-sm sm:text-base">
+                    {row.label}
+                  </div>
+                  <div className="p-3 sm:p-4 text-gray-800 text-sm sm:text-base break-words">
+                    {row.value}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <Link to="/data-pengajuan">
-              <Button color="light" className="border border-gray-300 text-blue-600 font-medium hover:bg-gray-50">
+            <Link to="/data-pengajuan" className="w-full sm:w-auto">
+              <Button
+                color="light"
+                className="w-full sm:w-auto border border-gray-300 text-blue-600 font-medium hover:bg-gray-50"
+              >
                 <HiArrowLeft className="mr-2 h-5 w-5" />
                 Kembali Ke Dashboard
               </Button>
@@ -281,17 +289,17 @@ export default function DetailVerifikasi() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-blue-800">Hasil Verifikasi</h1>
-        <p className="text-sm text-gray-500 mt-1">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-blue-800">Hasil Verifikasi</h1>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1">
           Data mahasiswa - detail - surat bebas clearing
         </p>
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 sm:gap-6">
         <Card>
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
             <div>
               <h2 className="text-lg font-bold text-gray-900">{detail.nama}</h2>
               <div className="flex flex-wrap gap-2 mt-2">
@@ -303,7 +311,7 @@ export default function DetailVerifikasi() {
                 </Badge>
               </div>
             </div>
-            <div className="text-right text-sm text-gray-600">
+            <div className="text-left sm:text-right text-sm text-gray-600">
               <p>pengajuan clearing</p>
               <p className="text-xs">{detail.tanggal}</p>
             </div>
@@ -336,23 +344,27 @@ export default function DetailVerifikasi() {
 
         {errorMsg && <p className="text-red-500 text-sm">{errorMsg}</p>}
 
-        <div className="flex justify-end gap-4 mt-2">
-          <Link to="/data-pengajuan">
-            <Button color="gray" className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50">
+        {/* Tombol aksi - stack full-width di mobile, sejajar di layar >= sm */}
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-2">
+          <Link to="/data-pengajuan" className="w-full sm:w-auto">
+            <Button
+              color="gray"
+              className="w-full sm:w-auto bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
               <HiArrowLeft className="mr-2 h-4 w-4" />
               Kembali
             </Button>
           </Link>
           <Button
             color="warning"
-            className="bg-yellow-500 hover:bg-yellow-600 text-white"
+            className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white"
             disabled={submitting}
             onClick={() => kirimKeputusan("revisi")}
           >
             Revisi
           </Button>
           <Button
-            className="bg-blue-800 hover:bg-blue-900"
+            className="w-full sm:w-auto bg-blue-800 hover:bg-blue-900"
             disabled={submitting}
             onClick={handleVerifikasiLulusClick}
           >
