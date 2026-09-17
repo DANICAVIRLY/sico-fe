@@ -1,11 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HiDocumentText, HiCheckCircle, HiClock, HiBell } from 'react-icons/hi';
 import axios from 'axios';
 import AtasanSidebar from '../components/AtasanSidebar';
 
-const API_BASE_URL = 'http://172.18.160.133:8000';
+const API_BASE_URL = 'http://172.18.160.168:8000';
+
+// [ADDED] key localStorage buat nyimpen id notifikasi yang udah dibaca,
+// biar status "dibaca" gak ilang tiap refresh halaman.
+const READ_NOTIF_KEY = 'atasan_read_notif_ids';
 
 export default function DashboardAtasan() {
+  const navigate = useNavigate();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState({
     total: 0,
@@ -14,8 +21,33 @@ export default function DashboardAtasan() {
   });
   const [loading, setLoading] = useState(true);
 
+  // [ADDED] state & ref untuk dropdown notifikasi
+  const [notifikasi, setNotifikasi] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [readIds, setReadIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem(READ_NOTIF_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const notifRef = useRef(null);
+
   useEffect(() => {
     fetchDashboardData();
+  }, []);
+
+  // [ADDED] tutup dropdown kalau klik di luar area notifikasi
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const extractArray = (payload) => {
@@ -63,6 +95,7 @@ export default function DashboardAtasan() {
       let total = rawItems.length;
       let sudahTtd = 0;
       let belumTtd = 0;
+      const belumTtdItems = [];
 
       rawItems.forEach((item) => {
         const s = String(item.status || "").trim().toLowerCase();
@@ -80,6 +113,7 @@ export default function DashboardAtasan() {
           sudahTtd++;
         } else {
           belumTtd++;
+          belumTtdItems.push(item);
         }
       });
 
@@ -88,12 +122,52 @@ export default function DashboardAtasan() {
         sudahTtd,
         belumTtd,
       });
+
+      // [ADDED] Notifikasi = pengajuan yang belum ditandatangani.
+      // Diurutkan biar yang paling baru masuk muncul paling atas,
+      // lalu diambil 5 teratas saja supaya dropdown tidak kepanjangan.
+      const sortedBelumTtd = [...belumTtdItems].sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      });
+
+      setNotifikasi(sortedBelumTtd.slice(0, 5));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // [ADDED] klik notifikasi -> tutup dropdown, tandai item itu dibaca,
+  // lalu arahkan ke halaman detail pengajuan
+  const handleNotifClick = (item) => {
+    markAsRead([item.id]);
+    setNotifOpen(false);
+    navigate(`/atasan/pengajuan/${item.id}`, { state: { dataMahasiswa: item } });
+  };
+
+  // [ADDED] simpan id yang sudah dibaca ke state + localStorage
+  const markAsRead = (ids) => {
+    setReadIds((prev) => {
+      const merged = Array.from(new Set([...prev, ...ids]));
+      try {
+        localStorage.setItem(READ_NOTIF_KEY, JSON.stringify(merged));
+      } catch {
+        // abaikan kalau localStorage gak tersedia
+      }
+      return merged;
+    });
+  };
+
+  // [ADDED] tombol "Tandai semua telah dibaca"
+  const handleTandaiSemua = () => {
+    markAsRead(notifikasi.map((item) => item.id));
+  };
+
+  const unreadCount = notifikasi.filter((item) => !readIds.includes(item.id)).length;
+  const badgeCount = unreadCount > 9 ? "9+" : unreadCount;
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -126,13 +200,72 @@ export default function DashboardAtasan() {
                 </div>
                 
                 {/* Lonceng Notifikasi */}
-                <div className="relative">
-                  <button className="p-2.5 bg-white rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm relative">
+                <div className="relative" ref={notifRef}>
+                  <button
+                    onClick={() => setNotifOpen((prev) => !prev)}
+                    className="p-2.5 bg-white rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 shadow-sm relative"
+                  >
                     <HiBell className="w-6 h-6" />
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
-                      1
-                    </span>
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+                        {badgeCount}
+                      </span>
+                    )}
                   </button>
+
+                  {/* [ADDED] Dropdown daftar notifikasi - style disamain ke referensi gambar */}
+                  {notifOpen && (
+                    <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-2xl shadow-lg border border-gray-100 z-50 overflow-hidden">
+                      <div className="px-4 pt-4 pb-2">
+                        <p className="text-base font-bold text-gray-900">Notifikasi</p>
+                      </div>
+
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifikasi.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-gray-400">
+                            Tidak ada notifikasi baru.
+                          </div>
+                        ) : (
+                          notifikasi.map((item) => {
+                            const isRead = readIds.includes(item.id);
+                            return (
+                              <button
+                                key={item.id}
+                                onClick={() => handleNotifClick(item)}
+                                className="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3"
+                              >
+                                <span
+                                  className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${
+                                    isRead ? "bg-gray-300" : "bg-amber-400"
+                                  }`}
+                                />
+                                <span
+                                  className={`text-sm leading-snug ${
+                                    isRead
+                                      ? "text-gray-400 font-normal"
+                                      : "text-gray-800 font-medium"
+                                  }`}
+                                >
+                                  Pengajuan Clearing Menunggu Persetujuan
+                                </span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {notifikasi.length > 0 && (
+                        <div className="px-4 py-3 border-t border-gray-100">
+                          <button
+                            onClick={handleTandaiSemua}
+                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Tandai semua telah dibaca
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

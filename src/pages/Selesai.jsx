@@ -23,7 +23,7 @@ export default function Selesai() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://172.18.160.133:8000/api/pengajuan-clearing?per_page=1000", {
+      .get("http://172.18.160.168:8000/api/pengajuan-clearing?per_page=1000", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
