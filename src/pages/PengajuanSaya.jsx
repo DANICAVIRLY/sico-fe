@@ -13,7 +13,6 @@ export default function PengajuanSaya() {
   const [nama, setNama] = useState("");
   const [nim, setNim] = useState("");
   const [departemen, setDepartemen] = useState("");
-  
 
   const [fileKtm, setFileKtm] = useState(null);
   const [fileSpp, setFileSpp] = useState(null);
@@ -82,7 +81,6 @@ export default function PengajuanSaya() {
         setNim(user.nim || user.NIM || user.nim_mahasiswa || "");
 
         setDepartemen(user.departemen || user.department || "");
-
       } catch (err) {
         console.error("Gagal membaca data user:", err);
       }
@@ -225,7 +223,6 @@ export default function PengajuanSaya() {
       const formData = new FormData();
 
       formData.append("departemen", departemen);
-    
       formData.append("file_ktm", fileKtm);
       formData.append("file_bukti_spp", fileSpp);
       formData.append("file_distribusi", fileDistribusi);
@@ -619,10 +616,6 @@ export default function PengajuanSaya() {
             </p>
 
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Pengajuan Saya</h1>
-
-            <p className="mt-2 text-gray-500">
-              Kelola dan unggah dokumen persyaratan clearing Anda.
-            </p>
           </div>
 
           {/* ERROR */}
@@ -634,7 +627,7 @@ export default function PengajuanSaya() {
             </div>
           )}
 
-          {/* [ADDED] FORM AJUKAN ULANG - muncul kalau ada pengajuan status REVISI_ADMIN */}
+          {/* FORM AJUKAN ULANG - muncul kalau ada pengajuan status REVISI_ADMIN */}
           {pengajuanRevisi && (
             <Card className="mb-6 border border-amber-300 bg-amber-50 shadow-sm">
               <div className="mb-4">
@@ -661,7 +654,7 @@ export default function PengajuanSaya() {
               )}
 
               <form onSubmit={handleAjukanUlang}>
-                {/* [ADDED] DATA MAHASISWA - Nama & NIM, fixed/readonly */}
+                {/* DATA MAHASISWA - Nama & NIM, fixed/readonly */}
                 <div className="mb-5 grid gap-5 md:grid-cols-2">
                   <div>
                     <Label htmlFor="revisiNama" value="Nama Mahasiswa">
@@ -692,19 +685,30 @@ export default function PengajuanSaya() {
                   </div>
                 </div>
 
-                <div className="mb-5 grid gap-5 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="revisiDepartemen" value="Departemen">
-                      Departemen
-                    </Label>
-                    <input
-                      id="revisiDepartemen"
-                      type="text"
-                      value={revisiDepartemen}
-                      onChange={(e) => setRevisiDepartemen(e.target.value)}
-                      className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
+                <div className="mb-5">
+                  <Label htmlFor="revisiDepartemen" value="Departemen">
+                    Departemen
+                  </Label>
+                  <select
+                    id="revisiDepartemen"
+                    value={revisiDepartemen}
+                    onChange={(e) => setRevisiDepartemen(e.target.value)}
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">Pilih Departemen</option>
+                    <option value="Departemen Manajemen Hutan (MNH)">
+                      Departemen Manajemen Hutan (MNH)
+                    </option>
+                    <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
+                      Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
+                    </option>
+                    <option value="Departemen Silvikultur (SVK)">
+                      Departemen Silvikultur (SVK)
+                    </option>
+                    <option value="Departemen Hasil Hutan (HH / DHH)">
+                      Departemen Hasil Hutan (HH / DHH)
+                    </option>
+                  </select>
                 </div>
 
                 {/* KTM */}
@@ -878,32 +882,32 @@ export default function PengajuanSaya() {
                   </div>
                 </div>
 
-                {/* DEPARTEMEN & PRODI */}
-                <div className="mb-6 grid gap-5 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="departemen" value="Departemen">
-                      Departemen
-                    </Label>
+                {/* DEPARTEMEN */}
+                <div className="mb-6">
+                  <Label htmlFor="departemen" value="Departemen">
+                    Departemen
+                  </Label>
 
-                    <select
-                      id="departemen"
-                      value={departemen}
-                      onChange={(e) => setDepartemen(e.target.value)}
-                      className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option value="" disabled>
-                        Pilih Departemen
-                      </option>
-                      <option value="Manajemen Hutan (MNH)">
-                        Manajemen Hutan (MNH)
-                      </option>
-                      <option value="Hasil Hutan (HH)">Hasil Hutan (HH)</option>
-                      <option value="Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
-                        Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
-                      </option>
-                      <option value="Silvikultur (SVK)">Silvikultur (SVK)</option>
-                    </select>
-                  </div>
+                  <select
+                    id="departemen"
+                    value={departemen}
+                    onChange={(e) => setDepartemen(e.target.value)}
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">Pilih Departemen</option>
+                    <option value="Departemen Manajemen Hutan (MNH)">
+                      Departemen Manajemen Hutan (MNH)
+                    </option>
+                    <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
+                      Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
+                    </option>
+                    <option value="Departemen Silvikultur (SVK)">
+                      Departemen Silvikultur (SVK)
+                    </option>
+                    <option value="Departemen Hasil Hutan (HH / DHH)">
+                      Departemen Hasil Hutan (HH / DHH)
+                    </option>
+                  </select>
                 </div>
 
                 {/* KTM */}

@@ -267,9 +267,9 @@ export default function BuatPengajuan() {
                       PERLU REVISI
                   ========================== */
                   <div className="flex flex-col items-center space-y-3">
-                    <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center shadow-sm">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center shadow-sm">
                       <svg
-                        className="w-12 h-12 text-yellow-600"
+                        className="w-12 h-12 text-red-600"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2.5"
@@ -283,7 +283,7 @@ export default function BuatPengajuan() {
                       </svg>
                     </div>
 
-                    <span className="text-yellow-600 font-semibold text-lg">
+                    <span className="text-red-600 font-semibold text-lg">
                       Perlu Revisi
                     </span>
                   </div>
