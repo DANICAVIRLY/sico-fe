@@ -3,7 +3,7 @@ import { HiDocumentText, HiCheckCircle, HiClock, HiBell } from 'react-icons/hi';
 import axios from 'axios';
 import AtasanSidebar from '../components/AtasanSidebar';
 
-const API_BASE_URL = 'http://172.18.160.133:8000';
+const API_BASE_URL = 'http://172.18.160.168:8000';
 
 export default function DashboardAtasan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
