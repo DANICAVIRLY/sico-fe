@@ -55,7 +55,7 @@ export default function DetailVerifikasi() {
 
       const token = localStorage.getItem("token");
 
-      const response = await axios.get("http://172.18.160.133:8000/api/bebas-pustaka", {
+      const response = await axios.get("http://172.18.160.182:8000/api/bebas-pustaka", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -126,7 +126,7 @@ export default function DetailVerifikasi() {
       const token = localStorage.getItem("token");
 
       await axios.post(
-        `http://172.18.160.133:8000/api/bebas-pustaka/${id}/review`,
+        `http://172.18.160.182:8000/api/bebas-pustaka/${id}/review`,
         {
           keputusan,
           catatan_revisi: catatan,
@@ -237,7 +237,7 @@ export default function DetailVerifikasi() {
         <div className="mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-blue-800">Hasil Verifikasi</h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Data mahasiswa - detail - surat bebas clearing
+            Data mahasiswa - detail 
           </p>
         </div>
 

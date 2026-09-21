@@ -3,7 +3,7 @@ import SidebarMahaComp from "../components/SidebarMahaComp";
 import { Label, TextInput, Button } from "flowbite-react";
 import axios from "axios";
 
-const API_BASE = "http://172.18.160.133:8000/api/bebas-pustaka";
+const API_BASE = "http://172.18.160.182:8000/api/bebas-pustaka";
 
 export default function BuatPengajuan() {
   const userData = JSON.parse(localStorage.getItem("user") || "null");

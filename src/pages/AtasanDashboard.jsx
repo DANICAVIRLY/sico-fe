@@ -3,13 +3,13 @@ import { HiDocumentText, HiCheckCircle, HiClock, HiBell } from 'react-icons/hi';
 import axios from 'axios';
 import AtasanSidebar from '../components/AtasanSidebar';
 
-const API_BASE_URL = 'http://172.18.160.133:8000';
+const API_BASE_URL = 'http://172.18.160.182:8000';
 
 export default function DashboardAtasan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState({
     total: 0,
-    sudahTtd: 0,
+    sudahTtd: 0, 
     belumTtd: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ export default function DashboardAtasan() {
     fetchDashboardData();
   }, []);
 
-  const extractArray = (payload) => {
+  const extractArray = (payload)  => {
     if (Array.isArray(payload)) return payload;
     if (!payload || typeof payload !== "object") return null;
 
