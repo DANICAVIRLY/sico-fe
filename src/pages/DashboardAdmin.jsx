@@ -3,7 +3,8 @@ import { HiDocumentText, HiCheckCircle, HiClock, HiPencilAlt, HiMenu, HiRefresh,
 import axios from 'axios';
 import SidebarAdminComp from '../components/SidebarAdminComp';
 
-const API_BASE_URL = 'http://172.18.160.168:8000';
+
+const API_BASE_URL = 'http://172.18.160.182:8000';
 
 export default function DashboardAdmin() {
   const [sidebarOpen, setSidebarOpen] = useState(false);

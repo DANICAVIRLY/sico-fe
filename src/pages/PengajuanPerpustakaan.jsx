@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import { Label, TextInput, Button } from "flowbite-react";
+import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-const API_BASE = "http://172.18.160.168:8000/api/bebas-pustaka";
+
+const API_BASE = "http://172.18.160.182:8000/api/bebas-pustaka";
 
 export default function BuatPengajuan() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const userData = JSON.parse(localStorage.getItem("user") || "null");
   const nama = userData?.nama || "";
   const nim = userData?.nim || "";
@@ -141,157 +145,171 @@ export default function BuatPengajuan() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <SidebarMahaComp />
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+      <SidebarMahaComp isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main className="ml-64 p-8">
-        <h2 className="text-4xl font-bold mb-10">
-          Buat Pengajuan
-        </h2>
+      <div className="flex-1 lg:ml-64 min-w-0">
+        {/* Topbar Mobile (Sticky) — sama persis pola di DashboardMahasiswa.jsx */}
+        <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
+          <button onClick={() => setSidebarOpen(true)} className="p-1 focus:outline-none">
+            <HiMenu className="w-6 h-6" />
+          </button>
+          <span className="font-bold">Clearing Online</span>
+          <div className="w-6" />
+        </div>
 
-        <div className="grid grid-cols-2 gap-10">
-          {/* =========================
-              KOLOM KIRI
-          ========================== */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="mb-5">
-              <Label
-                htmlFor="nama"
-                value="Nama Lengkap"
-              >
-                Nama Lengkap
-              </Label>
+        <main className="p-6 md:p-8">
+          <h2 className="text-2xl md:text-4xl font-bold mb-6 md:mb-10">
+            Buat Pengajuan
+          </h2>
 
-              <TextInput
-                id="nama"
-                value={nama || ""}
-                readOnly
-              />
-            </div>
+          {/* grid-cols-2 fixed sebelumnya bikin kolom kanan-kiri kegencet
+              parah di layar HP. Sekarang 1 kolom di HP, 2 kolom di layar
+              lebar (lg ke atas). */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
+            {/* =========================
+                KOLOM KIRI
+            ========================== */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="mb-5">
+                <Label
+                  htmlFor="nama"
+                  value="Nama Lengkap"
+                >
+                  Nama Lengkap
+                </Label>
 
-            <div className="mb-5">
-              <Label
-                htmlFor="nim"
-                value="NIM"
-              >
-                NIM
-              </Label>
+                <TextInput
+                  id="nama"
+                  value={nama || ""}
+                  readOnly
+                />
+              </div>
 
-              <TextInput
-                id="nim"
-                value={nim || ""}
-                readOnly
-              />
+              <div className="mb-5">
+                <Label
+                  htmlFor="nim"
+                  value="NIM"
+                >
+                  NIM
+                </Label>
+
+                <TextInput
+                  id="nim"
+                  value={nim || ""}
+                  readOnly
+                />
+              </div>
+
+              {/* =========================
+                  CATATAN REVISI
+              ========================== */}
+              {isRevisi && (
+                <div className="mb-5 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
+                  <p className="font-semibold mb-1">
+                    Pengajuan perlu direvisi
+                  </p>
+
+                  <p>
+                    {catatanRevisi ||
+                      "Pustakawan tidak menyertakan catatan."}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleKirim}
+                  disabled={tombolDisabled}
+                  className="bg-[#35279A] hover:bg-[#281d79] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {labelTombol()}
+                </Button>
+              </div>
             </div>
 
             {/* =========================
-                CATATAN REVISI
+                KOLOM KANAN
             ========================== */}
-            {isRevisi && (
-              <div className="mb-5 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
-                <p className="font-semibold mb-1">
-                  Pengajuan perlu direvisi
-                </p>
+            <div className="bg-white rounded-xl shadow-sm p-6">
+              <h2 className="text-center font-medium mb-5">
+                Tanda Tangan Pustakawan
+              </h2>
 
-                <p>
-                  {catatanRevisi ||
-                    "Pustakawan tidak menyertakan catatan."}
-                </p>
+              <div className="rounded-lg h-64 flex flex-col items-center justify-center">
+                {/* =========================
+                    SUDAH DIVERIFIKASI
+                ========================== */}
+                {isVerified ? (
+                  <div className="flex flex-col items-center space-y-3">
+                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center shadow-sm">
+                      <svg
+                        className="w-12 h-12 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
+
+                    <span className="text-green-600 font-semibold text-lg">
+                      Verifikasi Selesai
+                    </span>
+                  </div>
+
+                ) : isRevisi ? (
+                  /* =========================
+                      PERLU REVISI
+                  ========================== */
+                  <div className="flex flex-col items-center space-y-3">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center shadow-sm">
+                      <svg
+                        className="w-12 h-12 text-red-600"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z"
+                        />
+                      </svg>
+                    </div>
+
+                    <span className="text-red-600 font-semibold text-lg">
+                      Perlu Revisi
+                    </span>
+                  </div>
+
+                ) : isPending ? (
+                  /* =========================
+                      MENUNGGU
+                  ========================== */
+                  <span className="text-gray-400">
+                    Menunggu verifikasi pustakawan
+                  </span>
+
+                ) : (
+                  /* =========================
+                      BELUM ADA PENGAJUAN
+                  ========================== */
+                  <span className="text-gray-400">
+                    Belum ada tanda tangan
+                  </span>
+                )}
               </div>
-            )}
-
-            <div className="flex justify-end">
-              <Button
-                onClick={handleKirim}
-                disabled={tombolDisabled}
-                className="bg-[#35279A] hover:bg-[#281d79] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {labelTombol()}
-              </Button>
             </div>
           </div>
-
-          {/* =========================
-              KOLOM KANAN
-          ========================== */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-center font-medium mb-5">
-              Tanda Tangan Pustakawan
-            </h2>
-
-            <div className="rounded-lg h-64 flex flex-col items-center justify-center">
-              {/* =========================
-                  SUDAH DIVERIFIKASI
-              ========================== */}
-              {isVerified ? (
-                <div className="flex flex-col items-center space-y-3">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center shadow-sm">
-                    <svg
-                      className="w-12 h-12 text-green-600"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-
-                  <span className="text-green-600 font-semibold text-lg">
-                    Verifikasi Selesai
-                  </span>
-                </div>
-
-              ) : isRevisi ? (
-                /* =========================
-                    PERLU REVISI
-                ========================== */
-                <div className="flex flex-col items-center space-y-3">
-                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center shadow-sm">
-                    <svg
-                      className="w-12 h-12 text-red-600"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z"
-                      />
-                    </svg>
-                  </div>
-
-                  <span className="text-red-600 font-semibold text-lg">
-                    Perlu Revisi
-                  </span>
-                </div>
-
-              ) : isPending ? (
-                /* =========================
-                    MENUNGGU
-                ========================== */
-                <span className="text-gray-400">
-                  Menunggu verifikasi pustakawan
-                </span>
-
-              ) : (
-                /* =========================
-                    BELUM ADA PENGAJUAN
-                ========================== */
-                <span className="text-gray-400">
-                  Belum ada tanda tangan
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

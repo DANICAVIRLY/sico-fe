@@ -10,23 +10,12 @@ import {
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// =====================================================================
-// Worker PDF.js diambil dari node_modules (dibundle Vite), bukan CDN.
-// Ini menghindari mismatch versi antara pdfjs-dist yang ter-install
-// dengan file worker yang di-fetch dari luar (penyebab umum
-// "Gagal merender surat").
-// =====================================================================
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url
 ).toString();
 
-// =====================================================================
-// PENTING: satu tempat buat base URL. IP ini beberapa kali berubah di
-// project ini — pastikan ini IP backend yang aktif sekarang, dan samakan
-// di semua file lain yang manggil backend yang sama.
-// =====================================================================
-const API_BASE_URL = "http://172.18.160.168:8000";
+const API_BASE_URL = "http://172.18.160.182:8000";
 
 const TandaTanganAtasan = () => {
   const { id } = useParams();
