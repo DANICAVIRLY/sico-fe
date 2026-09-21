@@ -20,6 +20,7 @@ export default function DashboardMahasiswa() {
   const [nama, setNama] = useState("");
   const [loading, setLoading] = useState(true);
   const [pengajuan, setPengajuan] = useState(null);
+  const [bebasPustaka, setBebasPustaka] = useState(null);
   const [bebasPustakaSelesai, setBebasPustakaSelesai] = useState(false);
   const [tahapan, setTahapan] = useState(0);
   const [qrImageSrc, setQrImageSrc] = useState(null);
@@ -59,6 +60,8 @@ export default function DashboardMahasiswa() {
               item.id > terbaru.id ? item : terbaru
             )
           : null;
+
+      setBebasPustaka(bebasPustakaSaya);
 
       const bpSelesai =
         String(bebasPustakaSaya?.status ?? "").toLowerCase() === "disetujui";
@@ -104,6 +107,17 @@ export default function DashboardMahasiswa() {
   const isSelesai = Boolean(pengajuan?.disetujui_atasan_at);
   const statusPengajuan = String(pengajuan?.status ?? "").toLowerCase();
   const perluDirevisi = statusPengajuan === "revisi_admin";
+
+  // Status & catatan revisi Bebas Pustaka dari pustakawan
+  const statusBebasPustaka = String(bebasPustaka?.status ?? "").toLowerCase();
+  const bpPerluRevisi = ["ditolak", "revisi", "perlu_revisi", "rejected"].includes(
+    statusBebasPustaka
+  );
+  const catatanBebasPustaka =
+    bebasPustaka?.catatan_revisi ||
+    bebasPustaka?.catatan ||
+    bebasPustaka?.keterangan ||
+    "";
 
   const handlePreviewSurat = async () => {
     if (!pengajuan?.id) return;
@@ -220,6 +234,11 @@ export default function DashboardMahasiswa() {
                       const isActive = stepNumber === tahapan + 1;
                       const isLineFilled = stepNumber <= tahapan;
 
+                      // step 1 = Surat Bebas Pustaka, step 2 = Pengajuan Clearing
+                      const isRevisi =
+                        (index === 0 && bpPerluRevisi) ||
+                        (index === 1 && perluDirevisi);
+
                       return (
                         <div key={step.label} className="flex-1 flex flex-col items-center relative">
                           {index !== 0 && (
@@ -231,18 +250,34 @@ export default function DashboardMahasiswa() {
                           )}
                           <div
                             className={`w-8 h-8 rounded-full flex items-center justify-center z-10 ${
-                              isDone
+                              isRevisi
+                                ? "bg-red-100 border-2 border-red-500 text-red-600"
+                                : isDone
                                 ? "bg-indigo-600 text-white"
                                 : isActive
                                 ? "bg-white border-2 border-indigo-600 text-indigo-600"
                                 : "bg-gray-100 border border-gray-300 text-gray-400"
                             }`}
                           >
-                            {isDone ? <HiCheck className="w-4 h-4" /> : <HiDeviceMobile className="w-4 h-4" />}
+                            {isRevisi ? (
+                              <HiExclamationCircle className="w-4 h-4" />
+                            ) : isDone ? (
+                              <HiCheck className="w-4 h-4" />
+                            ) : (
+                              <HiDeviceMobile className="w-4 h-4" />
+                            )}
                           </div>
                           <p className="text-xs font-semibold text-gray-800 mt-2 text-center">{step.label}</p>
-                          <p className={`text-[11px] mt-0.5 ${isDone || isActive ? "text-indigo-600" : "text-gray-400"}`}>
-                            {isDone ? "Selesai" : isActive ? "Sedang diproses" : "Belum"}
+                          <p
+                            className={`text-[11px] mt-0.5 ${
+                              isRevisi
+                                ? "text-red-600 font-semibold"
+                                : isDone || isActive
+                                ? "text-indigo-600"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            {isRevisi ? "Revisi" : isDone ? "Selesai" : isActive ? "Sedang diproses" : "Belum"}
                           </p>
                         </div>
                       );
@@ -311,20 +346,55 @@ export default function DashboardMahasiswa() {
                 </div>
               ) : !bebasPustakaSelesai ? (
                 <div>
-                  <h3 className="text-xl font-bold mb-4">Langkah Selanjutnya</h3>
-                  <Card className="rounded-lg shadow-sm border border-yellow-200 bg-yellow-50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
-                        <HiClock className="w-6 h-6" />
+                  <h3 className="text-xl font-bold mb-4">
+                    {bpPerluRevisi ? "Status Bebas Pustaka" : "Langkah Selanjutnya"}
+                  </h3>
+
+                  {bpPerluRevisi ? (
+                    <Card className="rounded-lg shadow-sm border border-red-200 bg-red-50">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-600 shrink-0">
+                          <HiExclamationCircle className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-red-700">Bebas Pustaka Perlu Direvisi</h3>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Pustakawan meminta Anda memperbaiki pengajuan bebas pustaka sebelum bisa dilanjutkan.
+                          </p>
+
+                          {catatanBebasPustaka && (
+                            <div className="mt-3 rounded border border-red-200 bg-white p-3 text-sm text-red-800">
+                              <strong>Catatan dari pustakawan:</strong>
+                              <p className="mt-1">{catatanBebasPustaka}</p>
+                            </div>
+                          )}
+
+                          <Button
+                            size="xs"
+                            color="failure"
+                            className="mt-3"
+                            onClick={() => navigate("/bebas-pustaka")}
+                          >
+                            Perbaiki Sekarang
+                          </Button>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-bold text-yellow-700">Selesaikan Bebas Pustaka</h3>
-                        <p className="text-sm text-gray-600">
-                          Ajukan dan tunggu verifikasi bebas pustaka sebelum melanjutkan ke pengajuan clearing.
-                        </p>
+                    </Card>
+                  ) : (
+                    <Card className="rounded-lg shadow-sm border border-yellow-200 bg-yellow-50">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600">
+                          <HiClock className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-yellow-700">Selesaikan Bebas Pustaka</h3>
+                          <p className="text-sm text-gray-600">
+                            Ajukan dan tunggu verifikasi bebas pustaka sebelum melanjutkan ke pengajuan clearing.
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
+                    </Card>
+                  )}
                 </div>
               ) : !pengajuan ? (
                 <div>

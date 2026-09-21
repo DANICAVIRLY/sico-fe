@@ -50,8 +50,8 @@ export default function VerifikasiQR() {
           nomor_surat: item.nomor_surat || `CLR/${String(id).padStart(4, "0")}/SICO/2026`,
           qr_token: item.qr_token || "",
           status: "Terverifikasi",
-          penandatangan: item.atasan?.nama || "Atasan SICO",
-          jabatan: "Atasan",
+          penandatangan: item.atasan?.nama || "Kepala Bagian Tata Usaha",
+          jabatan: "Kepala Bagian Tata Usaha",
           tanggal_terbit: item.disetujui_atasan_at
             ? new Date(item.disetujui_atasan_at).toLocaleDateString("id-ID", {
                 day: "2-digit",
