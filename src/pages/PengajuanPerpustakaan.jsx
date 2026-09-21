@@ -4,7 +4,7 @@ import { Label, TextInput, Button } from "flowbite-react";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-const API_BASE = "http://172.18.160.168:8000/api/bebas-pustaka";
+const API_BASE = "http://172.18.160.182:8000/api/bebas-pustaka";
 
 export default function BuatPengajuan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);

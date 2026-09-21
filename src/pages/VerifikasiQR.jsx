@@ -8,7 +8,7 @@ import axios from "axios";
 // PENTING: samain base URL ke satu tempat.
 // Ganti ke '10.6.65.141' kalau ternyata itu yg jadi server aktif.
 // =====================================================================
-const API_BASE_URL = "http://172.18.160.168:8000";
+const API_BASE_URL = "http://172.18.160.182:8000";
 
 export default function VerifikasiQR() {
   const { id } = useParams();
@@ -50,8 +50,8 @@ export default function VerifikasiQR() {
           nomor_surat: item.nomor_surat || `CLR/${String(id).padStart(4, "0")}/SICO/2026`,
           qr_token: item.qr_token || "",
           status: "Terverifikasi",
-          penandatangan: item.atasan?.nama || "Atasan SICO",
-          jabatan: "Atasan",
+          penandatangan: item.atasan?.nama || "Kepala Bagian Tata Usaha",
+          jabatan: "Kepala Bagian Tata Usaha",
           tanggal_terbit: item.disetujui_atasan_at
             ? new Date(item.disetujui_atasan_at).toLocaleDateString("id-ID", {
                 day: "2-digit",

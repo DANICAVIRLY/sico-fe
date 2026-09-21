@@ -46,7 +46,7 @@ export default function DataMahasiswa() {
     const token = localStorage.getItem("token");
 
     axios
-      .get("http://172.18.160.168:8000/api/pengajuan-clearing?per_page=1000", {
+      .get("http://172.18.160.182:8000/api/pengajuan-clearing?per_page=1000", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
