@@ -1,4 +1,5 @@
-import { HiChartPie, HiDocumentText, HiLogout, HiX } from "react-icons/hi";
+import { HiChartPie, HiDocumentText, HiX } from "react-icons/hi";
+import { BsArrowBarLeft } from "react-icons/bs";
 import { Link } from "react-router-dom";
 
 export default function AtasanSidebar({ isOpen, onClose }) {
@@ -65,7 +66,7 @@ export default function AtasanSidebar({ isOpen, onClose }) {
             onClick={onClose}
             className="flex items-center gap-4 text-white text-lg font-medium py-3 hover:bg-[#2f3a96] px-4 rounded-lg transition-colors"
           >
-            <HiLogout className="w-6 h-6" />
+            <BsArrowBarLeft className="w-7 h-7" />
             Logout
           </Link>
         </div>

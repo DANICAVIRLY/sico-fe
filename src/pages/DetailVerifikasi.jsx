@@ -389,6 +389,13 @@ export default function DetailVerifikasi() {
   const kirimKeputusan = async (
     keputusan
   ) => {
+    // Syarat: kalau keputusan "revisi", catatan wajib diisi supaya
+    // mahasiswa tahu apa yang perlu diperbaiki.
+    if (keputusan === "revisi" && !catatan.trim()) {
+      alert("Catatan wajib diisi jika memberikan status revisi.");
+      return;
+    }
+
     try {
       setSubmitting(true);
 
@@ -858,6 +865,10 @@ export default function DetailVerifikasi() {
               Jika persyaratan belum terpenuhi,
               silakan lengkapi sesuai catatan
               syarat yang belum terpenuhi.
+            </li>
+
+            <li>
+              Jika ingin memberikan status revisi, wajib memberikan catatan.
             </li>
 
           </ol>

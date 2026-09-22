@@ -9,21 +9,32 @@ export default function VerifikasiMahasiswa() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+<<<<<<< HEAD
+=======
+
+>>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
   const [data, setData] = useState(location.state?.dataMahasiswa || null);
   const [loading, setLoading] = useState(true);
   const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
+<<<<<<< HEAD
   const [confirmModal, setConfirmModal] = useState(false);
 
   useEffect(() => {
 
     fetchDetailMahasiswa();
    
+=======
+ 
+  const [confirmModal, setConfirmModal] = useState(false);
+
+  useEffect(() => { 
+    fetchDetailMahasiswa(); 
+>>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
   }, [id]);
 
   const fetchDetailMahasiswa = () => {
     const token = localStorage.getItem("token");
-
     axios
       .get(`http://172.18.160.202:8000/api/pengajuan-clearing/${id}`, {
         headers: {
@@ -34,7 +45,10 @@ export default function VerifikasiMahasiswa() {
       .then((response) => {
         const detail = response.data?.data || response.data;
         setData(detail);
+<<<<<<< HEAD
         
+=======
+>>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
         setCatatan(detail.catatan_revisi || "");
         setLoading(false);
       })
@@ -44,7 +58,10 @@ export default function VerifikasiMahasiswa() {
       });
   };
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
   const handleUpdateStatus = (keputusan) => {
     const token = localStorage.getItem("token");
     setSubmitting(true);
@@ -70,7 +87,10 @@ export default function VerifikasiMahasiswa() {
       })
       .finally(() => setSubmitting(false));
   };
+<<<<<<< HEAD
 
+=======
+>>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
  
   const handleSetujuiClick = () => {
     setConfirmModal(true);
@@ -80,12 +100,15 @@ export default function VerifikasiMahasiswa() {
     setConfirmModal(false);
     handleUpdateStatus("setuju");
   };
-
-  // Preview dokumen (buka tab baru)
+ 
   const previewDokumen = async (jenis) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
+<<<<<<< HEAD
+=======
+
+>>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
         `http://172.18.160.202:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -102,12 +125,15 @@ export default function VerifikasiMahasiswa() {
       alert("Gagal memuat dokumen.");
     }
   };
-
-  // Download dokumen
+ 
   const downloadDokumen = async (jenis, namaFile) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
+<<<<<<< HEAD
+=======
+
+>>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
         `http://172.18.160.202:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },

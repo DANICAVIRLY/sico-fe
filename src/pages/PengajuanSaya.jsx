@@ -4,6 +4,10 @@ import SidebarMahaComp from "../components/SidebarMahaComp";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
 const API_URL = "http://172.18.160.202:8000";
 const STORAGE_URL = `${API_URL}/storage`;
 

@@ -5,6 +5,20 @@ import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 
+
+const capitalizeWords = (str) => {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const capitalizeFirstLetter = (str) => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 export default function Signup() {
   const navigate = useNavigate();
 
@@ -72,7 +86,6 @@ export default function Signup() {
       <div className="min-h-screen w-full bg-white grid md:grid-cols-2">
         <div className="min-h-screen overflow-y-auto flex items-center justify-center p-8 md:p-12">
           <div className="w-full max-w-md">
-            {/* Logo */}
             <div className="flex justify-center mb-3">
               <img
                 src={logo}
@@ -80,21 +93,16 @@ export default function Signup() {
                 className="w-14 h-14 object-contain"
               />
             </div>
-
-            {/* Judul */}
             <div className="text-center mb-8">
               <h2 className="text-xl font-bold text-gray-800">
                 IPB University
               </h2>
-
               <h1 className="text-2xl font-bold text-gray-900 mt-4">
                 Sistem Informasi
               </h1>
-
               <h1 className="text-2xl font-bold text-gray-900">
                 Clearing Online
               </h1>
-
               <p className="text-xs text-gray-500 mt-3">
                 Silahkan daftar untuk melanjutkan
               </p>
@@ -109,27 +117,24 @@ export default function Signup() {
                   value="Nama Lengkap"
                   className="text-sm font-semibold"
                 >Nama Lengkap</Label>
-
                 <TextInput
                   id="nama"
                   type="text"
                   placeholder="Masukkan Nama"
                   value={nama}
-                  onChange={(e) => setNama(e.target.value)}
+                  onChange={(e) => setNama(capitalizeWords(e.target.value))}
                   required
                   shadow
                   className="mt-1"
                 />
               </div>
 
-              {/* Email */}
               <div>
                 <Label
                   htmlFor="email"
                   value="Email"
                   className="text-sm font-semibold"
                 >Email</Label>
-
                 <TextInput
                   id="email"
                   type="email"
@@ -142,34 +147,30 @@ export default function Signup() {
                 />
               </div>
 
-              {/* NIM */}
               <div>
                 <Label
                   htmlFor="nim"
                   value="NIM"
                   className="text-sm font-semibold"
                 > NIM</Label>
-
                 <TextInput
                   id="nim"
                   type="text"
                   placeholder="Masukkan NIM"
                   value={nim}
-                  onChange={(e) => setNim(e.target.value)}
+                  onChange={(e) => setNim(capitalizeFirstLetter(e.target.value))}
                   required
                   shadow
                   className="mt-1"
                 />
               </div>
 
-              {/* Password */}
               <div>
                 <Label
                   htmlFor="password"
                   value="Password"
                   className="text-sm font-semibold"
                 >Password</Label>
-
                 <TextInput
                   id="password"
                   type="password"
@@ -182,14 +183,12 @@ export default function Signup() {
                 />
               </div>
 
-              {/* Confirm Password */}
               <div>
                 <Label
                   htmlFor="confirmPassword"
                   value="Confirm Password"
                   className="text-sm font-semibold"
                 >Confirm Password</Label>
-
                 <TextInput
                   id="confirmPassword"
                   type="password"
@@ -204,7 +203,6 @@ export default function Signup() {
                 />
               </div>
 
-              {/* Button */}
               <Button
                 type="submit"
                 className="w-full bg-indigo-600 hover:bg-indigo-700 mt-6"
@@ -223,7 +221,6 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* ================= FOTO FIXED ================= */}
         <div className="hidden md:block fixed right-0 top-0 h-screen w-1/2">
           <img
             src={ipb}
