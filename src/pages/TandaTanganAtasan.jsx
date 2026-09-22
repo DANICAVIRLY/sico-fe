@@ -2,31 +2,17 @@ import React, { useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Document, Page, pdfjs } from "react-pdf";
-import {
-  HiArrowLeft,
-  HiDocumentText,
-} from "react-icons/hi";
+import { HiArrowLeft, HiDocumentText } from "react-icons/hi";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// =====================================================================
-// Worker PDF.js diambil dari node_modules (dibundle Vite), bukan CDN.
-// Ini menghindari mismatch versi antara pdfjs-dist yang ter-install
-// dengan file worker yang di-fetch dari luar (penyebab umum
-// "Gagal merender surat").
-// =====================================================================
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
+  import.meta.url,
 ).toString();
 
-// =====================================================================
-// PENTING: satu tempat buat base URL. IP ini beberapa kali berubah di
-// project ini — pastikan ini IP backend yang aktif sekarang, dan samakan
-// di semua file lain yang manggil backend yang sama.
-// =====================================================================
-const API_BASE_URL = "http://172.18.160.182:8000";
+const API_BASE_URL = "http://172.18.160.202:8000";
 
 const TandaTanganAtasan = () => {
   const { id } = useParams();
@@ -56,8 +42,6 @@ const TandaTanganAtasan = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Lebar container preview, diukur otomatis biar PDF pas ngisi penuh
-  // tanpa celah/letterbox dan tetap responsive.
   const pdfContainerRef = useRef(null);
   const [pdfWidth, setPdfWidth] = useState(0);
 
@@ -80,9 +64,8 @@ const TandaTanganAtasan = () => {
     return token;
   };
 
-  // =========================================================
+ 
   // FETCH DATA PENGAJUAN
-  // =========================================================
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -97,7 +80,7 @@ const TandaTanganAtasan = () => {
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
           },
-        }
+        },
       );
 
       setPengajuan(response.data.data || response.data);
@@ -114,7 +97,7 @@ const TandaTanganAtasan = () => {
         setError(
           err.response?.data?.message ||
             err.message ||
-            "Gagal mengambil data pengajuan."
+            "Gagal mengambil data pengajuan.",
         );
       }
     } finally {
@@ -122,9 +105,8 @@ const TandaTanganAtasan = () => {
     }
   };
 
-  // =========================================================
+  
   // PREVIEW SURAT
-  // =========================================================
   const fetchPreviewPdf = async () => {
     try {
       setLoadingPdf(true);
@@ -140,7 +122,7 @@ const TandaTanganAtasan = () => {
             Accept: "application/pdf",
           },
           responseType: "blob",
-        }
+        },
       );
 
       const blob = new Blob([response.data], { type: "application/pdf" });
@@ -155,7 +137,7 @@ const TandaTanganAtasan = () => {
         setError("Anda tidak memiliki akses untuk melihat surat.");
       } else {
         setError(
-          err.response?.data?.message || "Gagal menampilkan preview surat."
+          err.response?.data?.message || "Gagal menampilkan preview surat.",
         );
       }
     } finally {
@@ -178,7 +160,7 @@ const TandaTanganAtasan = () => {
             Accept: "application/pdf",
           },
           responseType: "blob",
-        }
+        },
       );
 
       const blob = new Blob([response.data], { type: "application/pdf" });
@@ -202,7 +184,7 @@ const TandaTanganAtasan = () => {
       } else {
         showToast(
           "error",
-          err.response?.data?.message || "Gagal mengunduh surat."
+          err.response?.data?.message || "Gagal mengunduh surat.",
         );
       }
     }
@@ -240,7 +222,7 @@ const TandaTanganAtasan = () => {
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       navigate(`/verifikasi-qr/${id}`);
@@ -250,17 +232,20 @@ const TandaTanganAtasan = () => {
       if (err.response?.status === 401) {
         showToast("error", "Anda belum login atau token tidak valid.");
       } else if (err.response?.status === 403) {
-        showToast("error", "Anda tidak memiliki izin untuk menyetujui pengajuan.");
+        showToast(
+          "error",
+          "Anda tidak memiliki izin untuk menyetujui pengajuan.",
+        );
       } else if (err.response?.status === 422) {
         showToast(
           "error",
           err.response?.data?.message ||
-            "Pengajuan belum memenuhi syarat untuk disetujui."
+            "Pengajuan belum memenuhi syarat untuk disetujui.",
         );
       } else {
         showToast(
           "error",
-          err.response?.data?.message || "Gagal menyetujui pengajuan."
+          err.response?.data?.message || "Gagal menyetujui pengajuan.",
         );
       }
     } finally {
@@ -297,7 +282,7 @@ const TandaTanganAtasan = () => {
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       setShowTolak(false);
@@ -313,12 +298,12 @@ const TandaTanganAtasan = () => {
       } else if (err.response?.status === 422) {
         showToast(
           "error",
-          err.response?.data?.message || "Pengajuan tidak dapat diproses."
+          err.response?.data?.message || "Pengajuan tidak dapat diproses.",
         );
       } else {
         showToast(
           "error",
-          err.response?.data?.message || "Gagal menolak pengajuan."
+          err.response?.data?.message || "Gagal menolak pengajuan.",
         );
       }
     } finally {
@@ -390,7 +375,6 @@ const TandaTanganAtasan = () => {
   // =========================================================
   return (
     <div className="max-w-6xl mx-auto p-4">
-
       {/* BREADCRUMB */}
       <div className="text-sm text-gray-500 mb-4 flex gap-2">
         <Link to="/dashboard-atasan" className="hover:underline">
@@ -409,7 +393,6 @@ const TandaTanganAtasan = () => {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
         {/* KIRI - PREVIEW SURAT */}
         <div className="bg-[#e6f6e9] p-6 rounded-xl border border-green-200">
           <div className="flex justify-between items-center mb-4">
@@ -500,7 +483,6 @@ const TandaTanganAtasan = () => {
 
         {/* KANAN */}
         <div className="space-y-6">
-
           {/* INFORMASI DOKUMEN */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
@@ -543,7 +525,7 @@ const TandaTanganAtasan = () => {
                   {pengajuan?.created_at
                     ? new Date(pengajuan.created_at).toLocaleDateString(
                         "id-ID",
-                        { day: "2-digit", month: "long", year: "numeric" }
+                        { day: "2-digit", month: "long", year: "numeric" },
                       )
                     : "-"}
                 </span>
@@ -568,9 +550,7 @@ const TandaTanganAtasan = () => {
           {/* TINDAKAN — disembunyikan kalau sudah disetujui/ditolak */}
           {!sudahDiproses && (
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">
-                Tindakan
-              </h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Tindakan</h3>
               <p className="text-sm text-gray-500 mb-4">
                 Dengan menandatangani dokumen ini, Anda menyetujui dokumen
                 tersebut.
@@ -602,7 +582,6 @@ const TandaTanganAtasan = () => {
                 >
                   {processing ? "Memproses..." : "Setujui & Tandatangani"}
                 </button>
-
               </div>
 
               {showTolak && (
@@ -649,9 +628,7 @@ const TandaTanganAtasan = () => {
           {/* Kalau sudah diproses, tampilkan status singkat sebagai gantinya */}
           {sudahDiproses && (
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-2">
-                Tindakan
-              </h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Tindakan</h3>
               <p className="text-sm text-gray-600">
                 Pengajuan ini sudah{" "}
                 <strong>
@@ -671,7 +648,6 @@ const TandaTanganAtasan = () => {
               </button>
             </Link>
           </div>
-
         </div>
       </div>
 
@@ -683,8 +659,8 @@ const TandaTanganAtasan = () => {
               Setujui Pengajuan?
             </h3>
             <p className="text-sm text-gray-600 mb-6">
-              Apakah Anda yakin ingin menyetujui pengajuan ini? Surat
-              clearing final akan diterbitkan setelah ini.
+              Apakah Anda yakin ingin menyetujui pengajuan ini? Surat clearing
+              final akan diterbitkan setelah ini.
             </p>
             <div className="flex gap-3">
               <button

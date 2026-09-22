@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import SidebarMahaComp from "../components/SidebarMahaComp";
-import { Label, TextInput, Button } from "flowbite-react";
+import { Label, TextInput, Button, FileInput } from "flowbite-react";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-const API_BASE = "http://172.18.160.182:8000/api/bebas-pustaka";
+const API_BASE = "http://172.18.160.202:8000/api/bebas-pustaka";
 
 export default function BuatPengajuan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,6 +20,10 @@ export default function BuatPengajuan() {
   const [status, setStatus] = useState(null);
   const [catatanRevisi, setCatatanRevisi] = useState("");
   const [pengajuanId, setPengajuanId] = useState(null);
+
+  // File skripsi (PDF, max 10MB) — dikirim sebagai "file_skripsi" ke
+  // backend, sesuai StoreBebasPustakaRequest / AjukanUlangBebasPustakaRequest.
+  const [fileSkripsi, setFileSkripsi] = useState(null);
 
   const cekStatusPengajuan = async () => {
     try {
@@ -97,6 +101,26 @@ export default function BuatPengajuan() {
   const handleKirim = async () => {
     if (tombolDisabled) return;
 
+    // File wajib untuk pengajuan baru. Untuk "ajukan ulang", backend
+    // (AjukanUlangBebasPustakaRequest) menandainya nullable — boleh
+    // tidak ganti file kalau memang tidak perlu.
+    if (!isRevisi && !fileSkripsi) {
+      alert("File skripsi wajib diupload.");
+      return;
+    }
+
+    if (fileSkripsi) {
+      const maxSize = 10 * 1024 * 1024; // 10 MB, sesuai batas backend
+      if (fileSkripsi.size > maxSize) {
+        alert("Ukuran file skripsi maksimal 10 MB.");
+        return;
+      }
+      if (fileSkripsi.type !== "application/pdf") {
+        alert("File skripsi harus berformat PDF.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -105,21 +129,31 @@ export default function BuatPengajuan() {
       const headers = {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
       };
+
+      const formData = new FormData();
+      if (fileSkripsi) {
+        formData.append("file_skripsi", fileSkripsi);
+      }
 
       if (isRevisi && pengajuanId) {
         await axios.post(
           `${API_BASE}/${pengajuanId}/ajukan-ulang`,
-          {},
+          formData,
           { headers }
         );
 
         alert("Pengajuan ulang berhasil dikirim!");
       } else {
-        await axios.post(API_BASE, {}, { headers });
+        await axios.post(API_BASE, formData, { headers });
 
         alert("Pengajuan berhasil dikirim!");
       }
+
+      setFileSkripsi(null);
+      const inputFile = document.getElementById("fileSkripsi");
+      if (inputFile) inputFile.value = "";
 
       cekStatusPengajuan();
     } catch (error) {
@@ -199,6 +233,31 @@ export default function BuatPengajuan() {
                   readOnly
                 />
               </div>
+
+              {/* =========================
+                  UPLOAD SKRIPSI
+              ========================== */}
+              {!isVerified && !isPending && (
+                <div className="mb-5">
+                  <Label htmlFor="fileSkripsi" value="Upload Skripsi (PDF, maks. 10 MB)">
+                    Upload Skripsi (PDF, maks. 10 MB)
+                  </Label>
+
+                  <FileInput
+                    id="fileSkripsi"
+                    accept=".pdf"
+                    className="mt-2"
+                    onChange={(e) => setFileSkripsi(e.target.files?.[0] || null)}
+                  />
+
+                  {fileSkripsi && (
+                    <p className="mt-2 text-sm text-gray-600">
+                      File dipilih:{" "}
+                      <span className="font-semibold">{fileSkripsi.name}</span>
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* =========================
                   CATATAN REVISI

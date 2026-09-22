@@ -8,33 +8,24 @@ export default function VerifikasiMahasiswa() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Data dari tabel dipakai sebagai render awal sementara (skeleton),
-  // BUKAN sebagai sumber kebenaran untuk catatan revisi.
   const [data, setData] = useState(location.state?.dataMahasiswa || null);
   const [loading, setLoading] = useState(true);
   const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  // Modal konfirmasi custom (pengganti langsung eksekusi tanpa konfirmasi),
-  // dipakai sebelum submit keputusan "setuju".
   const [confirmModal, setConfirmModal] = useState(false);
 
   useEffect(() => {
-    // Selalu fetch detail terbaru dari API — jangan andalkan data dari
-    // halaman tabel, karena itu cuma snapshot lama dan bisa saja tidak
-    // membawa field catatan_revisi.
+
     fetchDetailMahasiswa();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [id]);
 
   const fetchDetailMahasiswa = () => {
     const token = localStorage.getItem("token");
 
     axios
-      .get(`http://172.18.160.182:8000/api/pengajuan-clearing/${id}`, {
+      .get(`http://172.18.160.202:8000/api/pengajuan-clearing/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -43,9 +34,7 @@ export default function VerifikasiMahasiswa() {
       .then((response) => {
         const detail = response.data?.data || response.data;
         setData(detail);
-        // FIXED: backend menyimpan & mengembalikan field "catatan_revisi",
-        // bukan "catatan". Sebelumnya field ini salah nama sehingga
-        // textarea selalu kosong walau catatan sudah tersimpan di DB.
+        
         setCatatan(detail.catatan_revisi || "");
         setLoading(false);
       })
@@ -55,15 +44,14 @@ export default function VerifikasiMahasiswa() {
       });
   };
 
-  // Manggil endpoint review-admin, kirim "keputusan" (setuju/revisi/tolak)
-  // beserta catatan_revisi.
+
   const handleUpdateStatus = (keputusan) => {
     const token = localStorage.getItem("token");
     setSubmitting(true);
 
     axios
       .post(
-        `http://172.18.160.182:8000/api/pengajuan-clearing/${id}/review-admin`,
+        `http://172.18.160.202:8000/api/pengajuan-clearing/${id}/review-admin`,
         { keputusan: keputusan, catatan_revisi: catatan },
         {
           headers: {
@@ -83,8 +71,7 @@ export default function VerifikasiMahasiswa() {
       .finally(() => setSubmitting(false));
   };
 
-  // Tombol "Setuju & kirim ke atasan" tidak langsung submit — buka modal
-  // konfirmasi dulu, baru submit beneran setelah user klik "Ya, Setujui".
+ 
   const handleSetujuiClick = () => {
     setConfirmModal(true);
   };
@@ -99,7 +86,7 @@ export default function VerifikasiMahasiswa() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://172.18.160.182:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
+        `http://172.18.160.202:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -121,7 +108,7 @@ export default function VerifikasiMahasiswa() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://172.18.160.182:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
+        `http://172.18.160.202:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -389,12 +376,7 @@ export default function VerifikasiMahasiswa() {
         </main>
       </div>
 
-      {/* =====================================================
-          MODAL KONFIRMASI CUSTOM
-          Muncul sebelum keputusan "setuju" beneran dikirim ke backend.
-          Style-nya disamakan dengan modal "Setujui Pengajuan?" di
-          halaman Tanda Tangan Atasan.
-      ===================================================== */}
+    
       {confirmModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
