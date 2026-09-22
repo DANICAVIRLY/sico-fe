@@ -14,7 +14,7 @@ export default function DashboardAtasan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState({
     total: 0,
-    sudahTtd: 0,
+    sudahTtd: 0, 
     belumTtd: 0,
   });
   const [loading, setLoading] = useState(true);

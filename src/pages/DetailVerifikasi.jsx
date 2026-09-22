@@ -236,7 +236,7 @@ export default function DetailVerifikasi() {
         <div className="mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-blue-800">Verifikasi</h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Data mahasiswa - detail - surat bebas clearing
+            Data mahasiswa - detail 
           </p>
         </div>
 
