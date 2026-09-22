@@ -62,10 +62,6 @@ export default function VerifikasiQR() {
       });
   };
 
-<<<<<<< HEAD
- 
-=======
->>>>>>> 19be579beeeebe59d6a6fa1fdb689b401785c0c0
   const handlePreview = async () => {
     try {
       const token = localStorage.getItem("token");
