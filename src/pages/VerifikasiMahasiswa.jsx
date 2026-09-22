@@ -10,6 +10,7 @@ export default function VerifikasiMahasiswa() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [data, setData] = useState(location.state?.dataMahasiswa || null);
   const [loading, setLoading] = useState(true);
   const [catatan, setCatatan] = useState("");

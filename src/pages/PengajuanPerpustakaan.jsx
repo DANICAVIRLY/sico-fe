@@ -13,6 +13,9 @@ const API_BASE = "http://172.18.160.48:8000/api/bebas-pustaka";
 // Hasil akhirnya: GET {API_BASE}/{id}/{PREVIEW_PATH}
 const PREVIEW_PATH = "preview-skripsi";
 
+// Batas ukuran file (MB). Samakan dengan validasi di backend.
+const MAX_FILE_MB = 5;
+
 export default function BuatPengajuan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -29,8 +32,6 @@ export default function BuatPengajuan() {
   const [catatanRevisi, setCatatanRevisi] = useState("");
   const [pengajuanId, setPengajuanId] = useState(null);
 
-  // File skripsi (PDF, max 10MB) — dikirim sebagai "file_skripsi" ke
-  // backend, sesuai StoreBebasPustakaRequest / AjukanUlangBebasPustakaRequest.
   const [fileSkripsi, setFileSkripsi] = useState(null);
 
   // Nama file yang sudah terkirim. Disimpan di localStorage supaya tetap
@@ -84,17 +85,12 @@ export default function BuatPengajuan() {
         return;
       }
 
-      // Ambil pengajuan dengan ID paling besar (paling baru)
       const pengajuanSaya = semuaPengajuanSaya.reduce((terbaru, item) =>
         item.id > terbaru.id ? item : terbaru,
       );
 
-      console.log("DATA PENGAJUAN SAYA (dipakai):", pengajuanSaya);
-
       setPengajuanId(pengajuanSaya.id);
 
-      // Enum backend:
-      // 'menunggu' | 'disetujui' | 'revisi'
       const rawStatus = String(pengajuanSaya.status ?? "").toLowerCase();
 
       if (rawStatus === "revisi") {
@@ -104,7 +100,6 @@ export default function BuatPengajuan() {
         setStatus("verified");
         setCatatanRevisi("");
       } else {
-        // "menunggu" atau status lain -> anggap pending
         setStatus("pending");
         setCatatanRevisi("");
       }
@@ -123,10 +118,16 @@ export default function BuatPengajuan() {
   const isPending = status === "pending";
   const isRevisi = status === "revisi";
 
-  const tombolDisabled = loading || isVerified || isPending;
+  // Mahasiswa boleh upload ulang saat "revisi" ATAU "verified"
+  // (sadar sendiri ada kesalahan setelah disetujui Pustakawan)
+  const bisaUploadUlang = isRevisi || isVerified;
 
-  // Saat pending/verified, kotak upload diganti tampilan file terkirim
-  const sudahTerkirim = isVerified || isPending;
+  // Tombol hanya disable saat loading atau masih pending
+  const tombolDisabled = loading || isPending;
+
+  // Saat masih pending, kotak upload diganti tampilan file terkirim.
+  // Saat verified/revisi, form upload tetap muncul supaya bisa ganti file.
+  const sudahTerkirim = isPending;
 
   // Ambil PDF dari backend pakai token, lalu buka di tab baru.
   const handleLihatFile = async () => {
@@ -183,14 +184,14 @@ export default function BuatPengajuan() {
   const handleKirim = async () => {
     if (tombolDisabled) return;
 
-    // File wajib untuk pengajuan baru. Untuk "ajukan ulang", backend
-    // (AjukanUlangBebasPustakaRequest) menandainya nullable — boleh
-    // tidak ganti file kalau memang tidak perlu.
-    if (!isRevisi && !fileSkripsi) {
+    // File wajib, baik untuk pengajuan baru maupun revisi/ajukan ulang
+    // (AjukanUlangBebasPustakaRequest: required, bukan nullable).
+    if (!fileSkripsi) {
       showAlert("File skripsi wajib diupload.", "error", "Upload File");
       return;
     }
 
+<<<<<<< HEAD
     if (fileSkripsi) {
       const maxSize = 10 * 1024 * 1024; // 10 MB, sesuai batas backend
       if (fileSkripsi.size > maxSize) {
@@ -205,6 +206,20 @@ export default function BuatPengajuan() {
         showAlert("File skripsi harus berformat PDF.", "error", "Upload File");
         return;
       }
+=======
+    const maxSize = MAX_FILE_MB * 1024 * 1024;
+    if (fileSkripsi.size > maxSize) {
+      showAlert(
+        `Ukuran file skripsi maksimal ${MAX_FILE_MB} MB.`,
+        "error",
+        "Upload File"
+      );
+      return;
+    }
+    if (fileSkripsi.type !== "application/pdf") {
+      showAlert("File skripsi harus berformat PDF.", "error", "Upload File");
+      return;
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
     }
 
     setLoading(true);
@@ -219,14 +234,22 @@ export default function BuatPengajuan() {
       };
 
       const formData = new FormData();
-      if (fileSkripsi) {
-        formData.append("file_skripsi", fileSkripsi);
-      }
+      formData.append("file_skripsi", fileSkripsi);
 
+<<<<<<< HEAD
       if (isRevisi && pengajuanId) {
         await axios.post(`${API_BASE}/${pengajuanId}/ajukan-ulang`, formData, {
           headers,
         });
+=======
+      // Pakai endpoint ajukan-ulang kalau statusnya revisi ATAU verified
+      if (bisaUploadUlang && pengajuanId) {
+        await axios.post(
+          `${API_BASE}/${pengajuanId}/ajukan-ulang`,
+          formData,
+          { headers }
+        );
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
 
         // [DIPERBAIKI] tambah type "success" dan title, sebelumnya kosong
         // sehingga jatuh ke default "warning" (oranye)
@@ -239,10 +262,8 @@ export default function BuatPengajuan() {
       }
 
       // Ingat nama file yang baru dikirim supaya tetap tampil
-      if (fileSkripsi) {
-        localStorage.setItem(kunciNamaFile, fileSkripsi.name);
-        setNamaFileTerkirim(fileSkripsi.name);
-      }
+      localStorage.setItem(kunciNamaFile, fileSkripsi.name);
+      setNamaFileTerkirim(fileSkripsi.name);
 
       setFileSkripsi(null);
       const inputFile = document.getElementById("fileSkripsi");
@@ -252,12 +273,26 @@ export default function BuatPengajuan() {
     } catch (error) {
       console.log("Error mengirim pengajuan:", error);
 
+<<<<<<< HEAD
       // [DIPERBAIKI] tambah type "error" dan title, sebelumnya kosong
       showAlert(
         error.response?.data?.message || "Pengajuan gagal dikirim.",
         "error",
         "Gagal",
       );
+=======
+      // Tangani pesan error spesifik dari backend,
+      // termasuk kasus "sudah dipakai untuk pengajuan clearing"
+      const errors = error.response?.data?.errors;
+      const message = error.response?.data?.message;
+
+      if (errors) {
+        const detail = Object.values(errors).flat().join("\n");
+        showAlert(detail);
+      } else {
+        showAlert(message || "Pengajuan gagal dikirim.");
+      }
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
     } finally {
       setLoading(false);
     }
@@ -265,9 +300,10 @@ export default function BuatPengajuan() {
 
   const labelTombol = () => {
     if (loading) return "Mengirim...";
-    if (isVerified) return "Sudah Diverifikasi";
     if (isPending) return "Menunggu Verifikasi";
     if (isRevisi) return "Ajukan Ulang";
+    // Label khusus saat sudah disetujui tapi mau ganti file
+    if (isVerified) return "Ganti File (Jika Ada Kesalahan)";
 
     return "Kirim";
   };
@@ -280,7 +316,6 @@ export default function BuatPengajuan() {
       />
 
       <div className="flex-1 lg:ml-64 min-w-0">
-        {/* Topbar Mobile (Sticky) — sama persis pola di DashboardMahasiswa.jsx */}
         <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -297,27 +332,29 @@ export default function BuatPengajuan() {
             Buat Pengajuan
           </h2>
 
-          {/* grid-cols-2 fixed sebelumnya bikin kolom kanan-kiri kegencet
-              parah di layar HP. Sekarang 1 kolom di HP, 2 kolom di layar
-              lebar (lg ke atas). */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
-            {/* =========================
-                KOLOM KIRI
-            ========================== */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="mb-5">
+<<<<<<< HEAD
                 <Label htmlFor="nama" value="Nama Lengkap">
                   Nama Lengkap
                 </Label>
 
+=======
+                <Label htmlFor="nama" value="Nama Lengkap">Nama Lengkap</Label>
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
                 <TextInput id="nama" value={nama || ""} readOnly />
               </div>
 
               <div className="mb-5">
+<<<<<<< HEAD
                 <Label htmlFor="nim" value="NIM">
                   NIM
                 </Label>
 
+=======
+                <Label htmlFor="nim" value="NIM">NIM</Label>
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
                 <TextInput id="nim" value={nim || ""} readOnly />
               </div>
 
@@ -327,9 +364,15 @@ export default function BuatPengajuan() {
               <div className="mb-5">
                 <Label
                   htmlFor="fileSkripsi"
+<<<<<<< HEAD
                   value="Upload Skripsi (PDF, maks. 10 MB)"
                 >
                   Upload Skripsi (PDF, maks. 10 MB)
+=======
+                  value={`Upload Skripsi (PDF, maks. ${MAX_FILE_MB} MB)`}
+                >
+                  Upload Skripsi (PDF, maks. {MAX_FILE_MB} MB)
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
                 </Label>
 
                 {sudahTerkirim ? (
@@ -379,15 +422,28 @@ export default function BuatPengajuan() {
                 )}
               </div>
 
-              {/* =========================
-                  CATATAN REVISI
-              ========================== */}
               {isRevisi && (
                 <div className="mb-5 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
                   <p className="font-semibold mb-1">Pengajuan perlu direvisi</p>
+<<<<<<< HEAD
+=======
+                  <p>{catatanRevisi || "Pustakawan tidak menyertakan catatan."}</p>
+                </div>
+              )}
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
 
+              {/* Info khusus saat status sudah disetujui */}
+              {isVerified && (
+                <div className="mb-5 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+                  <p className="font-semibold mb-1">Pengajuan sudah disetujui</p>
                   <p>
+<<<<<<< HEAD
                     {catatanRevisi || "Pustakawan tidak menyertakan catatan."}
+=======
+                    Jika Anda menemukan kesalahan pada file yang diunggah,
+                    Anda masih dapat mengganti file selama belum digunakan
+                    untuk pengajuan clearing.
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
                   </p>
 
                   <button
@@ -414,66 +470,30 @@ export default function BuatPengajuan() {
               </div>
             </div>
 
-            {/* =========================
-                KOLOM KANAN
-            ========================== */}
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-center font-medium mb-5">
-                Tanda Tangan Pustakawan
-              </h2>
+              <h2 className="text-center font-medium mb-5">Tanda Tangan Pustakawan</h2>
 
               <div className="rounded-lg h-64 flex flex-col items-center justify-center">
-                {/* =========================
-                    SUDAH DIVERIFIKASI
-                ========================== */}
                 {isVerified ? (
                   <div className="flex flex-col items-center space-y-3">
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center shadow-sm">
-                      <svg
-                        className="w-12 h-12 text-green-600"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M5 13l4 4L19 7"
-                        />
+                      <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-
-                    <span className="text-green-600 font-semibold text-lg">
-                      Verifikasi Selesai
-                    </span>
+                    <span className="text-green-600 font-semibold text-lg">Verifikasi Selesai</span>
                   </div>
                 ) : isRevisi ? (
-                  /* =========================
-                      PERLU REVISI
-                  ========================== */
                   <div className="flex flex-col items-center space-y-3">
                     <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center shadow-sm">
-                      <svg
-                        className="w-12 h-12 text-red-600"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z"
-                        />
+                      <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z" />
                       </svg>
                     </div>
-
-                    <span className="text-red-600 font-semibold text-lg">
-                      Perlu Revisi
-                    </span>
+                    <span className="text-red-600 font-semibold text-lg">Perlu Revisi</span>
                   </div>
                 ) : isPending ? (
+<<<<<<< HEAD
                   /* =========================
                       MENUNGGU
                   ========================== */
@@ -484,6 +504,10 @@ export default function BuatPengajuan() {
                   /* =========================
                       BELUM ADA PENGAJUAN
                   ========================== */
+=======
+                  <span className="text-gray-400">Menunggu verifikasi pustakawan</span>
+                ) : (
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
                   <span className="text-gray-400">Belum ada tanda tangan</span>
                 )}
               </div>
@@ -491,6 +515,10 @@ export default function BuatPengajuan() {
           </div>
         </main>
       </div>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 97b2b0b (nambah pengajuan ulang)
       <AlertModal
         open={modal.open}
         type={modal.type}
