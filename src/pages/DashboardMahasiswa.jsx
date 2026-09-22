@@ -6,7 +6,7 @@ import { HiCheckCircle, HiCheck, HiClock, HiDeviceMobile, HiExclamationCircle, H
 import axios from 'axios';
 
 
-const API_BASE_URL = 'http://172.18.160.182:8000';
+const API_BASE_URL = 'http://172.18.160.202:8000';
 
 const STEPPER_ITEMS = [
   { label: 'Surat Bebas Pustaka' },

@@ -47,7 +47,7 @@ export default function DataMahasiswa() {
 
     axios
 
-      .get("http://172.18.160.182:8000/api/pengajuan-clearing?per_page=1000", {
+      .get("http://172.18.160.202:8000/api/pengajuan-clearing?per_page=1000", {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",

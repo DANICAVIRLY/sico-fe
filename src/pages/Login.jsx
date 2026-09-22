@@ -27,7 +27,7 @@ export default function Login() {
       console.log("DATA YANG DIKIRIM:", payload);
 
       const response = await axios.post(
-        "http://172.18.160.182:8000/api/auth/login",
+        "http://172.18.160.202:8000/api/auth/login",
         payload,
         {
           headers: {
