@@ -5,7 +5,13 @@ import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
 
-const API_BASE = "http://172.18.160.202:8000/api/bebas-pustaka";
+const API_BASE = "http://172.18.160.44:8000/api/bebas-pustaka";
+
+// Bagian akhir URL untuk melihat PDF skripsi.
+// HARUS sama dengan route yang mengarah ke previewSkripsi di routes/api.php.
+// Cek dengan: php artisan route:list --path=bebas-pustaka
+// Hasil akhirnya: GET {API_BASE}/{id}/{PREVIEW_PATH}
+const PREVIEW_PATH = "preview-skripsi";
 
 export default function BuatPengajuan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -15,6 +21,7 @@ export default function BuatPengajuan() {
   const nim = userData?.nim || "";
 
   const [loading, setLoading] = useState(false);
+  const [loadingLihat, setLoadingLihat] = useState(false);
 
   // status:
   // null | "pending" | "verified" | "revisi"
@@ -25,6 +32,14 @@ export default function BuatPengajuan() {
   // File skripsi (PDF, max 10MB) — dikirim sebagai "file_skripsi" ke
   // backend, sesuai StoreBebasPustakaRequest / AjukanUlangBebasPustakaRequest.
   const [fileSkripsi, setFileSkripsi] = useState(null);
+
+  // Nama file yang sudah terkirim. Disimpan di localStorage supaya tetap
+  // tampil setelah halaman di-refresh.
+  const kunciNamaFile = `namaFileSkripsi_${nim}`;
+  const [namaFileTerkirim, setNamaFileTerkirim] = useState(
+    () => localStorage.getItem(kunciNamaFile) || ""
+  );
+  const namaFileTampil = namaFileTerkirim || `skripsi-${nim}.pdf`;
 
   const cekStatusPengajuan = async () => {
     try {
@@ -99,6 +114,57 @@ export default function BuatPengajuan() {
 
   const tombolDisabled = loading || isVerified || isPending;
 
+  // Saat pending/verified, kotak upload diganti tampilan file terkirim
+  const sudahTerkirim = isVerified || isPending;
+
+  // Ambil PDF dari backend pakai token, lalu buka di tab baru.
+  const handleLihatFile = async () => {
+    if (!pengajuanId || loadingLihat) return;
+
+    // Buka tab dulu (sinkron dengan klik) supaya tidak diblokir popup blocker
+    const tabBaru = window.open("", "_blank");
+
+    setLoadingLihat(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(
+        `${API_BASE}/${pengajuanId}/${PREVIEW_PATH}`,
+        {
+          headers: {
+            Accept: "application/pdf",
+            Authorization: `Bearer ${token}`,
+          },
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
+      if (tabBaru) {
+        tabBaru.location.href = url;
+      } else {
+        window.open(url, "_blank");
+      }
+
+      // Lepas memori setelah tab sempat memuat file
+      setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+    } catch (error) {
+      console.log("Error membuka file:", error);
+      if (tabBaru) tabBaru.close();
+
+      alert(
+        error.response?.status === 404
+          ? "File tidak ditemukan. Cek route preview di backend (PREVIEW_PATH) dan path file di database."
+          : "File skripsi gagal dibuka."
+      );
+    } finally {
+      setLoadingLihat(false);
+    }
+  };
+
   const handleKirim = async () => {
     if (tombolDisabled) return;
 
@@ -150,6 +216,12 @@ export default function BuatPengajuan() {
         await axios.post(API_BASE, formData, { headers });
 
         alert("Pengajuan berhasil dikirim!");
+      }
+
+      // Ingat nama file yang baru dikirim supaya tetap tampil
+      if (fileSkripsi) {
+        localStorage.setItem(kunciNamaFile, fileSkripsi.name);
+        setNamaFileTerkirim(fileSkripsi.name);
       }
 
       setFileSkripsi(null);
@@ -238,27 +310,53 @@ export default function BuatPengajuan() {
               {/* =========================
                   UPLOAD SKRIPSI
               ========================== */}
-              {!isVerified && !isPending && (
-                <div className="mb-5">
-                  <Label htmlFor="fileSkripsi" value="Upload Skripsi (PDF, maks. 10 MB)">
-                    Upload Skripsi (PDF, maks. 10 MB)
-                  </Label>
+              <div className="mb-5">
+                <Label htmlFor="fileSkripsi" value="Upload Skripsi (PDF, maks. 10 MB)">
+                  Upload Skripsi (PDF, maks. 10 MB)
+                </Label>
 
-                  <FileInput
-                    id="fileSkripsi"
-                    accept=".pdf"
-                    className="mt-2"
-                    onChange={(e) => setFileSkripsi(e.target.files?.[0] || null)}
-                  />
+                {sudahTerkirim ? (
+                  <>
+                    {/* Tampilan sama seperti sebelum dikirim, tapi bisa diklik
+                        untuk melihat file yang sudah terkirim */}
+                    <button
+                      type="button"
+                      onClick={handleLihatFile}
+                      disabled={loadingLihat}
+                      title="Klik untuk melihat file"
+                      className="mt-2 flex w-full items-stretch overflow-hidden rounded-lg border border-gray-300 bg-gray-50 text-left text-sm hover:bg-gray-100 disabled:opacity-60"
+                    >
+                      <span className="bg-gray-800 px-4 py-3 font-semibold text-white whitespace-nowrap">
+                        {loadingLihat ? "Membuka..." : "Lihat File"}
+                      </span>
+                      <span className="px-4 py-3 text-gray-900 truncate">
+                        {namaFileTampil}
+                      </span>
+                    </button>
 
-                  {fileSkripsi && (
                     <p className="mt-2 text-sm text-gray-600">
                       File dipilih:{" "}
-                      <span className="font-semibold">{fileSkripsi.name}</span>
+                      <span className="font-semibold">{namaFileTampil}</span>
                     </p>
-                  )}
-                </div>
-              )}
+                  </>
+                ) : (
+                  <>
+                    <FileInput
+                      id="fileSkripsi"
+                      accept=".pdf"
+                      className="mt-2"
+                      onChange={(e) => setFileSkripsi(e.target.files?.[0] || null)}
+                    />
+
+                    {fileSkripsi && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        File dipilih:{" "}
+                        <span className="font-semibold">{fileSkripsi.name}</span>
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
 
               {/* =========================
                   CATATAN REVISI
@@ -273,6 +371,15 @@ export default function BuatPengajuan() {
                     {catatanRevisi ||
                       "Pustakawan tidak menyertakan catatan."}
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={handleLihatFile}
+                    disabled={loadingLihat}
+                    className="mt-2 text-blue-600 underline disabled:opacity-50"
+                  >
+                    {loadingLihat ? "Membuka..." : "Lihat file yang sebelumnya dikirim"}
+                  </button>
                 </div>
               )}
 
