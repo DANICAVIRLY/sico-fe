@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import SidebarMahaComp from "../components/SidebarMahaComp";
+import AlertModal from "../components/AlertModal";
 import { Label, TextInput, Button, FileInput } from "flowbite-react";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
@@ -39,6 +40,20 @@ export default function BuatPengajuan() {
   const [namaFileTerkirim, setNamaFileTerkirim] = useState(
     () => localStorage.getItem(kunciNamaFile) || ""
   );
+
+  const [modal, setModal] = useState({
+  open: false,
+  type: "warning",
+  title: "",
+  message: "",
+});
+
+const showAlert = (message, type = "warning", title = "") => {
+  setModal({ open: true, type, title, message });
+};
+
+const closeAlert = () => setModal((m) => ({ ...m, open: false }));
+
   const namaFileTampil = namaFileTerkirim || `skripsi-${nim}.pdf`;
 
   const cekStatusPengajuan = async () => {
@@ -155,7 +170,7 @@ export default function BuatPengajuan() {
       console.log("Error membuka file:", error);
       if (tabBaru) tabBaru.close();
 
-      alert(
+      showAlert(
         error.response?.status === 404
           ? "File tidak ditemukan. Cek route preview di backend (PREVIEW_PATH) dan path file di database."
           : "File skripsi gagal dibuka."
@@ -172,18 +187,18 @@ export default function BuatPengajuan() {
     // (AjukanUlangBebasPustakaRequest) menandainya nullable — boleh
     // tidak ganti file kalau memang tidak perlu.
     if (!isRevisi && !fileSkripsi) {
-      alert("File skripsi wajib diupload.");
+      showAlert("File skripsi wajib diupload.", "error", "Upload File");
       return;
     }
 
     if (fileSkripsi) {
       const maxSize = 10 * 1024 * 1024; // 10 MB, sesuai batas backend
       if (fileSkripsi.size > maxSize) {
-        alert("Ukuran file skripsi maksimal 10 MB.");
+        showAlert("Ukuran file skripsi maksimal 10 MB.", "error", "Upload File");
         return;
       }
       if (fileSkripsi.type !== "application/pdf") {
-        alert("File skripsi harus berformat PDF.");
+        showAlert("File skripsi harus berformat PDF.", "error", "Upload File");
         return;
       }
     }
@@ -211,11 +226,11 @@ export default function BuatPengajuan() {
           { headers }
         );
 
-        alert("Pengajuan ulang berhasil dikirim!");
+        showAlert("Pengajuan ulang berhasil dikirim!");
       } else {
         await axios.post(API_BASE, formData, { headers });
 
-        alert("Pengajuan berhasil dikirim!");
+        showAlert("Pengajuan berhasil dikirim!");
       }
 
       // Ingat nama file yang baru dikirim supaya tetap tampil
@@ -232,7 +247,7 @@ export default function BuatPengajuan() {
     } catch (error) {
       console.log("Error mengirim pengajuan:", error);
 
-      alert(
+      showAlert(
         error.response?.data?.message ||
           "Pengajuan gagal dikirim."
       );
@@ -476,6 +491,13 @@ export default function BuatPengajuan() {
           </div>
         </main>
       </div>
+        <AlertModal
+      open={modal.open}
+      type={modal.type}
+      title={modal.title}
+      message={modal.message}
+      onClose={closeAlert}
+    />
     </div>
   );
 }
