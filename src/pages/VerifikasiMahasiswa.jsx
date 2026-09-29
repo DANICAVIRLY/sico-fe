@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { HiEye, HiDownload, HiCheck, HiMenu } from "react-icons/hi";
 import SidebarAdminComp from "../components/SidebarAdminComp";
+import AlertModal from "../components/AlertModal";
 
 export default function VerifikasiMahasiswa() {
   const { id } = useParams();
@@ -14,6 +15,34 @@ export default function VerifikasiMahasiswa() {
   const [catatan, setCatatan] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmModal, setConfirmModal] = useState(false);
+
+  const [modal, setModal] = useState({
+    open: false,
+    type: "warning",
+    title: "",
+    message: "",
+  });
+
+  // [DITAMBAH] flag ini nentuin apakah setelah modal ditutup perlu
+  // navigate(-1) atau tidak. Dipakai khusus untuk kasus "berhasil update
+  // status", supaya user sempat baca pesannya dulu sebelum halaman pindah.
+  const [navigateAfterClose, setNavigateAfterClose] = useState(false);
+
+  const showAlert = (message, type = "warning", title = "", withNavigate = false) => {
+    setNavigateAfterClose(withNavigate);
+    setModal({ open: true, type, title, message });
+  };
+
+  const closeAlert = () => {
+    setModal((m) => ({ ...m, open: false }));
+
+    // [DITAMBAH] baru pindah halaman SETELAH modal ditutup, bukan
+    // bersamaan dengan showAlert() seperti sebelumnya
+    if (navigateAfterClose) {
+      setNavigateAfterClose(false);
+      navigate(-1);
+    }
+  };
 
   useEffect(() => {
     fetchDetailMahasiswa();
@@ -56,12 +85,19 @@ export default function VerifikasiMahasiswa() {
         }
       )
       .then(() => {
-        alert(`Status berhasil diperbarui!`);
-        navigate(-1);
+        // [DIPERBAIKI] type "success" + title, dan navigate(-1) TIDAK
+        // dipanggil di sini lagi. Dipindah ke closeAlert() lewat flag
+        // withNavigate=true, supaya modal sempat kelihatan dulu.
+        showAlert("Status berhasil diperbarui!", "success", "Berhasil", true);
       })
       .catch((err) => {
         console.error(err);
-        alert(err.response?.data?.message || "Gagal memperbarui status.");
+        // [DIPERBAIKI] sebelumnya masih pakai alert() bawaan browser
+        showAlert(
+          err.response?.data?.message || "Gagal memperbarui status.",
+          "error",
+          "Gagal"
+        );
       })
       .finally(() => setSubmitting(false));
   };
@@ -92,7 +128,8 @@ export default function VerifikasiMahasiswa() {
       window.open(url, "_blank");
     } catch (err) {
       console.error(err);
-      alert("Gagal memuat dokumen.");
+      // [DIPERBAIKI] sebelumnya masih pakai alert() bawaan browser
+      showAlert("Gagal memuat dokumen.", "error", "Gagal");
     }
   };
 
@@ -118,7 +155,8 @@ export default function VerifikasiMahasiswa() {
       link.remove();
     } catch (err) {
       console.error(err);
-      alert("Gagal mengunduh dokumen.");
+      // [DIPERBAIKI] sebelumnya masih pakai alert() bawaan browser
+      showAlert("Gagal mengunduh dokumen.", "error", "Gagal");
     }
   };
 
@@ -396,6 +434,14 @@ export default function VerifikasiMahasiswa() {
           </div>
         </div>
       )}
+
+      <AlertModal
+        open={modal.open}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeAlert}
+      />
     </div>
   );
 }
