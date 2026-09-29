@@ -41,8 +41,8 @@ export default function Signup() {
     }
 
     try {
-      const response = await axios.post(
-        "http://172.18.160.202:8000/api/auth/register",
+      await axios.post(
+        "http://172.18.160.48:8000/api/auth/register",
         {
           nama: nama,
           nim: nim,
@@ -58,15 +58,11 @@ export default function Signup() {
         }
       );
 
-      console.log("REGISTER BERHASIL:", response.data);
-
       localStorage.setItem("nama", nama);
       localStorage.setItem("nim", nim);
 
       navigate("/login-admin");
     } catch (error) {
-      console.log("STATUS:", error.response?.status);
-      console.log("ERROR:", error.response?.data);
 
       if (error.response?.data?.errors) {
         const errors = error.response.data.errors;

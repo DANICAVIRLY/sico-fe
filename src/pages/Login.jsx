@@ -24,10 +24,8 @@ export default function Login() {
         password: password,
       };
 
-      console.log("DATA YANG DIKIRIM:", payload);
-
       const response = await axios.post(
-        "http://172.18.160.202:8000/api/auth/login",
+        "http://172.18.160.48:8000/api/auth/login",
         payload,
         {
           headers: {
@@ -37,23 +35,15 @@ export default function Login() {
         }
       );
 
-      console.log("LOGIN BERHASIL:", response.data);
-
       const data = response.data.data;
       const user = data.user;
       const token = data.token;
 
-      // Simpan token dan data user
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      // Ambil role user
       const roles = user.roles || [];
 
-      console.log("USER:", user);
-      console.log("ROLES:", roles);
-
-      // Arahkan sesuai role
       if (roles.includes("atasan")) {
         navigate("/dashboard-atasan");
       } else if (roles.includes("pustakawan")) {
@@ -66,13 +56,6 @@ export default function Login() {
         setError("Role akun tidak dikenali.");
       }
     } catch (error) {
-      console.log("STATUS:", error.response?.status);
-      console.log("RESPONSE ERROR:", error.response?.data);
-      console.log(
-        "VALIDATION ERROR:",
-        error.response?.data?.errors
-      );
-
       const errors = error.response?.data?.errors;
 
       if (errors?.login) {

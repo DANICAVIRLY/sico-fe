@@ -10,7 +10,7 @@ import {
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = "http://172.18.160.202:8000";
+const API_BASE_URL = "http://172.18.160.48:8000";
 
 export default function DetailVerifikasi() {
   const { id } = useParams();
