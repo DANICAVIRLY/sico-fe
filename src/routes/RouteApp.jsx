@@ -37,7 +37,7 @@ export default function RouteApp() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Signup />} />
-        <Route path="/login-admin" element={<Login />} />
+        <Route path="/login" element={<Login />} />
         <Route
           path="/dashboard-mahasiswa"
           element={<DashboardMahasiswa />}
@@ -70,7 +70,7 @@ export default function RouteApp() {
           path="/detail-selesai/:id"
           element={<DetailSelesai />}
         />
-        
+
         <Route
           path="/pustakawan-dashboard"
           element={<PustakawanDashboard />}

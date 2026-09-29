@@ -61,7 +61,7 @@ export default function Signup() {
       localStorage.setItem("nama", nama);
       localStorage.setItem("nim", nim);
 
-      navigate("/login-admin");
+      navigate("/login");
     } catch (error) {
 
       if (error.response?.data?.errors) {
@@ -208,7 +208,7 @@ export default function Signup() {
 
               <p className="text-center text-sm text-gray-500 mt-4">
                 Sudah punya akun?{" "}
-                <Link to="/login-admin"
+                <Link to="/login"
                  className="text-indigo-600 hover:underline">
                   Login di sini
                 </Link>
