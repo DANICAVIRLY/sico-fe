@@ -5,16 +5,89 @@ import { Label, TextInput, Button, FileInput } from "flowbite-react";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-
 const API_BASE = "http://172.18.160.48:8000/api/bebas-pustaka";
-// Bagian akhir URL untuk melihat PDF skripsi.
-// HARUS sama dengan route yang mengarah ke previewSkripsi di routes/api.php.
+
+// Bagian akhir URL untuk melihat PDF. HARUS sama dengan route di routes/api.php.
 // Cek dengan: php artisan route:list --path=bebas-pustaka
-// Hasil akhirnya: GET {API_BASE}/{id}/{PREVIEW_PATH}
-const PREVIEW_PATH = "preview-skripsi";
+// Hasil akhirnya: GET {API_BASE}/{id}/{PATH}
+const PREVIEW_SKRIPSI_PATH = "preview-skripsi";
+const PREVIEW_DISTRIBUSI_PATH = "preview-distribusi"; // TODO: samakan dengan backend
+
+// Nama field file yang dikirim ke backend.
+const FIELD_SKRIPSI = "file_skripsi";
+const FIELD_DISTRIBUSI = "file_distribusi"; // TODO: samakan dengan backend
 
 // Batas ukuran file (MB). Samakan dengan validasi di backend.
 const MAX_FILE_MB = 5;
+
+// Kembalikan pesan error kalau file tidak valid, atau null kalau aman.
+const validasiFile = (file, namaFile) => {
+  if (!file) return `${namaFile} wajib diupload.`;
+  if (file.size > MAX_FILE_MB * 1024 * 1024) {
+    return `Ukuran ${namaFile} maksimal ${MAX_FILE_MB} MB.`;
+  }
+  if (file.type !== "application/pdf") {
+    return `${namaFile} harus berformat PDF.`;
+  }
+  return null;
+};
+
+// Satu kotak upload. Saat sudahTerkirim (pending) tampil tombol "Lihat File",
+// selain itu tampil input file.
+function KotakUpload({
+  id,
+  label,
+  file,
+  onPilih,
+  sudahTerkirim,
+  namaFile,
+  onLihat,
+  sedangMembuka,
+}) {
+  return (
+    <div className="mb-5">
+      <Label htmlFor={id} value={label}>
+        {label}
+      </Label>
+
+      {sudahTerkirim ? (
+        <>
+          <button
+            type="button"
+            onClick={onLihat}
+            disabled={sedangMembuka}
+            title="Klik untuk melihat file"
+            className="mt-2 flex w-full items-stretch overflow-hidden rounded-lg border border-gray-300 bg-gray-50 text-left text-sm hover:bg-gray-100 disabled:opacity-60"
+          >
+            <span className="bg-gray-800 px-4 py-3 font-semibold text-white whitespace-nowrap">
+              {sedangMembuka ? "Membuka..." : "Lihat File"}
+            </span>
+            <span className="px-4 py-3 text-gray-900 truncate">{namaFile}</span>
+          </button>
+
+          <p className="mt-2 text-sm text-gray-600">
+            File dipilih: <span className="font-semibold">{namaFile}</span>
+          </p>
+        </>
+      ) : (
+        <>
+          <FileInput
+            id={id}
+            accept=".pdf"
+            className="mt-2"
+            onChange={(e) => onPilih(e.target.files?.[0] || null)}
+          />
+
+          {file && (
+            <p className="mt-2 text-sm text-gray-600">
+              File dipilih: <span className="font-semibold">{file.name}</span>
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function BuatPengajuan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -24,7 +97,8 @@ export default function BuatPengajuan() {
   const nim = userData?.nim || "";
 
   const [loading, setLoading] = useState(false);
-  const [loadingLihat, setLoadingLihat] = useState(false);
+  // Jenis file yang sedang dibuka: "" | "skripsi" | "distribusi"
+  const [sedangMembuka, setSedangMembuka] = useState("");
 
   // status:
   // null | "pending" | "verified" | "revisi"
@@ -33,12 +107,17 @@ export default function BuatPengajuan() {
   const [pengajuanId, setPengajuanId] = useState(null);
 
   const [fileSkripsi, setFileSkripsi] = useState(null);
+  const [fileDistribusi, setFileDistribusi] = useState(null);
 
   // Nama file yang sudah terkirim. Disimpan di localStorage supaya tetap
   // tampil setelah halaman di-refresh.
-  const kunciNamaFile = `namaFileSkripsi_${nim}`;
-  const [namaFileTerkirim, setNamaFileTerkirim] = useState(
-    () => localStorage.getItem(kunciNamaFile) || "",
+  const kunciSkripsi = `namaFileSkripsi_${nim}`;
+  const kunciDistribusi = `namaFileDistribusi_${nim}`;
+  const [namaSkripsiTerkirim, setNamaSkripsiTerkirim] = useState(
+    () => localStorage.getItem(kunciSkripsi) || "",
+  );
+  const [namaDistribusiTerkirim, setNamaDistribusiTerkirim] = useState(
+    () => localStorage.getItem(kunciDistribusi) || "",
   );
 
   const [modal, setModal] = useState({
@@ -54,7 +133,9 @@ export default function BuatPengajuan() {
 
   const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
-  const namaFileTampil = namaFileTerkirim || `skripsi-${nim}.pdf`;
+  const namaSkripsiTampil = namaSkripsiTerkirim || `skripsi-${nim}.pdf`;
+  const namaDistribusiTampil =
+    namaDistribusiTerkirim || `distribusi-${nim}.pdf`;
 
   const cekStatusPengajuan = async () => {
     try {
@@ -130,27 +211,29 @@ export default function BuatPengajuan() {
   const sudahTerkirim = isPending;
 
   // Ambil PDF dari backend pakai token, lalu buka di tab baru.
-  const handleLihatFile = async () => {
-    if (!pengajuanId || loadingLihat) return;
+  // jenis: "skripsi" | "distribusi"
+  const handleLihatFile = async (jenis) => {
+    if (!pengajuanId || sedangMembuka) return;
+
+    const path =
+      jenis === "distribusi" ? PREVIEW_DISTRIBUSI_PATH : PREVIEW_SKRIPSI_PATH;
+    const namaJenis = jenis === "distribusi" ? "distribusi" : "skripsi";
 
     // Buka tab dulu (sinkron dengan klik) supaya tidak diblokir popup blocker
     const tabBaru = window.open("", "_blank");
 
-    setLoadingLihat(true);
+    setSedangMembuka(jenis);
 
     try {
       const token = localStorage.getItem("token");
 
-      const response = await axios.get(
-        `${API_BASE}/${pengajuanId}/${PREVIEW_PATH}`,
-        {
-          headers: {
-            Accept: "application/pdf",
-            Authorization: `Bearer ${token}`,
-          },
-          responseType: "blob",
+      const response = await axios.get(`${API_BASE}/${pengajuanId}/${path}`, {
+        headers: {
+          Accept: "application/pdf",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        responseType: "blob",
+      });
 
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
@@ -167,59 +250,29 @@ export default function BuatPengajuan() {
       console.log("Error membuka file:", error);
       if (tabBaru) tabBaru.close();
 
-      // [DIPERBAIKI] tambah type "error" dan title, sebelumnya kosong
-      // sehingga jatuh ke default "warning" (oranye)
       showAlert(
         error.response?.status === 404
-          ? "File tidak ditemukan. Cek route preview di backend (PREVIEW_PATH) dan path file di database."
-          : "File skripsi gagal dibuka.",
+          ? `File ${namaJenis} tidak ditemukan. Cek route preview di backend (${path}) dan path file di database.`
+          : `File ${namaJenis} gagal dibuka.`,
         "error",
         "Gagal Membuka File",
       );
     } finally {
-      setLoadingLihat(false);
+      setSedangMembuka("");
     }
   };
 
   const handleKirim = async () => {
     if (tombolDisabled) return;
 
-    // File wajib, baik untuk pengajuan baru maupun revisi/ajukan ulang
-    // (AjukanUlangBebasPustakaRequest: required, bukan nullable).
-    if (!fileSkripsi) {
-      showAlert("File skripsi wajib diupload.", "error", "Upload File");
-      return;
-    }
+    // Kedua file wajib, baik untuk pengajuan baru maupun revisi/ajukan ulang.
+    const pesanError =
+      validasiFile(fileSkripsi, "File skripsi") ||
+      validasiFile(fileDistribusi, "Form distribusi skripsi");
 
-<<<<<<< HEAD
-    if (fileSkripsi) {
-      const maxSize = 10 * 1024 * 1024; // 10 MB, sesuai batas backend
-      if (fileSkripsi.size > maxSize) {
-        showAlert(
-          "Ukuran file skripsi maksimal 10 MB.",
-          "error",
-          "Upload File",
-        );
-        return;
-      }
-      if (fileSkripsi.type !== "application/pdf") {
-        showAlert("File skripsi harus berformat PDF.", "error", "Upload File");
-        return;
-      }
-=======
-    const maxSize = MAX_FILE_MB * 1024 * 1024;
-    if (fileSkripsi.size > maxSize) {
-      showAlert(
-        `Ukuran file skripsi maksimal ${MAX_FILE_MB} MB.`,
-        "error",
-        "Upload File"
-      );
+    if (pesanError) {
+      showAlert(pesanError, "error", "Upload File");
       return;
-    }
-    if (fileSkripsi.type !== "application/pdf") {
-      showAlert("File skripsi harus berformat PDF.", "error", "Upload File");
-      return;
->>>>>>> 97b2b0b (nambah pengajuan ulang)
     }
 
     setLoading(true);
@@ -234,53 +287,39 @@ export default function BuatPengajuan() {
       };
 
       const formData = new FormData();
-      formData.append("file_skripsi", fileSkripsi);
+      formData.append(FIELD_SKRIPSI, fileSkripsi);
+      formData.append(FIELD_DISTRIBUSI, fileDistribusi);
 
-<<<<<<< HEAD
-      if (isRevisi && pengajuanId) {
+      // Pakai endpoint ajukan-ulang kalau statusnya revisi ATAU verified
+      if (bisaUploadUlang && pengajuanId) {
         await axios.post(`${API_BASE}/${pengajuanId}/ajukan-ulang`, formData, {
           headers,
         });
-=======
-      // Pakai endpoint ajukan-ulang kalau statusnya revisi ATAU verified
-      if (bisaUploadUlang && pengajuanId) {
-        await axios.post(
-          `${API_BASE}/${pengajuanId}/ajukan-ulang`,
-          formData,
-          { headers }
-        );
->>>>>>> 97b2b0b (nambah pengajuan ulang)
 
-        // [DIPERBAIKI] tambah type "success" dan title, sebelumnya kosong
-        // sehingga jatuh ke default "warning" (oranye)
         showAlert("Pengajuan ulang berhasil dikirim!", "success", "Berhasil");
       } else {
         await axios.post(API_BASE, formData, { headers });
 
-        // [DIPERBAIKI] sama seperti di atas
         showAlert("Pengajuan berhasil dikirim!", "success", "Berhasil");
       }
 
       // Ingat nama file yang baru dikirim supaya tetap tampil
-      localStorage.setItem(kunciNamaFile, fileSkripsi.name);
-      setNamaFileTerkirim(fileSkripsi.name);
+      localStorage.setItem(kunciSkripsi, fileSkripsi.name);
+      setNamaSkripsiTerkirim(fileSkripsi.name);
+      localStorage.setItem(kunciDistribusi, fileDistribusi.name);
+      setNamaDistribusiTerkirim(fileDistribusi.name);
 
       setFileSkripsi(null);
-      const inputFile = document.getElementById("fileSkripsi");
-      if (inputFile) inputFile.value = "";
+      setFileDistribusi(null);
+      ["fileSkripsi", "fileDistribusi"].forEach((id) => {
+        const input = document.getElementById(id);
+        if (input) input.value = "";
+      });
 
       cekStatusPengajuan();
     } catch (error) {
       console.log("Error mengirim pengajuan:", error);
 
-<<<<<<< HEAD
-      // [DIPERBAIKI] tambah type "error" dan title, sebelumnya kosong
-      showAlert(
-        error.response?.data?.message || "Pengajuan gagal dikirim.",
-        "error",
-        "Gagal",
-      );
-=======
       // Tangani pesan error spesifik dari backend,
       // termasuk kasus "sudah dipakai untuk pengajuan clearing"
       const errors = error.response?.data?.errors;
@@ -288,11 +327,10 @@ export default function BuatPengajuan() {
 
       if (errors) {
         const detail = Object.values(errors).flat().join("\n");
-        showAlert(detail);
+        showAlert(detail, "error", "Gagal");
       } else {
-        showAlert(message || "Pengajuan gagal dikirim.");
+        showAlert(message || "Pengajuan gagal dikirim.", "error", "Gagal");
       }
->>>>>>> 97b2b0b (nambah pengajuan ulang)
     } finally {
       setLoading(false);
     }
@@ -335,127 +373,91 @@ export default function BuatPengajuan() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="mb-5">
-<<<<<<< HEAD
                 <Label htmlFor="nama" value="Nama Lengkap">
                   Nama Lengkap
                 </Label>
-
-=======
-                <Label htmlFor="nama" value="Nama Lengkap">Nama Lengkap</Label>
->>>>>>> 97b2b0b (nambah pengajuan ulang)
                 <TextInput id="nama" value={nama || ""} readOnly />
               </div>
 
               <div className="mb-5">
-<<<<<<< HEAD
                 <Label htmlFor="nim" value="NIM">
                   NIM
                 </Label>
-
-=======
-                <Label htmlFor="nim" value="NIM">NIM</Label>
->>>>>>> 97b2b0b (nambah pengajuan ulang)
                 <TextInput id="nim" value={nim || ""} readOnly />
               </div>
 
               {/* =========================
                   UPLOAD SKRIPSI
               ========================== */}
-              <div className="mb-5">
-                <Label
-                  htmlFor="fileSkripsi"
-<<<<<<< HEAD
-                  value="Upload Skripsi (PDF, maks. 10 MB)"
-                >
-                  Upload Skripsi (PDF, maks. 10 MB)
-=======
-                  value={`Upload Skripsi (PDF, maks. ${MAX_FILE_MB} MB)`}
-                >
-                  Upload Skripsi (PDF, maks. {MAX_FILE_MB} MB)
->>>>>>> 97b2b0b (nambah pengajuan ulang)
-                </Label>
+              <KotakUpload
+                id="fileSkripsi"
+                label={`Upload Skripsi (PDF, maks. ${MAX_FILE_MB} MB)`}
+                file={fileSkripsi}
+                onPilih={setFileSkripsi}
+                sudahTerkirim={sudahTerkirim}
+                namaFile={namaSkripsiTampil}
+                onLihat={() => handleLihatFile("skripsi")}
+                sedangMembuka={sedangMembuka === "skripsi"}
+              />
 
-                {sudahTerkirim ? (
-                  <>
-                    {/* Tampilan sama seperti sebelum dikirim, tapi bisa diklik
-                        untuk melihat file yang sudah terkirim */}
-                    <button
-                      type="button"
-                      onClick={handleLihatFile}
-                      disabled={loadingLihat}
-                      title="Klik untuk melihat file"
-                      className="mt-2 flex w-full items-stretch overflow-hidden rounded-lg border border-gray-300 bg-gray-50 text-left text-sm hover:bg-gray-100 disabled:opacity-60"
-                    >
-                      <span className="bg-gray-800 px-4 py-3 font-semibold text-white whitespace-nowrap">
-                        {loadingLihat ? "Membuka..." : "Lihat File"}
-                      </span>
-                      <span className="px-4 py-3 text-gray-900 truncate">
-                        {namaFileTampil}
-                      </span>
-                    </button>
-
-                    <p className="mt-2 text-sm text-gray-600">
-                      File dipilih:{" "}
-                      <span className="font-semibold">{namaFileTampil}</span>
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <FileInput
-                      id="fileSkripsi"
-                      accept=".pdf"
-                      className="mt-2"
-                      onChange={(e) =>
-                        setFileSkripsi(e.target.files?.[0] || null)
-                      }
-                    />
-
-                    {fileSkripsi && (
-                      <p className="mt-2 text-sm text-gray-600">
-                        File dipilih:{" "}
-                        <span className="font-semibold">
-                          {fileSkripsi.name}
-                        </span>
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
+              {/* =========================
+                  UPLOAD FORM DISTRIBUSI SKRIPSI
+              ========================== */}
+              <KotakUpload
+                id="fileDistribusi"
+                label={`Upload Form Distribusi Skripsi (PDF, maks. ${MAX_FILE_MB} MB)`}
+                file={fileDistribusi}
+                onPilih={setFileDistribusi}
+                sudahTerkirim={sudahTerkirim}
+                namaFile={namaDistribusiTampil}
+                onLihat={() => handleLihatFile("distribusi")}
+                sedangMembuka={sedangMembuka === "distribusi"}
+              />
 
               {isRevisi && (
                 <div className="mb-5 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
                   <p className="font-semibold mb-1">Pengajuan perlu direvisi</p>
-<<<<<<< HEAD
-=======
-                  <p>{catatanRevisi || "Pustakawan tidak menyertakan catatan."}</p>
+                  <p>
+                    {catatanRevisi || "Pustakawan tidak menyertakan catatan."}
+                  </p>
                 </div>
               )}
->>>>>>> 97b2b0b (nambah pengajuan ulang)
 
               {/* Info khusus saat status sudah disetujui */}
               {isVerified && (
                 <div className="mb-5 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-                  <p className="font-semibold mb-1">Pengajuan sudah disetujui</p>
+                  <p className="font-semibold mb-1">
+                    Pengajuan sudah disetujui
+                  </p>
                   <p>
-<<<<<<< HEAD
-                    {catatanRevisi || "Pustakawan tidak menyertakan catatan."}
-=======
-                    Jika Anda menemukan kesalahan pada file yang diunggah,
-                    Anda masih dapat mengganti file selama belum digunakan
-                    untuk pengajuan clearing.
->>>>>>> 97b2b0b (nambah pengajuan ulang)
+                    Jika Anda menemukan kesalahan pada file yang diunggah, Anda
+                    masih dapat mengganti file selama belum digunakan untuk
+                    pengajuan clearing. Kedua file (skripsi dan form
+                    distribusi) perlu diunggah ulang.
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={handleLihatFile}
-                    disabled={loadingLihat}
-                    className="mt-2 text-blue-600 underline disabled:opacity-50"
-                  >
-                    {loadingLihat
-                      ? "Membuka..."
-                      : "Lihat file yang sebelumnya dikirim"}
-                  </button>
+                  <div className="mt-2 flex flex-col items-start gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleLihatFile("skripsi")}
+                      disabled={!!sedangMembuka}
+                      className="text-blue-600 underline disabled:opacity-50"
+                    >
+                      {sedangMembuka === "skripsi"
+                        ? "Membuka..."
+                        : "Lihat skripsi yang sebelumnya dikirim"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLihatFile("distribusi")}
+                      disabled={!!sedangMembuka}
+                      className="text-blue-600 underline disabled:opacity-50"
+                    >
+                      {sedangMembuka === "distribusi"
+                        ? "Membuka..."
+                        : "Lihat form distribusi yang sebelumnya dikirim"}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -471,43 +473,58 @@ export default function BuatPengajuan() {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-center font-medium mb-5">Tanda Tangan Pustakawan</h2>
+              <h2 className="text-center font-medium mb-5">
+                Tanda Tangan Pustakawan
+              </h2>
 
               <div className="rounded-lg h-64 flex flex-col items-center justify-center">
                 {isVerified ? (
                   <div className="flex flex-col items-center space-y-3">
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center shadow-sm">
-                      <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      <svg
+                        className="w-12 h-12 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
                       </svg>
                     </div>
-                    <span className="text-green-600 font-semibold text-lg">Verifikasi Selesai</span>
+                    <span className="text-green-600 font-semibold text-lg">
+                      Verifikasi Selesai
+                    </span>
                   </div>
                 ) : isRevisi ? (
                   <div className="flex flex-col items-center space-y-3">
                     <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center shadow-sm">
-                      <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z" />
+                      <svg
+                        className="w-12 h-12 text-red-600"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z"
+                        />
                       </svg>
                     </div>
-                    <span className="text-red-600 font-semibold text-lg">Perlu Revisi</span>
+                    <span className="text-red-600 font-semibold text-lg">
+                      Perlu Revisi
+                    </span>
                   </div>
                 ) : isPending ? (
-<<<<<<< HEAD
-                  /* =========================
-                      MENUNGGU
-                  ========================== */
                   <span className="text-gray-400">
                     Menunggu verifikasi pustakawan
                   </span>
                 ) : (
-                  /* =========================
-                      BELUM ADA PENGAJUAN
-                  ========================== */
-=======
-                  <span className="text-gray-400">Menunggu verifikasi pustakawan</span>
-                ) : (
->>>>>>> 97b2b0b (nambah pengajuan ulang)
                   <span className="text-gray-400">Belum ada tanda tangan</span>
                 )}
               </div>
@@ -515,10 +532,7 @@ export default function BuatPengajuan() {
           </div>
         </main>
       </div>
-<<<<<<< HEAD
-=======
 
->>>>>>> 97b2b0b (nambah pengajuan ulang)
       <AlertModal
         open={modal.open}
         type={modal.type}
