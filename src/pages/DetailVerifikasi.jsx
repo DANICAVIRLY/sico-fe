@@ -1,5 +1,6 @@
 import { Button, Card, Textarea, Badge } from "flowbite-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import AlertModal from "../components/AlertModal";
 import {
   HiArrowLeft,
   HiCheckCircle,
@@ -29,6 +30,24 @@ export default function DetailVerifikasi() {
 
   // Modal konfirmasi
   const [confirmModal, setConfirmModal] = useState(false);
+
+  // [DITAMBAH] state + helper untuk AlertModal — sebelumnya komponen ini
+  // sudah import AlertModal dan bahkan sudah manggil showAlert() di
+  // kirimKeputusan(), tapi function showAlert-nya sendiri tidak pernah
+  // didefinisikan, dan <AlertModal /> tidak pernah dirender. Ini bikin
+  // error "showAlert is not defined" tiap kali submit revisi tanpa catatan.
+  const [modal, setModal] = useState({
+    open: false,
+    type: "warning",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (message, type = "warning", title = "") => {
+    setModal({ open: true, type, title, message });
+  };
+
+  const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
   const extractArray = (payload) => {
     if (Array.isArray(payload)) return payload;
@@ -246,7 +265,8 @@ export default function DetailVerifikasi() {
 
   const handlePreviewSkripsi = async () => {
     if (!detail?.fileSkripsi) {
-      alert("File skripsi tidak ditemukan.");
+      // [DIPERBAIKI] alert() bawaan -> showAlert()
+      showAlert("File skripsi tidak ditemukan.", "warning", "Tidak Ditemukan");
       return;
     }
 
@@ -299,9 +319,8 @@ export default function DetailVerifikasi() {
         error.response?.data
       );
 
-      alert(
-        "Gagal membuka file skripsi."
-      );
+      // [DIPERBAIKI] alert() bawaan -> showAlert()
+      showAlert("Gagal membuka file skripsi.", "error", "Gagal");
 
     } finally {
       setPreviewLoading(false);
@@ -314,7 +333,8 @@ export default function DetailVerifikasi() {
 
   const handleDownloadSkripsi = async () => {
     if (!detail?.fileSkripsi) {
-      alert("File skripsi tidak ditemukan.");
+      // [DIPERBAIKI] alert() bawaan -> showAlert()
+      showAlert("File skripsi tidak ditemukan.", "warning", "Tidak Ditemukan");
       return;
     }
 
@@ -373,9 +393,8 @@ export default function DetailVerifikasi() {
         error.response?.data
       );
 
-      alert(
-        "Gagal mengunduh file skripsi."
-      );
+      // [DIPERBAIKI] alert() bawaan -> showAlert()
+      showAlert("Gagal mengunduh file skripsi.", "error", "Gagal");
 
     } finally {
       setDownloadLoading(false);
@@ -392,7 +411,14 @@ export default function DetailVerifikasi() {
     // Syarat: kalau keputusan "revisi", catatan wajib diisi supaya
     // mahasiswa tahu apa yang perlu diperbaiki.
     if (keputusan === "revisi" && !catatan.trim()) {
-      alert("Catatan wajib diisi jika memberikan status revisi.");
+      // [DIPERBAIKI] sebelumnya showAlert() dipanggil tapi function-nya
+      // belum pernah didefinisikan sama sekali -> ReferenceError.
+      // Sekarang sudah didefinisikan di atas, dan dilengkapi type+title.
+      showAlert(
+        "Catatan wajib diisi jika memberikan status revisi.",
+        "warning",
+        "Catatan Kosong"
+      );
       return;
     }
 
@@ -770,6 +796,16 @@ export default function DetailVerifikasi() {
           </div>
         </Card>
 
+        {/* [DITAMBAH] render AlertModal — sebelumnya di-import tapi tidak
+            pernah dirender sama sekali di halaman ini */}
+        <AlertModal
+          open={modal.open}
+          type={modal.type}
+          title={modal.title}
+          message={modal.message}
+          onClose={closeAlert}
+        />
+
       </div>
     );
   }
@@ -1094,6 +1130,16 @@ export default function DetailVerifikasi() {
         </div>
 
       )}
+
+      {/* [DITAMBAH] render AlertModal — sebelumnya di-import tapi tidak
+          pernah dirender sama sekali di halaman ini */}
+      <AlertModal
+        open={modal.open}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeAlert}
+      />
 
     </div>
   );
