@@ -42,7 +42,7 @@ export default function Signup() {
 
     try {
       const response = await axios.post(
-        "http://172.18.160.44:8000/api/auth/register",
+        "http://172.18.160.48:8000/api/auth/register",
         {
           nama: nama,
           nim: nim,

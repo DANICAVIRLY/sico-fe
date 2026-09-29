@@ -5,8 +5,7 @@ import { Label, TextInput, Button, FileInput } from "flowbite-react";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-
-const API_BASE = "http://172.18.160.44:8000/api/bebas-pustaka";
+const API_BASE = "http://172.18.160.48:8000/api/bebas-pustaka";
 
 // Bagian akhir URL untuk melihat PDF skripsi.
 // HARUS sama dengan route yang mengarah ke previewSkripsi di routes/api.php.
@@ -38,21 +37,21 @@ export default function BuatPengajuan() {
   // tampil setelah halaman di-refresh.
   const kunciNamaFile = `namaFileSkripsi_${nim}`;
   const [namaFileTerkirim, setNamaFileTerkirim] = useState(
-    () => localStorage.getItem(kunciNamaFile) || ""
+    () => localStorage.getItem(kunciNamaFile) || "",
   );
 
   const [modal, setModal] = useState({
-  open: false,
-  type: "warning",
-  title: "",
-  message: "",
-});
+    open: false,
+    type: "warning",
+    title: "",
+    message: "",
+  });
 
-const showAlert = (message, type = "warning", title = "") => {
-  setModal({ open: true, type, title, message });
-};
+  const showAlert = (message, type = "warning", title = "") => {
+    setModal({ open: true, type, title, message });
+  };
 
-const closeAlert = () => setModal((m) => ({ ...m, open: false }));
+  const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
   const namaFileTampil = namaFileTerkirim || `skripsi-${nim}.pdf`;
 
@@ -67,15 +66,14 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
         },
       });
 
-      const listData =
-        response.data?.data?.data || response.data?.data || [];
+      const listData = response.data?.data?.data || response.data?.data || [];
 
       const semuaPengajuanSaya = Array.isArray(listData)
         ? listData.filter(
             (item) =>
               String(item.nim) === String(nim) ||
               String(item.user_id) === String(userData?.id) ||
-              item.nama?.toLowerCase() === nama.toLowerCase()
+              item.nama?.toLowerCase() === nama.toLowerCase(),
           )
         : [];
 
@@ -88,7 +86,7 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
       // Ambil pengajuan dengan ID paling besar (paling baru)
       const pengajuanSaya = semuaPengajuanSaya.reduce((terbaru, item) =>
-        item.id > terbaru.id ? item : terbaru
+        item.id > terbaru.id ? item : terbaru,
       );
 
       console.log("DATA PENGAJUAN SAYA (dipakai):", pengajuanSaya);
@@ -97,9 +95,7 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
       // Enum backend:
       // 'menunggu' | 'disetujui' | 'revisi'
-      const rawStatus = String(
-        pengajuanSaya.status ?? ""
-      ).toLowerCase();
+      const rawStatus = String(pengajuanSaya.status ?? "").toLowerCase();
 
       if (rawStatus === "revisi") {
         setStatus("revisi");
@@ -152,7 +148,7 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
             Authorization: `Bearer ${token}`,
           },
           responseType: "blob",
-        }
+        },
       );
 
       const blob = new Blob([response.data], { type: "application/pdf" });
@@ -170,10 +166,14 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
       console.log("Error membuka file:", error);
       if (tabBaru) tabBaru.close();
 
+      // [DIPERBAIKI] tambah type "error" dan title, sebelumnya kosong
+      // sehingga jatuh ke default "warning" (oranye)
       showAlert(
         error.response?.status === 404
           ? "File tidak ditemukan. Cek route preview di backend (PREVIEW_PATH) dan path file di database."
-          : "File skripsi gagal dibuka."
+          : "File skripsi gagal dibuka.",
+        "error",
+        "Gagal Membuka File",
       );
     } finally {
       setLoadingLihat(false);
@@ -194,7 +194,11 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
     if (fileSkripsi) {
       const maxSize = 10 * 1024 * 1024; // 10 MB, sesuai batas backend
       if (fileSkripsi.size > maxSize) {
-        showAlert("Ukuran file skripsi maksimal 10 MB.", "error", "Upload File");
+        showAlert(
+          "Ukuran file skripsi maksimal 10 MB.",
+          "error",
+          "Upload File",
+        );
         return;
       }
       if (fileSkripsi.type !== "application/pdf") {
@@ -220,17 +224,18 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
       }
 
       if (isRevisi && pengajuanId) {
-        await axios.post(
-          `${API_BASE}/${pengajuanId}/ajukan-ulang`,
-          formData,
-          { headers }
-        );
+        await axios.post(`${API_BASE}/${pengajuanId}/ajukan-ulang`, formData, {
+          headers,
+        });
 
-        showAlert("Pengajuan ulang berhasil dikirim!");
+        // [DIPERBAIKI] tambah type "success" dan title, sebelumnya kosong
+        // sehingga jatuh ke default "warning" (oranye)
+        showAlert("Pengajuan ulang berhasil dikirim!", "success", "Berhasil");
       } else {
         await axios.post(API_BASE, formData, { headers });
 
-        showAlert("Pengajuan berhasil dikirim!");
+        // [DIPERBAIKI] sama seperti di atas
+        showAlert("Pengajuan berhasil dikirim!", "success", "Berhasil");
       }
 
       // Ingat nama file yang baru dikirim supaya tetap tampil
@@ -247,9 +252,11 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
     } catch (error) {
       console.log("Error mengirim pengajuan:", error);
 
+      // [DIPERBAIKI] tambah type "error" dan title, sebelumnya kosong
       showAlert(
-        error.response?.data?.message ||
-          "Pengajuan gagal dikirim."
+        error.response?.data?.message || "Pengajuan gagal dikirim.",
+        "error",
+        "Gagal",
       );
     } finally {
       setLoading(false);
@@ -267,12 +274,18 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
-      <SidebarMahaComp isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SidebarMahaComp
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <div className="flex-1 lg:ml-64 min-w-0">
         {/* Topbar Mobile (Sticky) — sama persis pola di DashboardMahasiswa.jsx */}
         <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
-          <button onClick={() => setSidebarOpen(true)} className="p-1 focus:outline-none">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1 focus:outline-none"
+          >
             <HiMenu className="w-6 h-6" />
           </button>
           <span className="font-bold">Clearing Online</span>
@@ -293,40 +306,29 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
             ========================== */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="mb-5">
-                <Label
-                  htmlFor="nama"
-                  value="Nama Lengkap"
-                >
+                <Label htmlFor="nama" value="Nama Lengkap">
                   Nama Lengkap
                 </Label>
 
-                <TextInput
-                  id="nama"
-                  value={nama || ""}
-                  readOnly
-                />
+                <TextInput id="nama" value={nama || ""} readOnly />
               </div>
 
               <div className="mb-5">
-                <Label
-                  htmlFor="nim"
-                  value="NIM"
-                >
+                <Label htmlFor="nim" value="NIM">
                   NIM
                 </Label>
 
-                <TextInput
-                  id="nim"
-                  value={nim || ""}
-                  readOnly
-                />
+                <TextInput id="nim" value={nim || ""} readOnly />
               </div>
 
               {/* =========================
                   UPLOAD SKRIPSI
               ========================== */}
               <div className="mb-5">
-                <Label htmlFor="fileSkripsi" value="Upload Skripsi (PDF, maks. 10 MB)">
+                <Label
+                  htmlFor="fileSkripsi"
+                  value="Upload Skripsi (PDF, maks. 10 MB)"
+                >
                   Upload Skripsi (PDF, maks. 10 MB)
                 </Label>
 
@@ -360,13 +362,17 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                       id="fileSkripsi"
                       accept=".pdf"
                       className="mt-2"
-                      onChange={(e) => setFileSkripsi(e.target.files?.[0] || null)}
+                      onChange={(e) =>
+                        setFileSkripsi(e.target.files?.[0] || null)
+                      }
                     />
 
                     {fileSkripsi && (
                       <p className="mt-2 text-sm text-gray-600">
                         File dipilih:{" "}
-                        <span className="font-semibold">{fileSkripsi.name}</span>
+                        <span className="font-semibold">
+                          {fileSkripsi.name}
+                        </span>
                       </p>
                     )}
                   </>
@@ -378,13 +384,10 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
               ========================== */}
               {isRevisi && (
                 <div className="mb-5 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
-                  <p className="font-semibold mb-1">
-                    Pengajuan perlu direvisi
-                  </p>
+                  <p className="font-semibold mb-1">Pengajuan perlu direvisi</p>
 
                   <p>
-                    {catatanRevisi ||
-                      "Pustakawan tidak menyertakan catatan."}
+                    {catatanRevisi || "Pustakawan tidak menyertakan catatan."}
                   </p>
 
                   <button
@@ -393,7 +396,9 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                     disabled={loadingLihat}
                     className="mt-2 text-blue-600 underline disabled:opacity-50"
                   >
-                    {loadingLihat ? "Membuka..." : "Lihat file yang sebelumnya dikirim"}
+                    {loadingLihat
+                      ? "Membuka..."
+                      : "Lihat file yang sebelumnya dikirim"}
                   </button>
                 </div>
               )}
@@ -443,7 +448,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                       Verifikasi Selesai
                     </span>
                   </div>
-
                 ) : isRevisi ? (
                   /* =========================
                       PERLU REVISI
@@ -469,7 +473,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                       Perlu Revisi
                     </span>
                   </div>
-
                 ) : isPending ? (
                   /* =========================
                       MENUNGGU
@@ -477,27 +480,24 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                   <span className="text-gray-400">
                     Menunggu verifikasi pustakawan
                   </span>
-
                 ) : (
                   /* =========================
                       BELUM ADA PENGAJUAN
                   ========================== */
-                  <span className="text-gray-400">
-                    Belum ada tanda tangan
-                  </span>
+                  <span className="text-gray-400">Belum ada tanda tangan</span>
                 )}
               </div>
             </div>
           </div>
         </main>
       </div>
-        <AlertModal
-      open={modal.open}
-      type={modal.type}
-      title={modal.title}
-      message={modal.message}
-      onClose={closeAlert}
-    />
+      <AlertModal
+        open={modal.open}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeAlert}
+      />
     </div>
   );
 }

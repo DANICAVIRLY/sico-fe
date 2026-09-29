@@ -22,7 +22,7 @@ export default function VerifikasiMahasiswa() {
   const fetchDetailMahasiswa = () => {
     const token = localStorage.getItem("token");
     axios
-      .get(`http://172.18.160.44:8000/api/pengajuan-clearing/${id}`, {
+      .get(`http://172.18.160.48:8000/api/pengajuan-clearing/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -46,7 +46,7 @@ export default function VerifikasiMahasiswa() {
 
     axios
       .post(
-        `http://172.18.160.44:8000/api/pengajuan-clearing/${id}/review-admin`,
+        `http://172.18.160.48:8000/api/pengajuan-clearing/${id}/review-admin`,
         { keputusan: keputusan, catatan_revisi: catatan },
         {
           headers: {
@@ -79,7 +79,7 @@ export default function VerifikasiMahasiswa() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://172.18.160.44:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
+        `http://172.18.160.48:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -100,7 +100,7 @@ export default function VerifikasiMahasiswa() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://172.18.160.44:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
+        `http://172.18.160.48:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
