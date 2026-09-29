@@ -41,7 +41,7 @@ export default function Signup() {
     }
 
     try {
-      await axios.post(
+      const response = await axios.post(
         "http://172.18.160.48:8000/api/auth/register",
         {
           nama: nama,

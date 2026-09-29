@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Badge, Button, Card, FileInput, Label, Spinner } from "flowbite-react";
 import SidebarMahaComp from "../components/SidebarMahaComp";
+import AlertModal from "../components/AlertModal";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
@@ -22,6 +23,20 @@ export default function PengajuanSaya() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+
+    const [modal, setModal] = useState({
+  open: false,
+  type: "warning",
+  title: "",
+  message: "",
+});
+
+const showAlert = (message, type = "warning", title = "") => {
+  setModal({ open: true, type, title, message });
+};
+
+const closeAlert = () => setModal((m) => ({ ...m, open: false }));
+
 
   // =========================
   // [ADDED] STATE UNTUK AJUKAN ULANG
@@ -163,7 +178,7 @@ export default function PengajuanSaya() {
     const maxSize = 5 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      alert(`File ${file.name} terlalu besar. Maksimal 1 MB.`);
+      showAlert(`File ${file.name} terlalu besar. Maksimal 1 MB.`);
       return false;
     }
 
@@ -175,7 +190,7 @@ export default function PengajuanSaya() {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      alert(
+      showAlert(
         `File ${file.name} tidak didukung.\nGunakan PDF, JPG, JPEG, atau PNG.`,
       );
       return false;
@@ -194,22 +209,22 @@ export default function PengajuanSaya() {
     setError("");
 
     if (!departemen.trim()) {
-      alert("Departemen wajib diisi.");
+      showAlert("Departemen wajib diisi.");
       return;
     }
 
     if (!fileKtm) {
-      alert("File KTM wajib diupload.");
+      showAlert("File KTM wajib diupload.");
       return;
     }
 
     if (!fileSpp) {
-      alert("File Bukti Pembayaran SPP wajib diupload.");
+      showAlert("File Bukti Pembayaran SPP wajib diupload.");
       return;
     }
 
     if (!fileDistribusi) {
-      alert("File Distribusi Skripsi wajib diupload.");
+      showAlert("File Distribusi Skripsi wajib diupload.");
       return;
     }
 
@@ -249,7 +264,7 @@ export default function PengajuanSaya() {
 
       console.log("UPLOAD RESPONSE:", response.data);
 
-      alert("Pengajuan clearing berhasil diajukan.");
+      showAlert("Pengajuan clearing berhasil diajukan.", "success", "Upload File");
 
       setFileKtm(null);
       setFileSpp(null);
@@ -275,13 +290,13 @@ export default function PengajuanSaya() {
         const messages = Object.values(errors).flat().join("\n");
 
         setError(messages);
-        alert(messages);
+        showAlert(messages, "error", "Upload File");
       } else if (err.response?.data?.message) {
         setError(err.response.data.message);
-        alert(err.response.data.message);
+        showAlert(err.response.data.message, "error", "Upload File");
       } else {
         setError("Gagal mengajukan clearing.");
-        alert("Gagal mengajukan clearing.");
+        showAlert("Gagal mengajukan clearing.", "error", "Upload File");
       }
     } finally {
       setUploading(false);
@@ -336,7 +351,7 @@ export default function PengajuanSaya() {
 
       console.log("AJUKAN ULANG RESPONSE:", response.data);
 
-      alert("Pengajuan clearing berhasil diajukan ulang.");
+      showAlert("Pengajuan clearing berhasil diajukan ulang.", "success", "Ajukan Ulang");
 
       setRevisiFileKtm(null);
       setRevisiFileSpp(null);
@@ -362,13 +377,13 @@ export default function PengajuanSaya() {
           .join("\n");
 
         setAjukanUlangError(messages);
-        alert(messages);
+        showAlert(messages, "error", "Ajukan Ulang");
       } else if (err.response?.data?.message) {
         setAjukanUlangError(err.response.data.message);
-        alert(err.response.data.message);
+        showAlert(err.response.data.message, "error", "Ajukan Ulang");
       } else {
         setAjukanUlangError("Gagal mengajukan ulang.");
-        alert("Gagal mengajukan ulang.");
+        showAlert("Gagal mengajukan ulang.", "error", "Ajukan Ulang");
       }
     } finally {
       setAjukanUlangLoading(false);
@@ -381,7 +396,7 @@ export default function PengajuanSaya() {
 
   const handlePreview = async (pengajuanId, jenis) => {
     if (!pengajuanId || !jenis) {
-      alert("Dokumen tidak ditemukan.");
+      showAlert("Dokumen tidak ditemukan.", "error", "Preview Dokumen");
       return;
     }
 
@@ -406,13 +421,13 @@ export default function PengajuanSaya() {
       window.open(url, "_blank");
     } catch (err) {
       console.error("Gagal preview dokumen:", err);
-      alert("Gagal memuat dokumen.");
+      showAlert("Gagal memuat dokumen.", "error", "Preview Dokumen");
     }
   };
 
   const handleDownload = async (pengajuanId, jenis, namaFile) => {
     if (!pengajuanId || !jenis) {
-      alert("Dokumen tidak ditemukan.");
+      showAlert("Dokumen tidak ditemukan.", "error", "Download Dokumen");
       return;
     }
 
@@ -443,7 +458,7 @@ export default function PengajuanSaya() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Gagal download:", err);
-      alert("Gagal mengunduh file.");
+      showAlert("Gagal mengunduh file.", "error", "Download Dokumen");
     }
   };
 
@@ -1188,6 +1203,13 @@ export default function PengajuanSaya() {
           </div>
         </main>
       </div>
+        <AlertModal
+            open={modal.open}
+            type={modal.type}
+            title={modal.title}
+            message={modal.message}
+            onClose={closeAlert}
+          />
     </div>
   );
 }
