@@ -11,7 +11,7 @@ import {
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE_URL = "http://172.18.160.48:8000";
+const API_BASE_URL = "http://172.18.160.73:8000";
 
 // Daftar dokumen yang bisa dilihat pustakawan.
 // Samakan `preview` dan `download` dengan route di backend.

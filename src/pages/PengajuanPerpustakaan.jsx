@@ -5,9 +5,10 @@ import { Label, TextInput, Button, FileInput } from "flowbite-react";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-const API_BASE = "http://172.18.160.48:8000/api/bebas-pustaka";
 
-// Bagian akhir URL untuk melihat PDF. HARUS sama dengan route di routes/api.php.
+const API_BASE = "http://172.18.160.73:8000/api/bebas-pustaka";
+// Bagian akhir URL untuk melihat PDF skripsi.
+// HARUS sama dengan route yang mengarah ke previewSkripsi di routes/api.php.
 // Cek dengan: php artisan route:list --path=bebas-pustaka
 // Hasil akhirnya: GET {API_BASE}/{id}/{PATH}
 const PREVIEW_SKRIPSI_PATH = "preview-skripsi";
@@ -270,9 +271,20 @@ export default function BuatPengajuan() {
       validasiFile(fileSkripsi, "File skripsi") ||
       validasiFile(fileDistribusi, "Form distribusi skripsi");
 
-    if (pesanError) {
-      showAlert(pesanError, "error", "Upload File");
-      return;
+    if (fileSkripsi) {
+      const maxSize = 5 * 1024 * 1024; // 5 MB, sesuai batas backend
+      if (fileSkripsi.size > maxSize) {
+        showAlert(
+          "Ukuran file skripsi maksimal 5 MB.",
+          "error",
+          "Upload File",
+        );
+        return;
+      }
+      if (fileSkripsi.type !== "application/pdf") {
+        showAlert("File skripsi harus berformat PDF.", "error", "Upload File");
+        return;
+      }
     }
 
     setLoading(true);
@@ -389,16 +401,60 @@ export default function BuatPengajuan() {
               {/* =========================
                   UPLOAD SKRIPSI
               ========================== */}
-              <KotakUpload
-                id="fileSkripsi"
-                label={`Upload Skripsi (PDF, maks. ${MAX_FILE_MB} MB)`}
-                file={fileSkripsi}
-                onPilih={setFileSkripsi}
-                sudahTerkirim={sudahTerkirim}
-                namaFile={namaSkripsiTampil}
-                onLihat={() => handleLihatFile("skripsi")}
-                sedangMembuka={sedangMembuka === "skripsi"}
-              />
+              <div className="mb-5">
+                <Label
+                  htmlFor="fileSkripsi"
+                  value="Upload Skripsi (PDF, maks. 5 MB)"
+                >
+                  Upload Skripsi (PDF, maks. 5 MB)
+                </Label>
+
+                {sudahTerkirim ? (
+                  <>
+                    {/* Tampilan sama seperti sebelum dikirim, tapi bisa diklik
+                        untuk melihat file yang sudah terkirim */}
+                    <button
+                      type="button"
+                      onClick={handleLihatFile}
+                      disabled={loadingLihat}
+                      title="Klik untuk melihat file"
+                      className="mt-2 flex w-full items-stretch overflow-hidden rounded-lg border border-gray-300 bg-gray-50 text-left text-sm hover:bg-gray-100 disabled:opacity-60"
+                    >
+                      <span className="bg-gray-800 px-4 py-3 font-semibold text-white whitespace-nowrap">
+                        {loadingLihat ? "Membuka..." : "Lihat File"}
+                      </span>
+                      <span className="px-4 py-3 text-gray-900 truncate">
+                        {namaFileTampil}
+                      </span>
+                    </button>
+
+                    <p className="mt-2 text-sm text-gray-600">
+                      File dipilih:{" "}
+                      <span className="font-semibold">{namaFileTampil}</span>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <FileInput
+                      id="fileSkripsi"
+                      accept=".pdf"
+                      className="mt-2"
+                      onChange={(e) =>
+                        setFileSkripsi(e.target.files?.[0] || null)
+                      }
+                    />
+
+                    {fileSkripsi && (
+                      <p className="mt-2 text-sm text-gray-600">
+                        File dipilih:{" "}
+                        <span className="font-semibold">
+                          {fileSkripsi.name}
+                        </span>
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
 
               {/* =========================
                   UPLOAD FORM DISTRIBUSI SKRIPSI
