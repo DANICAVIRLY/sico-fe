@@ -5,7 +5,11 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 
+<<<<<<< HEAD
 const API_BASE_URL = "http://172.18.160.76:8000";
+=======
+const API_BASE_URL = "http://172.18.160.73:8000";
+>>>>>>> 41e0e9891f29c21ac856e3076fb7b7991575082d
 
 export default function VerifikasiQR() {
   const { id } = useParams();

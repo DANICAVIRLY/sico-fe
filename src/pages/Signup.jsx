@@ -101,8 +101,8 @@ export default function Signup() {
     if (Object.keys(newErrors).length > 0) return;
 
     try {
-      await axios.post(
-        "http://172.18.160.76:8000/api/auth/register",
+      const response = await axios.post(
+        "http://172.18.160.73:8000/api/auth/register",
         {
           nama: nama,
           nim: nim,

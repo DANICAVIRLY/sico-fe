@@ -4,7 +4,11 @@ import { HiDocumentText, HiCheckCircle, HiClock, HiBell } from 'react-icons/hi';
 import axios from 'axios';
 import AtasanSidebar from '../components/AtasanSidebar';
 
+<<<<<<< HEAD
 const API_BASE_URL = 'http://172.18.160.76:8000';
+=======
+const API_BASE_URL = 'http://172.18.160.73:8000';
+>>>>>>> 41e0e9891f29c21ac856e3076fb7b7991575082d
 const READ_NOTIF_KEY = 'atasan_read_notif_ids';
 
 export default function DashboardAtasan() {

@@ -25,7 +25,11 @@ export default function Login() {
       };
 
       const response = await axios.post(
+<<<<<<< HEAD
         "http://172.18.160.76:8000/api/auth/login",
+=======
+        "http://172.18.160.73:8000/api/auth/login",
+>>>>>>> 41e0e9891f29c21ac856e3076fb7b7991575082d
         payload,
         {
           headers: {
