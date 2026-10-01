@@ -4,6 +4,7 @@ import axios from "axios";
 import { HiEye, HiDownload, HiCheck, HiMenu } from "react-icons/hi";
 import SidebarAdminComp from "../components/SidebarAdminComp";
 import AlertModal from "../components/AlertModal";
+import { Button } from "flowbite-react";
 
 export default function VerifikasiMahasiswa() {
   const { id } = useParams();
@@ -24,7 +25,7 @@ export default function VerifikasiMahasiswa() {
     message: "",
   });
 
-  // [DITAMBAH] flag ini nentuin apakah setelah modal ditutup perlu
+  // flag ini nentuin apakah setelah modal ditutup perlu
   // navigate(-1) atau tidak. Dipakai khusus untuk kasus "berhasil update
   // status", supaya user sempat baca pesannya dulu sebelum halaman pindah.
   const [navigateAfterClose, setNavigateAfterClose] = useState(false);
@@ -37,8 +38,7 @@ export default function VerifikasiMahasiswa() {
   const closeAlert = () => {
     setModal((m) => ({ ...m, open: false }));
 
-    // [DITAMBAH] baru pindah halaman SETELAH modal ditutup, bukan
-    // bersamaan dengan showAlert() seperti sebelumnya
+    // pindah halaman SETELAH modal ditutup, bukan bersamaan dengan showAlert()
     if (navigateAfterClose) {
       setNavigateAfterClose(false);
       navigate(-1);
@@ -52,7 +52,7 @@ export default function VerifikasiMahasiswa() {
   const fetchDetailMahasiswa = () => {
     const token = localStorage.getItem("token");
     axios
-      .get(`http://172.18.160.48:8000/api/pengajuan-clearing/${id}`, {
+      .get(`http://172.18.160.76:8000/api/pengajuan-clearing/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
@@ -76,7 +76,7 @@ export default function VerifikasiMahasiswa() {
 
     axios
       .post(
-        `http://172.18.160.48:8000/api/pengajuan-clearing/${id}/review-admin`,
+        `http://172.18.160.76:8000/api/pengajuan-clearing/${id}/review-admin`,
         { keputusan: keputusan, catatan_revisi: catatan },
         {
           headers: {
@@ -86,14 +86,10 @@ export default function VerifikasiMahasiswa() {
         }
       )
       .then(() => {
-        // [DIPERBAIKI] type "success" + title, dan navigate(-1) TIDAK
-        // dipanggil di sini lagi. Dipindah ke closeAlert() lewat flag
-        // withNavigate=true, supaya modal sempat kelihatan dulu.
         showAlert("Status berhasil diperbarui!", "success", "Berhasil", true);
       })
       .catch((err) => {
         console.error(err);
-        // [DIPERBAIKI] sebelumnya masih pakai alert() bawaan browser
         showAlert(
           err.response?.data?.message || "Gagal memperbarui status.",
           "error",
@@ -116,7 +112,7 @@ export default function VerifikasiMahasiswa() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://172.18.160.48:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
+        `http://172.18.160.76:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -129,7 +125,6 @@ export default function VerifikasiMahasiswa() {
       window.open(url, "_blank");
     } catch (err) {
       console.error(err);
-      // [DIPERBAIKI] sebelumnya masih pakai alert() bawaan browser
       showAlert("Gagal memuat dokumen.", "error", "Gagal");
     }
   };
@@ -138,7 +133,7 @@ export default function VerifikasiMahasiswa() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        `http://172.18.160.48:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
+        `http://172.18.160.76:8000/api/pengajuan-clearing/${id}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -156,7 +151,6 @@ export default function VerifikasiMahasiswa() {
       link.remove();
     } catch (err) {
       console.error(err);
-      // [DIPERBAIKI] sebelumnya masih pakai alert() bawaan browser
       showAlert("Gagal mengunduh dokumen.", "error", "Gagal");
     }
   };
@@ -210,7 +204,7 @@ export default function VerifikasiMahasiswa() {
       <SidebarAdminComp isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 lg:ml-64 min-w-0">
-        {/* Topbar Mobile (Sticky) — sama pola di DashboardMahasiswa.jsx & BuatPengajuan.jsx */}
+        {/* Topbar Mobile (Sticky) */}
         <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
           <button onClick={() => setSidebarOpen(true)} className="p-1 focus:outline-none">
             <HiMenu className="w-6 h-6" />
@@ -267,116 +261,75 @@ export default function VerifikasiMahasiswa() {
             </div>
 
             {/* Card Dokumen Persyaratan */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
-              <h3 className="font-bold text-gray-900 text-base mb-6">Dokumen Persyaratan</h3>
-              <div className="space-y-6 text-sm">
-
-                {/* SPP */}
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-800 font-medium">Spp</span>
-                  <div className="flex items-center gap-4 text-indigo-950">
-                    <button
-                      type="button"
-                      onClick={() => previewDokumen("spp")}
-                      className="hover:text-indigo-600 transition"
-                      title="Lihat Dokumen"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
-                        <circle cx="12" cy="12" r="1" fill="currentColor" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => downloadDokumen("spp", `spp-${data?.nim || id}`)}
-                      className="hover:text-indigo-600 transition"
-                      title="Unduh Dokumen"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 17V3" />
-                        <path d="m6 11 6 6 6-6" />
-                        <path d="M19 21H5" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Distribusi Skripsi */}
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-800 font-medium">Distribusi Skripsi</span>
-                  <div className="flex items-center gap-4 text-indigo-950">
-                    <button
-                      type="button"
-                      onClick={() => previewDokumen("distribusi")}
-                      className="hover:text-indigo-600 transition"
-                      title="Lihat Dokumen"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
-                        <circle cx="12" cy="12" r="1" fill="currentColor" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => downloadDokumen("distribusi", `distribusi-${data?.nim || id}`)}
-                      className="hover:text-indigo-600 transition"
-                      title="Unduh Dokumen"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 17V3" />
-                        <path d="m6 11 6 6 6-6" />
-                        <path d="M19 21H5" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* KTM */}
-                <div className="flex items-center justify-between">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+              <h3 className="font-bold text-gray-900 text-base">Dokumen Persyaratan</h3>
+              <div className="flex-1 flex flex-col justify-center space-y-6 text-sm mt-4">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-gray-800 font-medium">KTM (Kartu Tanda Mahasiswa)</span>
-                  <div className="flex items-center gap-4 text-indigo-950">
-                    <button
-                      type="button"
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="xs"
+                      color="light"
                       onClick={() => previewDokumen("ktm")}
-                      className="hover:text-indigo-600 transition"
-                      title="Lihat Dokumen"
                     >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
-                        <circle cx="12" cy="12" r="1" fill="currentColor" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
+                      Preview
+                    </Button>
+                    <Button
+                      size="xs"
+                      color="blue"
                       onClick={() => downloadDokumen("ktm", `ktm-${data?.nim || id}`)}
-                      className="hover:text-indigo-600 transition"
-                      title="Unduh Dokumen"
                     >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 17V3" />
-                        <path d="m6 11 6 6 6-6" />
-                        <path d="M19 21H5" />
-                      </svg>
-                    </button>
+                      Unduh
+                    </Button>
                   </div>
                 </div>
 
-                {/* Keterangan Bebas Pustaka */}
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-gray-800 font-medium">Keterangan Bebas Pustaka</span>
-                  <span className="text-[#00a86b] font-semibold text-sm">
-                    Lengkap
-                  </span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-800 font-medium">Bukti Pembayaran SPP</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="xs"
+                      color="light"
+                      onClick={() => previewDokumen("spp")}
+                    >
+                      Preview
+                    </Button>
+                    <Button
+                      size="xs"
+                      color="blue"
+                      onClick={() => downloadDokumen("spp", `spp-${data?.nim || id}`)}
+                    >
+                      Unduh
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-800 font-medium">Surat Bebas Pustaka</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="xs"
+                      color="light"
+                      onClick={() => previewDokumen("bebas_pustaka")}
+                    >
+                      Preview
+                    </Button>
+                    <Button
+                      size="xs"
+                      color="blue"
+                      onClick={() =>
+                        downloadDokumen("bebas_pustaka", `bebas-pustaka-${data?.nim || id}`)
+                      }
+                    >
+                      Unduh
+                    </Button>
+                  </div>
                 </div>
 
               </div>
             </div>
           </div>
 
-          {/* Catatan & Action */}
           <div className="mt-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Catatan (Optional)</label>
             <textarea
@@ -400,7 +353,7 @@ export default function VerifikasiMahasiswa() {
                 onClick={handleSetujuiClick}
                 className="px-8 py-2.5 bg-[#4c51bf] hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition disabled:opacity-50"
               >
-                Setuju & kirim ke atasan
+                Setuju & kirim ke Kabag TU
               </button>
             </div>
           </div>

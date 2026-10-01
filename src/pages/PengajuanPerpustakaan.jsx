@@ -5,7 +5,7 @@ import { Label, TextInput, Button, FileInput } from "flowbite-react";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-const API_BASE = "http://172.18.160.48:8000/api/bebas-pustaka";
+const API_BASE = "http://172.18.160.76:8000/api/bebas-pustaka";
 
 // Bagian akhir URL untuk melihat PDF. HARUS sama dengan route di routes/api.php.
 // Cek dengan: php artisan route:list --path=bebas-pustaka

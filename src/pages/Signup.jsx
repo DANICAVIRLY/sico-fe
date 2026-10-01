@@ -5,7 +5,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 
-
 const capitalizeWords = (str) => {
   return str
     .toLowerCase()
@@ -19,6 +18,31 @@ const capitalizeFirstLetter = (str) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+// Aturan NIM: 1 huruf + 10 angka = 11 karakter, awalan E441-E444
+const NIM_LENGTH = 11;
+const NIM_PREFIX_REGEX = /^E44[1-4]/;
+const NIM_FULL_REGEX = /^E44[1-4][0-9]{7}$/;
+
+const FormField = ({ id, label, error, ...props }) => (
+  <div>
+    <Label
+      htmlFor={id}
+      color={error ? "failure" : undefined}
+      className="text-sm font-semibold"
+    >
+      {label}
+    </Label>
+    <TextInput
+      id={id}
+      color={error ? "failure" : "gray"}
+      shadow
+      className="mt-1"
+      {...props}
+    />
+    {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+  </div>
+);
+
 export default function Signup() {
   const navigate = useNavigate();
 
@@ -27,22 +51,58 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({});
+
+  const clearError = (field) =>
+    setErrors((prev) => ({ ...prev, [field]: "", general: "" }));
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!nama.trim()) {
+      newErrors.nama = "Nama lengkap wajib diisi.";
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Email wajib diisi.";
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      newErrors.email = "Format email tidak valid.";
+    }
+
+    if (!nim.trim()) {
+      newErrors.nim = "NIM wajib diisi.";
+    } else if (!NIM_PREFIX_REGEX.test(nim)) {
+      newErrors.nim =
+        "NIM harus diawali E dan menggunakan kode departemen yang valid (E441, E442, E443, atau E444).";
+    } else if (!NIM_FULL_REGEX.test(nim)) {
+      newErrors.nim = "NIM harus 11 karakter: 1 huruf diikuti 10 angka.";
+    }
+
+    if (!password) {
+      newErrors.password = "Password wajib diisi.";
+    } else if (password.length < 8) {
+      newErrors.password = "Password minimal 8 karakter.";
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Konfirmasi password wajib diisi.";
+    } else if (confirmPassword !== password) {
+      newErrors.confirmPassword = "Konfirmasi password tidak cocok.";
+    }
+
+    return newErrors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
-      alert("Password dan Confirm Password tidak sama!");
-      return;
-    }
-
-    if (!nama || !nim || !email || !password || !confirmPassword) {
-      alert("Semua data harus diisi!");
-      return;
-    }
+    const newErrors = validate();
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
 
     try {
-      const response = await axios.post(
-        "http://172.18.160.48:8000/api/auth/register",
+      await axios.post(
+        "http://172.18.160.76:8000/api/auth/register",
         {
           nama: nama,
           nim: nim,
@@ -63,16 +123,20 @@ export default function Signup() {
 
       navigate("/login");
     } catch (error) {
+      const serverErrors = error.response?.data?.errors;
 
-      if (error.response?.data?.errors) {
-        const errors = error.response.data.errors;
-        const firstError = Object.values(errors)[0][0];
-
-        alert(firstError);
+      if (serverErrors) {
+        const mapped = {};
+        Object.entries(serverErrors).forEach(([field, messages]) => {
+          const key =
+            field === "password_confirmation" ? "confirmPassword" : field;
+          mapped[key] = messages[0];
+        });
+        setErrors(mapped);
       } else {
-        alert(
-          error.response?.data?.message || "Registrasi gagal."
-        );
+        setErrors({
+          general: error.response?.data?.message || "Registrasi gagal.",
+        });
       }
     }
   };
@@ -103,101 +167,79 @@ export default function Signup() {
                 Silahkan daftar untuk melanjutkan
               </p>
             </div>
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-            >
-              <div>
-                <Label
-                  htmlFor="nama"
-                  value="Nama Lengkap"
-                  className="text-sm font-semibold"
-                >Nama Lengkap</Label>
-                <TextInput
-                  id="nama"
-                  type="text"
-                  placeholder="Masukkan Nama"
-                  value={nama}
-                  onChange={(e) => setNama(capitalizeWords(e.target.value))}
-                  required
-                  shadow
-                  className="mt-1"
-                />
-              </div>
 
-              <div>
-                <Label
-                  htmlFor="email"
-                  value="Email"
-                  className="text-sm font-semibold"
-                >Email</Label>
-                <TextInput
-                  id="email"
-                  type="email"
-                  placeholder="Masukkan Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  shadow
-                  className="mt-1"
-                />
-              </div>
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              <FormField
+                id="nama"
+                label="Nama Lengkap"
+                type="text"
+                placeholder="Masukkan Nama"
+                value={nama}
+                error={errors.nama}
+                onChange={(e) => {
+                  setNama(capitalizeWords(e.target.value));
+                  clearError("nama");
+                }}
+              />
 
-              <div>
-                <Label
-                  htmlFor="nim"
-                  value="NIM"
-                  className="text-sm font-semibold"
-                > NIM</Label>
-                <TextInput
-                  id="nim"
-                  type="text"
-                  placeholder="Masukkan NIM"
-                  value={nim}
-                  onChange={(e) => setNim(capitalizeFirstLetter(e.target.value))}
-                  required
-                  shadow
-                  className="mt-1"
-                />
-              </div>
+              <FormField
+                id="email"
+                label="Email"
+                type="email"
+                placeholder="Masukkan Email"
+                value={email}
+                error={errors.email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearError("email");
+                }}
+              />
 
-              <div>
-                <Label
-                  htmlFor="password"
-                  value="Password"
-                  className="text-sm font-semibold"
-                >Password</Label>
-                <TextInput
-                  id="password"
-                  type="password"
-                  placeholder="Masukkan Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  shadow
-                  className="mt-1"
-                />
-              </div>
+              <FormField
+                id="nim"
+                label="NIM"
+                type="text"
+                placeholder="Masukkan NIM"
+                maxLength={NIM_LENGTH}
+                value={nim}
+                error={errors.nim}
+                onChange={(e) => {
+                  setNim(capitalizeFirstLetter(e.target.value));
+                  clearError("nim");
+                }}
+              />
 
-              <div>
-                <Label
-                  htmlFor="confirmPassword"
-                  value="Confirm Password"
-                  className="text-sm font-semibold"
-                >Confirm Password</Label>
-                <TextInput
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Ulangi Password"
-                  value={confirmPassword}
-                  onChange={(e) =>
-                    setConfirmPassword(e.target.value)
-                  }
-                  required
-                  shadow
-                  className="mt-1"
-                />
-              </div>
+              <FormField
+                id="password"
+                label="Password"
+                type="password"
+                placeholder="Masukkan Password"
+                value={password}
+                error={errors.password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearError("password");
+                }}
+              />
+
+              <FormField
+                id="confirmPassword"
+                label="Confirm Password"
+                type="password"
+                placeholder="Ulangi Password"
+                value={confirmPassword}
+                error={errors.confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  clearError("confirmPassword");
+                }}
+              />
+
+              {errors.general && (
+                <p className="text-sm text-red-600 text-center">
+                  {errors.general}
+                </p>
+              )}
 
               <Button
                 type="submit"
@@ -208,8 +250,7 @@ export default function Signup() {
 
               <p className="text-center text-sm text-gray-500 mt-4">
                 Sudah punya akun?{" "}
-                <Link to="/login"
-                 className="text-indigo-600 hover:underline">
+                <Link to="/login" className="text-indigo-600 hover:underline">
                   Login di sini
                 </Link>
               </p>

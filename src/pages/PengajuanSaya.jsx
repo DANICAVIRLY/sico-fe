@@ -5,7 +5,7 @@ import AlertModal from "../components/AlertModal";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-const API_URL = "http://172.18.160.48:8000";
+const API_URL = "http://172.18.160.76:8000";
 const STORAGE_URL = `${API_URL}/storage`;
 
 export default function PengajuanSaya() {
@@ -13,39 +13,34 @@ export default function PengajuanSaya() {
 
   const [nama, setNama] = useState("");
   const [nim, setNim] = useState("");
-  const [departemen, setDepartemen] = useState("");
 
   const [fileKtm, setFileKtm] = useState(null);
   const [fileSpp, setFileSpp] = useState(null);
-  const [fileDistribusi, setFileDistribusi] = useState(null);
 
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-    const [modal, setModal] = useState({
-  open: false,
-  type: "warning",
-  title: "",
-  message: "",
-});
+  const [modal, setModal] = useState({
+    open: false,
+    type: "warning",
+    title: "",
+    message: "",
+  });
 
-const showAlert = (message, type = "warning", title = "") => {
-  setModal({ open: true, type, title, message });
-};
+  const showAlert = (message, type = "warning", title = "") => {
+    setModal({ open: true, type, title, message });
+  };
 
-const closeAlert = () => setModal((m) => ({ ...m, open: false }));
-
+  const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
   // =========================
-  // [ADDED] STATE UNTUK AJUKAN ULANG
+  // STATE UNTUK AJUKAN ULANG
   // =========================
 
   const [revisiFileKtm, setRevisiFileKtm] = useState(null);
   const [revisiFileSpp, setRevisiFileSpp] = useState(null);
-  const [revisiFileDistribusi, setRevisiFileDistribusi] = useState(null);
-  const [revisiDepartemen, setRevisiDepartemen] = useState("");
   const [ajukanUlangLoading, setAjukanUlangLoading] = useState(false);
   const [ajukanUlangError, setAjukanUlangError] = useState("");
 
@@ -94,8 +89,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
         );
 
         setNim(user.nim || user.NIM || user.nim_mahasiswa || "");
-
-        setDepartemen(user.departemen || user.department || "");
       } catch (err) {
         console.error("Gagal membaca data user:", err);
       }
@@ -116,8 +109,8 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
       setError("");
 
       const response = await axios.get(
-        "http://172.18.160.48:8000/api/pengajuan-clearing",
-        getConfig()
+        "http://172.18.160.76:8000/api/pengajuan-clearing",
+        getConfig(),
       );
 
       console.log("DATA PENGAJUAN:", response.data);
@@ -136,14 +129,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
       setDocuments(data);
       setPengajuanList(data);
-
-      const revisi = data.find(
-        (p) => String(p.status).toUpperCase() === "REVISI_ADMIN",
-      );
-
-      if (revisi) {
-        setRevisiDepartemen(revisi.departemen || "");
-      }
     } catch (err) {
       console.error("Gagal mengambil pengajuan:", err);
 
@@ -208,11 +193,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
     setError("");
 
-    if (!departemen.trim()) {
-      showAlert("Departemen wajib diisi.");
-      return;
-    }
-
     if (!fileKtm) {
       showAlert("File KTM wajib diupload.");
       return;
@@ -223,24 +203,16 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
       return;
     }
 
-    if (!fileDistribusi) {
-      showAlert("File Distribusi Skripsi wajib diupload.");
-      return;
-    }
-
     if (!validateFile(fileKtm)) return;
     if (!validateFile(fileSpp)) return;
-    if (!validateFile(fileDistribusi)) return;
 
     try {
       setUploading(true);
 
       const formData = new FormData();
 
-      formData.append("departemen", departemen);
       formData.append("file_ktm", fileKtm);
       formData.append("file_bukti_spp", fileSpp);
-      formData.append("file_distribusi", fileDistribusi);
 
       console.log("FORM DATA:");
 
@@ -251,7 +223,7 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
       const token = getToken();
 
       const response = await axios.post(
-        "http://172.18.160.48:8000/api/pengajuan-clearing",
+        "http://172.18.160.76:8000/api/pengajuan-clearing",
         formData,
         {
           headers: {
@@ -268,15 +240,12 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
       setFileKtm(null);
       setFileSpp(null);
-      setFileDistribusi(null);
 
       const inputKtm = document.getElementById("fileKtm");
       const inputSpp = document.getElementById("fileSpp");
-      const inputDistribusi = document.getElementById("fileDistribusi");
 
       if (inputKtm) inputKtm.value = "";
       if (inputSpp) inputSpp.value = "";
-      if (inputDistribusi) inputDistribusi.value = "";
 
       await getPengajuan();
     } catch (err) {
@@ -304,7 +273,7 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
   };
 
   // =========================
-  // [ADDED] AJUKAN ULANG (setelah revisi admin)
+  // AJUKAN ULANG (setelah revisi admin)
   // =========================
 
   const handleAjukanUlang = async (e) => {
@@ -318,27 +287,19 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
     if (revisiFileKtm && !validateFile(revisiFileKtm)) return;
     if (revisiFileSpp && !validateFile(revisiFileSpp)) return;
-    if (revisiFileDistribusi && !validateFile(revisiFileDistribusi)) return;
 
     try {
       setAjukanUlangLoading(true);
 
       const formData = new FormData();
 
-      if (revisiDepartemen && revisiDepartemen !== pengajuanRevisi.departemen) {
-        formData.append("departemen", revisiDepartemen);
-      }
-
       if (revisiFileKtm) formData.append("file_ktm", revisiFileKtm);
       if (revisiFileSpp) formData.append("file_bukti_spp", revisiFileSpp);
-      if (revisiFileDistribusi) {
-        formData.append("file_distribusi", revisiFileDistribusi);
-      }
 
       const token = getToken();
 
       const response = await axios.post(
-        `http://172.18.160.48:8000/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
+        `http://172.18.160.76:8000/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
         formData,
         {
           headers: {
@@ -351,19 +312,20 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
       console.log("AJUKAN ULANG RESPONSE:", response.data);
 
-      showAlert("Pengajuan clearing berhasil diajukan ulang.", "success", "Ajukan Ulang");
+      showAlert(
+        "Pengajuan clearing berhasil diajukan ulang.",
+        "success",
+        "Ajukan Ulang",
+      );
 
       setRevisiFileKtm(null);
       setRevisiFileSpp(null);
-      setRevisiFileDistribusi(null);
 
       const inputKtm = document.getElementById("revisiFileKtm");
       const inputSpp = document.getElementById("revisiFileSpp");
-      const inputDistribusi = document.getElementById("revisiFileDistribusi");
 
       if (inputKtm) inputKtm.value = "";
       if (inputSpp) inputSpp.value = "";
-      if (inputDistribusi) inputDistribusi.value = "";
 
       await getPengajuan();
     } catch (err) {
@@ -404,7 +366,7 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
       const token = getToken();
 
       const response = await axios.get(
-        `http://172.18.160.48:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        `http://172.18.160.76:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -435,7 +397,7 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
       const token = getToken();
 
       const response = await axios.get(
-        `http://172.18.160.48:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        `http://172.18.160.76:8000/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
@@ -581,27 +543,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
           catatan: pengajuan.catatan_spp || pengajuan.catatan || "-",
         });
       }
-
-      if (
-        pengajuan.file_distribusi ||
-        pengajuan.distribusi ||
-        pengajuan.fileDistribusi
-      ) {
-        rows.push({
-          id: `${pengajuan.id}-distribusi`,
-          pengajuanId: pengajuan.id,
-          jenis: "distribusi",
-          nama: "Distribusi Skripsi",
-          file:
-            pengajuan.file_distribusi ||
-            pengajuan.distribusi ||
-            pengajuan.fileDistribusi,
-          status: pengajuan.status_distribusi || pengajuan.status || "Pending",
-          upload: pengajuan.created_at || pengajuan.tanggal_upload,
-          validasi: pengajuan.validated_at || pengajuan.tanggal_validasi,
-          catatan: pengajuan.catatan_distribusi || pengajuan.catatan || "-",
-        });
-      }
     });
 
     return rows;
@@ -611,12 +552,18 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col lg:flex-row">
-      <SidebarMahaComp isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SidebarMahaComp
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
       <div className="flex-1 lg:ml-64 min-w-0">
-        {/* Topbar Mobile (Sticky) — sama pola di DashboardMahasiswa.jsx & BuatPengajuan.jsx */}
+        {/* Topbar Mobile (Sticky) */}
         <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
-          <button onClick={() => setSidebarOpen(true)} className="p-1 focus:outline-none">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1 focus:outline-none"
+          >
             <HiMenu className="w-6 h-6" />
           </button>
           <span className="font-bold">Clearing Online</span>
@@ -630,7 +577,9 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
               Sistem Informasi Clearing Online
             </p>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Pengajuan Saya</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+              Pengajuan Saya
+            </h1>
           </div>
 
           {/* ERROR */}
@@ -700,32 +649,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                   </div>
                 </div>
 
-                <div className="mb-5">
-                  <Label htmlFor="revisiDepartemen" value="Departemen">
-                    Departemen
-                  </Label>
-                  <select
-                    id="revisiDepartemen"
-                    value={revisiDepartemen}
-                    onChange={(e) => setRevisiDepartemen(e.target.value)}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="">Pilih Departemen</option>
-                    <option value="Departemen Manajemen Hutan (MNH)">
-                      Departemen Manajemen Hutan (MNH)
-                    </option>
-                    <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
-                      Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
-                    </option>
-                    <option value="Departemen Silvikultur (SVK)">
-                      Departemen Silvikultur (SVK)
-                    </option>
-                    <option value="Departemen Hasil Hutan (HH / DHH)">
-                      Departemen Hasil Hutan (HH / DHH)
-                    </option>
-                  </select>
-                </div>
-
                 {/* KTM */}
                 <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5">
                   <h3 className="mb-2 font-semibold text-gray-800">
@@ -755,13 +678,15 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                   {revisiFileKtm && (
                     <p className="mt-2 text-sm text-gray-600">
                       File baru dipilih:{" "}
-                      <span className="font-semibold">{revisiFileKtm.name}</span>
+                      <span className="font-semibold">
+                        {revisiFileKtm.name}
+                      </span>
                     </p>
                   )}
                 </div>
 
                 {/* SPP */}
-                <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5">
+                <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
                   <h3 className="mb-2 font-semibold text-gray-800">
                     Ganti Bukti SPP (opsional)
                   </h3>
@@ -789,44 +714,8 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                   {revisiFileSpp && (
                     <p className="mt-2 text-sm text-gray-600">
                       File baru dipilih:{" "}
-                      <span className="font-semibold">{revisiFileSpp.name}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* DISTRIBUSI */}
-                <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
-                  <h3 className="mb-2 font-semibold text-gray-800">
-                    Ganti Distribusi Skripsi (opsional)
-                  </h3>
-
-                  {pengajuanRevisi.file_distribusi && (
-                    <p className="mb-2 text-sm text-gray-600">
-                      File saat ini:{" "}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handlePreview(pengajuanRevisi.id, "distribusi")
-                        }
-                        className="text-blue-600 underline hover:text-blue-800"
-                      >
-                        {getFileName(pengajuanRevisi.file_distribusi)}
-                      </button>
-                    </p>
-                  )}
-
-                  <FileInput
-                    id="revisiFileDistribusi"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) =>
-                      setRevisiFileDistribusi(e.target.files?.[0] || null)
-                    }
-                  />
-                  {revisiFileDistribusi && (
-                    <p className="mt-2 text-sm text-gray-600">
-                      File baru dipilih:{" "}
                       <span className="font-semibold">
-                        {revisiFileDistribusi.name}
+                        {revisiFileSpp.name}
                       </span>
                     </p>
                   )}
@@ -897,34 +786,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                   </div>
                 </div>
 
-                {/* DEPARTEMEN */}
-                <div className="mb-6">
-                  <Label htmlFor="departemen" value="Departemen">
-                    Departemen
-                  </Label>
-
-                  <select
-                    id="departemen"
-                    value={departemen}
-                    onChange={(e) => setDepartemen(e.target.value)}
-                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                  >
-                    <option value="">Pilih Departemen</option>
-                    <option value="Departemen Manajemen Hutan (MNH)">
-                      Departemen Manajemen Hutan (MNH)
-                    </option>
-                    <option value="Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)">
-                      Departemen Konservasi Sumberdaya Hutan dan Ekowisata (KSHE)
-                    </option>
-                    <option value="Departemen Silvikultur (SVK)">
-                      Departemen Silvikultur (SVK)
-                    </option>
-                    <option value="Departemen Hasil Hutan (HH / DHH)">
-                      Departemen Hasil Hutan (HH / DHH)
-                    </option>
-                  </select>
-                </div>
-
                 {/* KTM */}
                 <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
                   <div className="mb-3">
@@ -975,35 +836,6 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
                     <p className="mt-2 text-sm text-gray-600">
                       File dipilih:{" "}
                       <span className="font-semibold">{fileSpp.name}</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* DISTRIBUSI */}
-                <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
-                  <div className="mb-3">
-                    <h3 className="font-semibold text-gray-800">
-                      3. Distribusi Skripsi
-                    </h3>
-
-                    <p className="mt-1 text-xs text-gray-500">
-                      Upload dokumen distribusi skripsi dalam format PDF, JPG,
-                      JPEG, atau PNG. Maksimal 1 MB.
-                    </p>
-                  </div>
-
-                  <FileInput
-                    id="fileDistribusi"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) =>
-                      setFileDistribusi(e.target.files?.[0] || null)
-                    }
-                  />
-
-                  {fileDistribusi && (
-                    <p className="mt-2 text-sm text-gray-600">
-                      File dipilih:{" "}
-                      <span className="font-semibold">{fileDistribusi.name}</span>
                     </p>
                   )}
                 </div>
@@ -1203,13 +1035,14 @@ const closeAlert = () => setModal((m) => ({ ...m, open: false }));
           </div>
         </main>
       </div>
-        <AlertModal
-            open={modal.open}
-            type={modal.type}
-            title={modal.title}
-            message={modal.message}
-            onClose={closeAlert}
-          />
+
+      <AlertModal
+        open={modal.open}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeAlert}
+      />
     </div>
   );
 }
