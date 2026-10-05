@@ -218,8 +218,6 @@ export default function BuatPengajuan() {
       jenis === "distribusi"
         ? "distribusi"
         : "skripsi";
-
-    // Buka tab terlebih dahulu supaya tidak terkena popup blocker.
     const tabBaru = window.open("", "_blank");
 
     setSedangMembuka(jenis);
@@ -249,8 +247,6 @@ export default function BuatPengajuan() {
       } else {
         window.open(url, "_blank");
       }
-
-      // Bersihkan object URL setelah beberapa waktu.
       setTimeout(() => {
         URL.revokeObjectURL(url);
       }, 60 * 1000);
@@ -273,16 +269,8 @@ export default function BuatPengajuan() {
     }
   };
 
-  // ======================================================
-  // KIRIM PENGAJUAN
-  // ======================================================
-
   const handleKirim = async () => {
   if (tombolDisabled) return;
-
-  // ======================================================
-  // VALIDASI FILE
-  // ======================================================
 
   const pesanError =
     validasiFile(
@@ -318,20 +306,14 @@ export default function BuatPengajuan() {
     };
 
     const formData = new FormData();
-
     formData.append(
       FIELD_SKRIPSI,
       fileSkripsi
     );
-
     formData.append(
       FIELD_DISTRIBUSI,
       fileDistribusi
     );
-
-    // ======================================================
-    // AJUKAN ULANG
-    // ======================================================
 
     if (bisaUploadUlang && pengajuanId) {
       await axios.post(
@@ -348,10 +330,6 @@ export default function BuatPengajuan() {
         "Berhasil"
       );
     } else {
-      // ====================================================
-      // PENGAJUAN BARU
-      // ====================================================
-
       await axios.post(
         API_BASE,
         formData,
@@ -366,10 +344,6 @@ export default function BuatPengajuan() {
         "Berhasil"
       );
     }
-
-    // ======================================================
-    // SIMPAN NAMA FILE
-    // ======================================================
 
     localStorage.setItem(
       kunciSkripsi,
@@ -388,10 +362,6 @@ export default function BuatPengajuan() {
     setNamaDistribusiTerkirim(
       fileDistribusi.name
     );
-
-    // ======================================================
-    // RESET FILE
-    // ======================================================
 
     setFileSkripsi(null);
     setFileDistribusi(null);
@@ -445,10 +415,6 @@ export default function BuatPengajuan() {
   }
 };
 
-  // ======================================================
-  // LABEL TOMBOL
-  // ======================================================
-
   const labelTombol = () => {
     if (loading) return "Mengirim...";
 
@@ -466,10 +432,6 @@ export default function BuatPengajuan() {
 
     return "Kirim";
   };
-
-  // ======================================================
-  // RENDER
-  // ======================================================
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
@@ -500,22 +462,13 @@ export default function BuatPengajuan() {
           <div className="w-6" />
         </div>
 
-        {/* MAIN */}
         <main className="p-6 md:p-8">
-
           <h2 className="text-2xl md:text-4xl font-bold mb-6 md:mb-10">
             Buat Pengajuan
           </h2>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
 
-            {/* ==================================================
-                FORM PENGAJUAN
-            ================================================== */}
-
             <div className="bg-white rounded-lg shadow-sm p-6">
-
-              {/* NAMA */}
               <div className="mb-5">
                 <Label
                   htmlFor="nama"
@@ -530,8 +483,6 @@ export default function BuatPengajuan() {
                   readOnly
                 />
               </div>
-
-              {/* NIM */}
               <div className="mb-5">
                 <Label
                   htmlFor="nim"
@@ -546,10 +497,6 @@ export default function BuatPengajuan() {
                   readOnly
                 />
               </div>
-
-              {/* ==================================================
-                  UPLOAD SKRIPSI
-              ================================================== */}
 
               <div className="mb-5">
 
@@ -624,26 +571,18 @@ export default function BuatPengajuan() {
 
               </div>
 
-              {/* ==================================================
-                  UPLOAD FORM DISTRIBUSI
-              ================================================== */}
-
             <KotakUpload
-  id="fileDistribusi"
-  label="Upload Form Distribusi Skripsi (PDF, maks. 1 MB)"
-  file={fileDistribusi}
-  onPilih={setFileDistribusi}
-  sudahTerkirim={sudahTerkirim}
-  namaFile={namaDistribusiTampil}
-  onLihat={() => handleLihatFile("distribusi")}
-  sedangMembuka={
-    sedangMembuka === "distribusi"
-  }
-/>
-
-              {/* ==================================================
-                  CATATAN REVISI
-              ================================================== */}
+              id="fileDistribusi"
+              label="Upload Form Distribusi Skripsi (PDF, maks. 1 MB)"
+              file={fileDistribusi}
+              onPilih={setFileDistribusi}
+              sudahTerkirim={sudahTerkirim}
+              namaFile={namaDistribusiTampil}
+              onLihat={() => handleLihatFile("distribusi")}
+              sedangMembuka={
+                sedangMembuka === "distribusi"
+              }
+            />
 
               {isRevisi && (
                 <div className="mb-5 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
@@ -659,10 +598,6 @@ export default function BuatPengajuan() {
 
                 </div>
               )}
-
-              {/* ==================================================
-                  INFO VERIFIED
-              ================================================== */}
 
               {isVerified && (
                 <div className="mb-5 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
@@ -725,10 +660,6 @@ export default function BuatPengajuan() {
                 </div>
               )}
 
-              {/* ==================================================
-                  TOMBOL KIRIM
-              ================================================== */}
-
               <div className="flex justify-end">
 
                 <Button
@@ -738,14 +669,8 @@ export default function BuatPengajuan() {
                 >
                   {labelTombol()}
                 </Button>
-
               </div>
-
             </div>
-
-            {/* ==================================================
-                TANDA TANGAN PUSTAKAWAN
-            ================================================== */}
 
             <div className="bg-white rounded-xl shadow-sm p-6">
 
@@ -839,10 +764,6 @@ export default function BuatPengajuan() {
         </main>
 
       </div>
-
-      {/* ==================================================
-          ALERT MODAL
-      ================================================== */}
 
       <AlertModal
         open={modal.open}

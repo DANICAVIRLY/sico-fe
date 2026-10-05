@@ -19,8 +19,6 @@ export default function DashboardAdmin() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
-
-  // Helper untuk mengekstrak array data secara fleksibel dari berbagai bentuk response API
   const extractArray = (payload, depth = 0) => {
     if (depth > 5) return null;
     if (Array.isArray(payload)) return payload;
@@ -176,10 +174,6 @@ export default function DashboardAdmin() {
   return (
     <div className="min-h-screen bg-slate-50 flex">
       <SidebarAdminComp isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {/* lg:ml-64 karena SidebarAdminComp posisinya "fixed" (keluar dari flow
-          normal), jadi konten digeser manual selebar sidebar (256px) di
-          layar >= lg. Disamakan persis dengan pola di halaman Pustakawan. */}
       <div className="flex-1 lg:ml-64 flex flex-col min-w-0 overflow-x-hidden">
         <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
           <button onClick={() => setSidebarOpen(true)} className="p-1 focus:outline-none">

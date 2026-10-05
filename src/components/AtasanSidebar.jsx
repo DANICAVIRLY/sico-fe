@@ -24,8 +24,6 @@ export default function AtasanSidebar({ isOpen, onClose }) {
         >
           <HiX className="w-6 h-6" />
         </button>
-
-        {/* Logo & Judul */}
         <div className="flex flex-col items-center justify-center pt-10 pb-10 text-white border-b border-[#2f3a96]">
           <img
             src="https://upload.wikimedia.org/wikipedia/id/0/0f/Logo_IPB.png"
@@ -37,8 +35,6 @@ export default function AtasanSidebar({ isOpen, onClose }) {
             <span className="text-xl font-bold">Online</span>
           </div>
         </div>
-
-        {/* Menu atasan*/}
         <div className="flex flex-col gap-2 mt-6 px-6">
           <Link
             to="/dashboard-atasan"
@@ -58,8 +54,6 @@ export default function AtasanSidebar({ isOpen, onClose }) {
             Menunggu ttd
           </Link>
         </div>
-
-        {/* Logout */}
         <div className="mt-auto pb-10 px-6">
           <Link
             to="/"

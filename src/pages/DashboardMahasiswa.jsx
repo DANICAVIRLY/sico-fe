@@ -108,8 +108,6 @@ export default function DashboardMahasiswa() {
   const isSelesai = Boolean(pengajuan?.disetujui_atasan_at);
   const statusPengajuan = String(pengajuan?.status ?? "").toLowerCase();
   const perluDirevisi = statusPengajuan === "revisi_admin";
-
-  // Status & catatan revisi Bebas Pustaka dari pustakawan
   const statusBebasPustaka = String(bebasPustaka?.status ?? "").toLowerCase();
   const bpPerluRevisi = ["ditolak", "revisi", "perlu_revisi", "rejected"].includes(
     statusBebasPustaka
@@ -234,8 +232,6 @@ export default function DashboardMahasiswa() {
                       const isDone = stepNumber <= tahapan;
                       const isActive = stepNumber === tahapan + 1;
                       const isLineFilled = stepNumber <= tahapan;
-
-                      // step 1 = Surat Bebas Pustaka, step 2 = Pengajuan Clearing
                       const isRevisi =
                         (index === 0 && bpPerluRevisi) ||
                         (index === 1 && perluDirevisi);
@@ -287,7 +283,6 @@ export default function DashboardMahasiswa() {
                 </Card>
               </div>
 
-              {/* Dynamic Status Section */}
               {isSelesai ? (
                 <div>
                   <h3 className="text-xl font-bold mb-4">Dokumen Selesai</h3>

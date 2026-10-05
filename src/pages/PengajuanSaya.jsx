@@ -22,39 +22,24 @@ export default function PengajuanSaya() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-
   const [modal, setModal] = useState({
     open: false,
     type: "warning",
     title: "",
     message: "",
   });
-
   const showAlert = (message, type = "warning", title = "") => {
     setModal({ open: true, type, title, message });
   };
-
   const closeAlert = () => setModal((m) => ({ ...m, open: false }));
-
-  // =========================
-  // STATE UNTUK AJUKAN ULANG
-  // =========================
-
   const [revisiFileKtm, setRevisiFileKtm] = useState(null);
   const [revisiFileSpp, setRevisiFileSpp] = useState(null);
   const [ajukanUlangLoading, setAjukanUlangLoading] = useState(false);
   const [ajukanUlangError, setAjukanUlangError] = useState("");
-
   const [pengajuanList, setPengajuanList] = useState([]);
-
   const pengajuanRevisi = pengajuanList.find(
     (p) => String(p.status).toUpperCase() === "REVISI_ADMIN",
   );
-
-  // =========================
-  // TOKEN
-  // =========================
-
   const getToken = () => {
     return (
       localStorage.getItem("token") ||
@@ -62,7 +47,6 @@ export default function PengajuanSaya() {
       ""
     );
   };
-
   const getConfig = () => {
     const token = getToken();
 
@@ -73,11 +57,6 @@ export default function PengajuanSaya() {
       },
     };
   };
-
-  // =========================
-  // AMBIL DATA USER
-  // =========================
-
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -94,15 +73,9 @@ export default function PengajuanSaya() {
         console.error("Gagal membaca data user:", err);
       }
     }
-
     setNama((prev) => prev || localStorage.getItem("nama") || "Mahasiswa");
-
     setNim((prev) => prev || localStorage.getItem("nim") || "");
   }, []);
-
-  // =========================
-  // AMBIL DATA PENGAJUAN
-  // =========================
 
   const getPengajuan = async () => {
     try {
@@ -152,11 +125,6 @@ export default function PengajuanSaya() {
   useEffect(() => {
     getPengajuan();
   }, []);
-
-  // =========================
-  // VALIDASI FILE
-  // =========================
-
   const validateFile = (file) => {
     if (!file) {
       return true;
@@ -185,10 +153,6 @@ export default function PengajuanSaya() {
 
     return true;
   };
-
-  // =========================
-  // UPLOAD PENGAJUAN
-  // =========================
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -274,10 +238,6 @@ export default function PengajuanSaya() {
     }
   };
 
-  // =========================
-  // AJUKAN ULANG (setelah revisi admin)
-  // =========================
-
   const handleAjukanUlang = async (e) => {
     e.preventDefault();
 
@@ -354,10 +314,6 @@ export default function PengajuanSaya() {
     }
   };
 
-  // =========================
-  // PREVIEW & DOWNLOAD (lewat API, bukan langsung ke storage)
-  // =========================
-
   const handlePreview = async (pengajuanId, jenis) => {
     if (!pengajuanId || !jenis) {
       showAlert("Dokumen tidak ditemukan.", "error", "Preview Dokumen");
@@ -425,10 +381,6 @@ export default function PengajuanSaya() {
     }
   };
 
-  // =========================
-  // STATUS
-  // =========================
-
   const renderStatus = (status) => {
     const normalized = String(status || "")
       .toLowerCase()
@@ -470,10 +422,6 @@ export default function PengajuanSaya() {
     );
   };
 
-  // =========================
-  // FORMAT TANGGAL
-  // =========================
-
   const formatDate = (date) => {
     if (!date) {
       return "-";
@@ -489,11 +437,6 @@ export default function PengajuanSaya() {
       return date;
     }
   };
-
-  // =========================
-  // NAMA FILE
-  // =========================
-
   const getFileName = (file) => {
     if (!file) {
       return "-";
@@ -501,11 +444,6 @@ export default function PengajuanSaya() {
 
     return file.split("/").pop();
   };
-
-  // =========================
-  // BUAT BARIS DOKUMEN
-  // =========================
-
   const getDocumentRows = () => {
     const rows = [];
 

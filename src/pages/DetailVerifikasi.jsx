@@ -97,31 +97,20 @@ export default function DetailVerifikasi() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
-  // Aksi dokumen yang sedang berjalan, contoh: "preview-skripsi",
-  // "download-distribusi". Kosong kalau tidak ada.
   const [proses, setProses] = useState("");
-
-  // Modal konfirmasi
   const [confirmModal, setConfirmModal] = useState(false);
-
-  // State + helper untuk AlertModal
   const [modal, setModal] = useState({
     open: false,
     type: "warning",
     title: "",
     message: "",
   });
-
   const showAlert = (message, type = "warning", title = "") => {
     setModal({ open: true, type, title, message });
   };
-
   const closeAlert = () => setModal((m) => ({ ...m, open: false }));
-
   const extractArray = (payload) => {
     if (Array.isArray(payload)) return payload;
-
     if (!payload || typeof payload !== "object") return null;
 
     const commonKeys = [
@@ -163,21 +152,12 @@ export default function DetailVerifikasi() {
     fetchDetail();
   }, [id]);
 
-  // =====================================================
-  // AMBIL DATA PENGAJUAN
-  // =====================================================
-
   const fetchDetail = async () => {
     try {
       setLoading(true);
       setErrorMsg("");
 
       const token = localStorage.getItem("token");
-
-      // Backend tidak punya endpoint show single-item untuk bebas-pustaka,
-      // jadi kita ambil dari list (index). per_page dibikin besar supaya
-      // data mahasiswa yang dicari tidak "tenggelam" di halaman pagination
-      // lain (default backend per_page = 15).
       const response = await axios.get(`${API_BASE_URL}/api/bebas-pustaka`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -210,20 +190,14 @@ export default function DetailVerifikasi() {
 
       const mapped = {
         id: item.id,
-
-        // Controller pakai with('user'), jadi nama/nim ada di item.user.*
         nama: item.user?.nama || item.nama || item.mahasiswa?.nama || "-",
-
         nim: item.user?.nim || item.nim || item.mahasiswa?.nim || "-",
-
         departemen:
           item.user?.departemen ||
           item.departemen ||
           item.mahasiswa?.departemen ||
           "-",
-
         status: item.status || "menunggu",
-
         tanggal: item.created_at
           ? new Date(item.created_at).toLocaleDateString("id-ID", {
               day: "2-digit",
@@ -233,26 +207,16 @@ export default function DetailVerifikasi() {
               minute: "2-digit",
             })
           : "-",
-
         peminjamanBuku:
           item.status_peminjaman || item.peminjaman_buku || "Tidak ada",
-
         denda: item.status_denda || item.denda || "Tidak ada",
-
         catatanAwal: item.catatan_revisi || "",
-
         diverifikasiOleh:
           item.reviewer?.nama ||
           item.reviewed_by?.nama ||
           item.diverifikasi_oleh ||
           "-",
-
-        // Backend TIDAK mengirim path asli file di response list, hanya flag
-        // boolean. Endpoint preview/download tetap bisa dipanggil pakai ID
-        // saja, jadi path aslinya tidak dibutuhkan di frontend.
         fileSkripsi: item.ada_file_skripsi ? true : null,
-
-        // TODO: samakan nama flag dengan yang dikirim backend.
         fileDistribusi: item.ada_file_distribusi ? true : null,
       };
 
@@ -275,10 +239,6 @@ export default function DetailVerifikasi() {
     }
   };
 
-  // =====================================================
-  // PREVIEW & DOWNLOAD PDF
-  // jenis: "skripsi" | "distribusi"
-  // =====================================================
 
   const flagAda = (jenis) =>
     jenis === "distribusi" ? detail?.fileDistribusi : detail?.fileSkripsi;
@@ -381,7 +341,6 @@ export default function DetailVerifikasi() {
     }
   };
 
-  // Render satu kotak dokumen berdasarkan jenisnya.
   const renderBoxDokumen = (jenis) => {
     const cfg = DOKUMEN[jenis];
 
@@ -396,14 +355,7 @@ export default function DetailVerifikasi() {
       />
     );
   };
-
-  // =====================================================
-  // KIRIM KEPUTUSAN
-  // =====================================================
-
   const kirimKeputusan = async (keputusan) => {
-    // Kalau keputusan "revisi", catatan wajib diisi supaya
-    // mahasiswa tahu apa yang perlu diperbaiki.
     if (keputusan === "revisi" && !catatan.trim()) {
       showAlert(
         "Catatan wajib diisi jika memberikan status revisi.",
@@ -465,10 +417,6 @@ export default function DetailVerifikasi() {
     }
   };
 
-  // =====================================================
-  // MODAL VERIFIKASI
-  // =====================================================
-
   const handleVerifikasiLulusClick = () => {
     setConfirmModal(true);
   };
@@ -478,18 +426,10 @@ export default function DetailVerifikasi() {
     kirimKeputusan("setuju");
   };
 
-  // =====================================================
-  // STATUS FINAL
-  // =====================================================
-
   const statusFinal = ["disetujui", "revisi"];
 
   const sudahDiproses =
     detail && statusFinal.includes(String(detail.status).toLowerCase());
-
-  // =====================================================
-  // LOADING
-  // =====================================================
 
   if (loading) {
     return (
@@ -498,10 +438,6 @@ export default function DetailVerifikasi() {
       </div>
     );
   }
-
-  // =====================================================
-  // ERROR
-  // =====================================================
 
   if (errorMsg || !detail) {
     return (
@@ -519,10 +455,6 @@ export default function DetailVerifikasi() {
       </div>
     );
   }
-
-  // =====================================================
-  // SUDAH DIPROSES
-  // =====================================================
 
   if (sudahDiproses) {
     const statusLower = String(detail.status).toLowerCase();
@@ -631,10 +563,6 @@ export default function DetailVerifikasi() {
       </div>
     );
   }
-
-  // =====================================================
-  // HALAMAN VERIFIKASI
-  // =====================================================
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-0">
