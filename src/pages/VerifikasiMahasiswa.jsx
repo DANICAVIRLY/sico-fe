@@ -131,6 +131,19 @@ export default function VerifikasiMahasiswa() {
     handleUpdateStatus("setuju");
   };
 
+  const pesanErrorDokumen = async (err, pesanDefault) => {
+    if (err.response?.data instanceof Blob) {
+      try {
+        const json = JSON.parse(await err.response.data.text());
+        return json?.message || pesanDefault;
+      } catch {
+        return pesanDefault;
+      }
+    }
+
+    return err.response?.data?.message || pesanDefault;
+  };
+
   const previewDokumen = async (jenis) => {
     try {
       const token = localStorage.getItem("token");
@@ -157,7 +170,9 @@ export default function VerifikasiMahasiswa() {
       window.open(url, "_blank");
     } catch (err) {
       console.error(err);
-      showAlert("Gagal memuat dokumen.", "error", "Gagal");
+
+      const pesan = await pesanErrorDokumen(err, "Gagal memuat dokumen.");
+      showAlert(pesan, "error", "Gagal");
     }
   };
 
@@ -196,13 +211,11 @@ export default function VerifikasiMahasiswa() {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      showAlert("Gagal mengunduh dokumen.", "error", "Gagal");
+
+      const pesan = await pesanErrorDokumen(err, "Gagal mengunduh dokumen.");
+      showAlert(pesan, "error", "Gagal");
     }
   };
-
-  // =====================================================
-  // SURAT KETERANGAN BEBAS PUSTAKA
-  // =====================================================
 
   const ambilSuratBebasPustaka = async () => {
     const token = localStorage.getItem("token");
@@ -362,8 +375,6 @@ export default function VerifikasiMahasiswa() {
       />
 
       <div className="flex-1 lg:ml-64 min-w-0">
-
-        {/* Topbar Mobile */}
         <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -377,9 +388,7 @@ export default function VerifikasiMahasiswa() {
           <div className="w-6" />
         </div>
 
-        {/* Konten */}
         <main className="p-6 md:p-8">
-
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -411,10 +420,7 @@ export default function VerifikasiMahasiswa() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            {/* Card Biodata */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-5">
-
               <div>
                 <p className="text-xs font-semibold text-gray-400">
                   Nama
@@ -466,16 +472,12 @@ export default function VerifikasiMahasiswa() {
               </div>
             </div>
 
-            {/* Card Dokumen */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-
               <h3 className="font-bold text-gray-900 text-base">
                 Dokumen Persyaratan
               </h3>
 
               <div className="flex-1 flex flex-col justify-center space-y-6 text-sm mt-4">
-
-                {/* KTM */}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-gray-800 font-medium">
                     KTM (Kartu Tanda Mahasiswa)
@@ -505,7 +507,6 @@ export default function VerifikasiMahasiswa() {
                   </div>
                 </div>
 
-                {/* SPP */}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-gray-800 font-medium">
                     Bukti Pembayaran SPP
@@ -535,19 +536,16 @@ export default function VerifikasiMahasiswa() {
                   </div>
                 </div>
 
-                {/* Surat Bebas Pustaka */}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-gray-800 font-medium">
-                    Surat Bebas Pustaka
+                    Form Distribusi Skripsi
                   </span>
 
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
                       size="xs"
                       color="light"
-                      onClick={() =>
-                        previewDokumen("bebas_pustaka")
-                      }
+                      onClick={() => previewDokumen("distribusi")}
                     >
                       Preview
                     </Button>
@@ -557,8 +555,8 @@ export default function VerifikasiMahasiswa() {
                       color="blue"
                       onClick={() =>
                         downloadDokumen(
-                          "bebas_pustaka",
-                          `bebas-pustaka-${data?.nim || id}`
+                          "distribusi",
+                          `distribusi-${data?.nim || id}`
                         )
                       }
                     >
@@ -567,43 +565,34 @@ export default function VerifikasiMahasiswa() {
                   </div>
                 </div>
 
-                {/* Keterangan Bebas Pustaka */}
                 <div className="flex items-center justify-between">
                   <span className="text-gray-800 font-medium">
                     Keterangan Bebas Pustaka
                   </span>
 
-                  <div className="flex items-center gap-4 text-indigo-950">
-
-                    {/* Preview Surat */}
-                    <button
-                      type="button"
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="xs"
+                      color="light"
                       onClick={previewSuratBebasPustaka}
-                      className="hover:text-indigo-600 transition"
-                      title="Lihat Surat"
                     >
-                      <HiEye className="w-5 h-5" />
-                    </button>
+                      Preview
+                    </Button>
 
-                    {/* Download Surat */}
-                    <button
-                      type="button"
+                    <Button
+                      size="xs"
+                      color="blue"
                       onClick={downloadSuratBebasPustaka}
-                      className="hover:text-indigo-600 transition"
-                      title="Unduh Surat"
                     >
-                      <HiDownload className="w-5 h-5" />
-                    </button>
+                      Unduh
+                    </Button>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
 
-          {/* Catatan */}
           <div className="mt-6">
-
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Catatan (Optional)
             </label>
@@ -617,8 +606,6 @@ export default function VerifikasiMahasiswa() {
             />
 
             <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-6">
-
-              {/* Revisi */}
               <button
                 disabled={submitting}
                 onClick={() => handleUpdateStatus("revisi")}
@@ -627,7 +614,6 @@ export default function VerifikasiMahasiswa() {
                 Revisi
               </button>
 
-              {/* Setuju */}
               <button
                 disabled={submitting}
                 onClick={handleSetujuiClick}
@@ -635,17 +621,14 @@ export default function VerifikasiMahasiswa() {
               >
                 Setuju & kirim ke Kabag TU
               </button>
-
             </div>
           </div>
         </main>
       </div>
 
-      {/* Confirm Modal */}
       {confirmModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Setujui Pengajuan?
             </h3>
@@ -656,7 +639,6 @@ export default function VerifikasiMahasiswa() {
             </p>
 
             <div className="flex gap-3">
-
               <button
                 onClick={() => setConfirmModal(false)}
                 className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
@@ -670,13 +652,11 @@ export default function VerifikasiMahasiswa() {
               >
                 Ya, Setujui
               </button>
-
             </div>
           </div>
         </div>
       )}
 
-      {/* Alert Modal */}
       <AlertModal
         open={modal.open}
         type={modal.type}
