@@ -96,9 +96,11 @@ const TandaTanganAtasan = () => {
     }
   };
 
+  // PREVIEW SURAT
   const fetchPreviewPdf = async () => {
     try {
       setLoadingPdf(true);
+      setError("");
 
       const token = getToken();
 
@@ -115,46 +117,48 @@ const TandaTanganAtasan = () => {
 
       const contentType = response.headers["content-type"] || "";
 
+      // Kalau backend ternyata mengembalikan JSON error
       if (contentType.includes("application/json")) {
         const text = await response.data.text();
+
         let message = "Gagal membuat preview surat.";
 
         try {
           const json = JSON.parse(text);
-          message = json?.message || json?.error || message;
+          message =
+            json?.message || json?.error || "Gagal membuat preview surat.";
         } catch {
           message = text || message;
         }
 
         console.error("ERROR DARI BACKEND:", message);
-        showToast("error", message);
+        setError(message);
         return;
       }
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      setPdfUrl(window.URL.createObjectURL(blob));
+      const blob = new Blob([response.data], {
+        type: "application/pdf",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      setPdfUrl(url);
     } catch (err) {
       console.error("Error preview PDF:", err);
 
+      // Karena responseType blob, error Laravel juga berupa Blob
       if (err.response?.data instanceof Blob) {
         try {
           const text = await err.response.data.text();
           const json = JSON.parse(text);
+
           console.error("DETAIL ERROR BACKEND:", json);
-          showToast(
-            "error",
-            json?.message || "Backend gagal membuat preview surat.",
-          );
+
+          setError(json?.message || "Backend gagal membuat preview surat.");
         } catch {
-          showToast("error", "Backend gagal membuat preview surat.");
+          setError("Backend gagal membuat preview surat.");
         }
-      } else if (err.response?.status === 401) {
-        showToast("error", "Token tidak valid atau sesi login telah berakhir.");
-      } else if (err.response?.status === 403) {
-        showToast("error", "Anda tidak memiliki akses untuk melihat surat.");
       } else {
-        showToast(
-          "error",
+        setError(
           err.response?.data?.message ||
             err.message ||
             "Gagal menampilkan preview surat.",
@@ -489,6 +493,9 @@ const TandaTanganAtasan = () => {
             </button>
           )}
 
+          {/* Kalau sudah diproses, tampilkan status singkat sebagai gantinya */}
+
+          {/* KEMBALI */}
           <div className="pt-2">
             <Link to="/data-mahasiswa-atasan">
               <button className="flex items-center bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg w-full lg:w-auto">

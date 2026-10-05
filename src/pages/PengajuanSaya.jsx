@@ -1,551 +1,778 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  Badge,
+  Button,
+  Card,
+  FileInput,
+  Label,
+  Spinner,
+} from "flowbite-react";
+import SidebarMahaComp from "../components/SidebarMahaComp";
+import AlertModal from "../components/AlertModal";
+import { HiMenu } from "react-icons/hi";
 import axios from "axios";
-import { Document, Page, pdfjs } from "react-pdf";
-import { HiArrowLeft, HiDocumentText } from "react-icons/hi";
 
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
+const API_URL = "http://172.18.160.91:8000";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url,
-).toString();
+export default function PengajuanSaya() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [nama, setNama] = useState("");
+  const [nim, setNim] = useState("");
 
-const API_BASE_URL = "http://172.18.160.91:8000";
+  const [fileKtm, setFileKtm] = useState(null);
+  const [fileSpp, setFileSpp] = useState(null);
 
-const TandaTanganAtasan = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-
-  const [pengajuan, setPengajuan] = useState(null);
-  const [pdfUrl, setPdfUrl] = useState(null);
-  const [numPages, setNumPages] = useState(null);
-
+  const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingPdf, setLoadingPdf] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [modal, setModal] = useState({
+    open: false,
+    type: "warning",
+    title: "",
+    message: "",
+  });
 
-  const [toast, setToast] = useState(null);
-  const showToast = (type, message) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3500);
-  };
+  const [revisiFileKtm, setRevisiFileKtm] = useState(null);
+  const [revisiFileSpp, setRevisiFileSpp] = useState(null);
+  const [revisiDepartemen, setRevisiDepartemen] = useState("");
+  const [ajukanUlangLoading, setAjukanUlangLoading] = useState(false);
+  const [ajukanUlangError, setAjukanUlangError] = useState("");
 
-  const pdfContainerRef = useRef(null);
-  const [pdfWidth, setPdfWidth] = useState(0);
+  const [pengajuanList, setPengajuanList] = useState([]);
+
+  const getToken = () =>
+    localStorage.getItem("token") ||
+    localStorage.getItem("access_token") ||
+    "";
+
+  const getConfig = () => ({
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+      Accept: "application/json",
+    },
+  });
 
   useEffect(() => {
-    const updateWidth = () => {
-      if (pdfContainerRef.current) {
-        setPdfWidth(pdfContainerRef.current.clientWidth);
-      }
-    };
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
-  }, [pdfUrl]);
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  const getToken = () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Anda belum login atau token tidak ditemukan.");
-    }
-    return token;
-  };
+    setNama(user?.nama || user?.name || "");
+    setNim(user?.nim || "");
 
-  const fetchData = async () => {
+    getPengajuan();
+  }, []);
+
+  const getPengajuan = async () => {
+    setLoading(true);
+    setError("");
+
     try {
-      setLoading(true);
-      setError("");
-
-      const token = getToken();
-
       const response = await axios.get(
-        `${API_BASE_URL}/api/pengajuan-clearing/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        },
+        `${API_URL}/api/pengajuan-clearing`,
+        getConfig()
       );
 
-      setPengajuan(response.data.data || response.data);
-    } catch (err) {
-      console.error("Error fetch data:", err);
+      const data = response.data?.data ?? response.data ?? [];
 
-      if (err.response?.status === 401) {
-        setError("Anda belum login atau token tidak valid.");
-      } else if (err.response?.status === 403) {
-        setError("Anda tidak memiliki akses untuk halaman ini.");
-      } else if (err.response?.status === 404) {
-        setError("Data pengajuan tidak ditemukan.");
-      } else {
-        setError(
-          err.response?.data?.message ||
-            err.message ||
-            "Gagal mengambil data pengajuan.",
-        );
-      }
+      const list = Array.isArray(data) ? data : [data];
+
+      setDocuments(list);
+      setPengajuanList(list);
+    } catch (err) {
+      console.error(err);
+      setError(
+        err.response?.data?.message ||
+          "Gagal mengambil data pengajuan clearing."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // PREVIEW SURAT
-  const fetchPreviewPdf = async () => {
-    try {
-      setLoadingPdf(true);
-      setError("");
+  const pengajuanRevisi =
+    pengajuanList.find(
+      (item) =>
+        String(item?.status || "").toLowerCase() === "revisi_admin"
+    ) || null;
 
-      const token = getToken();
+  const validateFile = (file) => {
+    if (!file) return true;
 
-      const response = await axios.get(
-        `${API_BASE_URL}/api/pengajuan-clearing/${id}/preview-surat`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/pdf",
-          },
-          responseType: "blob",
-        },
-      );
+    const maxSize = 1 * 1024 * 1024;
 
-      const contentType = response.headers["content-type"] || "";
-
-      // Kalau backend ternyata mengembalikan JSON error
-      if (contentType.includes("application/json")) {
-        const text = await response.data.text();
-
-        let message = "Gagal membuat preview surat.";
-
-        try {
-          const json = JSON.parse(text);
-          message =
-            json?.message || json?.error || "Gagal membuat preview surat.";
-        } catch {
-          message = text || message;
-        }
-
-        console.error("ERROR DARI BACKEND:", message);
-        setError(message);
-        return;
-      }
-
-      const blob = new Blob([response.data], {
-        type: "application/pdf",
+    if (file.size > maxSize) {
+      setModal({
+        open: true,
+        type: "warning",
+        title: "File Terlalu Besar",
+        message: "Maksimal ukuran file adalah 1 MB.",
       });
-
-      const url = window.URL.createObjectURL(blob);
-      setPdfUrl(url);
-    } catch (err) {
-      console.error("Error preview PDF:", err);
-
-      // Karena responseType blob, error Laravel juga berupa Blob
-      if (err.response?.data instanceof Blob) {
-        try {
-          const text = await err.response.data.text();
-          const json = JSON.parse(text);
-
-          console.error("DETAIL ERROR BACKEND:", json);
-
-          setError(json?.message || "Backend gagal membuat preview surat.");
-        } catch {
-          setError("Backend gagal membuat preview surat.");
-        }
-      } else {
-        setError(
-          err.response?.data?.message ||
-            err.message ||
-            "Gagal menampilkan preview surat.",
-        );
-      }
-    } finally {
-      setLoadingPdf(false);
+      return false;
     }
+
+    return true;
   };
 
-  const handleDownloadSurat = async () => {
-    try {
-      const token = getToken();
+  const handleUpload = async (e) => {
+    e.preventDefault();
 
-      const response = await axios.get(
-        `${API_BASE_URL}/api/pengajuan-clearing/${id}/download-surat`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/pdf",
-          },
-          responseType: "blob",
-        },
-      );
-
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `surat-clearing-${id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Error download surat:", err);
-
-      if (err.response?.status === 401) {
-        showToast("error", "Token tidak valid atau sesi login telah berakhir.");
-      } else if (err.response?.status === 403) {
-        showToast("error", "Anda tidak memiliki akses untuk mengunduh surat.");
-      } else {
-        showToast(
-          "error",
-          err.response?.data?.message || "Gagal mengunduh surat.",
-        );
-      }
-    }
-  };
-
-  const doSetujui = async () => {
-    setShowConfirm(false);
-
-    try {
-      setProcessing(true);
-
-      const token = getToken();
-
-      await axios.post(
-        `${API_BASE_URL}/api/pengajuan-clearing/${id}/review-atasan`,
-        {
-          keputusan: "setuju",
-          catatan: "Disetujui oleh atasan",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      navigate(`/verifikasi-qr/${id}`);
-    } catch (err) {
-      console.error("Error approve:", err);
-
-      if (err.response?.status === 401) {
-        showToast("error", "Anda belum login atau token tidak valid.");
-      } else if (err.response?.status === 403) {
-        showToast(
-          "error",
-          "Anda tidak memiliki izin untuk menyetujui pengajuan.",
-        );
-      } else if (err.response?.status === 422) {
-        showToast(
-          "error",
-          err.response?.data?.message ||
-            "Pengajuan belum memenuhi syarat untuk disetujui.",
-        );
-      } else {
-        showToast(
-          "error",
-          err.response?.data?.message || "Gagal menyetujui pengajuan.",
-        );
-      }
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const onDocumentLoadSuccess = ({ numPages }) => {
-    setNumPages(numPages);
-  };
-
-  useEffect(() => {
-    if (!id) {
-      setError("ID pengajuan tidak ditemukan.");
-      setLoading(false);
+    if (!fileKtm || !fileSpp) {
+      setModal({
+        open: true,
+        type: "warning",
+        title: "Data Belum Lengkap",
+        message: "Silakan upload file KTM dan bukti pembayaran SPP.",
+      });
       return;
     }
 
-    fetchData();
-    fetchPreviewPdf();
+    if (!validateFile(fileKtm) || !validateFile(fileSpp)) {
+      return;
+    }
 
-    return () => {
-      if (pdfUrl) {
-        window.URL.revokeObjectURL(pdfUrl);
+    setUploading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+
+      formData.append("file_ktm", fileKtm);
+      formData.append("file_bukti_spp", fileSpp);
+
+      await axios.post(
+        `${API_URL}/api/pengajuan-clearing`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            Accept: "application/json",
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      setFileKtm(null);
+      setFileSpp(null);
+
+      const inputKtm = document.getElementById("file-ktm");
+      if (inputKtm) inputKtm.value = "";
+
+      const inputSpp = document.getElementById("file-spp");
+      if (inputSpp) inputSpp.value = "";
+
+      setModal({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Pengajuan clearing berhasil dikirim.",
+      });
+
+      await getPengajuan();
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.response?.data?.message ||
+          "Gagal mengirim pengajuan clearing."
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAjukanUlang = async (e) => {
+    e.preventDefault();
+
+    if (!pengajuanRevisi) return;
+
+    if (revisiFileKtm && !validateFile(revisiFileKtm)) return;
+    if (revisiFileSpp && !validateFile(revisiFileSpp)) return;
+
+    setAjukanUlangLoading(true);
+    setAjukanUlangError("");
+
+    try {
+      const formData = new FormData();
+
+      if (revisiFileKtm) {
+        formData.append("file_ktm", revisiFileKtm);
       }
-    };
-  }, [id]);
 
-  const statusPengajuan = String(pengajuan?.status ?? "").toLowerCase();
-  const sudahDiproses = ["disetujui", "ditolak"].includes(statusPengajuan);
+      if (revisiFileSpp) {
+        formData.append("file_bukti_spp", revisiFileSpp);
+      }
 
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <span className="ml-3 text-gray-500">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+      await axios.post(
+        `${API_URL}/api/pengajuan-clearing/${pengajuanRevisi.id}/ajukan-ulang`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            Accept: "application/json",
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
-  if (error && !pengajuan) {
-    return (
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="text-center py-12">
-          <p className="text-gray-500">{error}</p>
-          <Link
-            to="/data-mahasiswa-atasan"
-            className="text-indigo-600 hover:underline mt-2 inline-block"
-          >
-            Kembali
-          </Link>
-        </div>
-      </div>
-    );
-  }
+      setRevisiFileKtm(null);
+      setRevisiFileSpp(null);
+      setRevisiDepartemen("");
+
+      setModal({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Pengajuan berhasil diajukan ulang.",
+      });
+
+      await getPengajuan();
+    } catch (err) {
+      console.error(err);
+
+      setAjukanUlangError(
+        err.response?.data?.message ||
+          "Gagal mengajukan ulang pengajuan."
+      );
+    } finally {
+      setAjukanUlangLoading(false);
+    }
+  };
+
+  const handlePreview = async (pengajuanId, jenis) => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        {
+          ...getConfig(),
+          responseType: "blob",
+        }
+      );
+
+      const blobUrl = window.URL.createObjectURL(response.data);
+      window.open(blobUrl, "_blank");
+    } catch (err) {
+      console.error(err);
+
+      setModal({
+        open: true,
+        type: "warning",
+        title: "Gagal",
+        message: "Dokumen tidak dapat dibuka.",
+      });
+    }
+  };
+
+  const handleDownload = async (pengajuanId, jenis, fileName) => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
+        {
+          ...getConfig(),
+          responseType: "blob",
+        }
+      );
+
+      const url = window.URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = fileName || "dokumen";
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+
+      setModal({
+        open: true,
+        type: "warning",
+        title: "Gagal",
+        message: "Dokumen tidak dapat diunduh.",
+      });
+    }
+  };
+
+  const renderStatus = (status) => {
+    const value = String(status || "").toLowerCase();
+
+    if (
+      ["verified", "disetujui", "approved", "diverifikasi_admin"].includes(
+        value
+      )
+    ) {
+      return <Badge color="success">Verified</Badge>;
+    }
+
+    if (["ditolak", "rejected"].includes(value)) {
+      return <Badge color="failure">Ditolak</Badge>;
+    }
+
+    return <Badge color="warning">Pending</Badge>;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "-";
+
+    return new Date(date).toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const getFileName = (path) => {
+    if (!path) return "-";
+
+    return String(path).split("/").pop();
+  };
+
+  const getDocumentRows = () => {
+    const rows = [];
+
+    documents.forEach((pengajuan) => {
+      if (pengajuan.file_ktm) {
+        rows.push({
+          id: `${pengajuan.id}-ktm`,
+          pengajuanId: pengajuan.id,
+          jenis: "ktm",
+          nama: getFileName(pengajuan.file_ktm),
+          tanggal: pengajuan.created_at,
+          status: pengajuan.status,
+        });
+      }
+
+      if (pengajuan.file_bukti_spp) {
+        rows.push({
+          id: `${pengajuan.id}-spp`,
+          pengajuanId: pengajuan.id,
+          jenis: "spp",
+          nama: getFileName(pengajuan.file_bukti_spp),
+          tanggal: pengajuan.created_at,
+          status: pengajuan.status,
+        });
+      }
+    });
+
+    return rows;
+  };
+
+  const documentRows = getDocumentRows();
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      <div className="text-sm text-gray-500 mb-4 flex gap-2">
-        <Link to="/dashboard-atasan" className="hover:underline">
-          Dashboard
-        </Link>
-        <span>›</span>
-        <Link to="/data-mahasiswa-atasan" className="hover:underline">
-          Menunggu Tanda Tangan
-        </Link>
-        <span>›</span>
-        <span className="text-gray-900 font-medium">Tanda Tangan</span>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <SidebarMahaComp
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        Tanda Tangan Kepala Bagian Tata Usaha
-      </h1>
+      <div className="lg:ml-64">
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b bg-white px-4 py-3 shadow-sm lg:hidden">
+          <Button
+            color="light"
+            size="sm"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <HiMenu className="h-5 w-5" />
+          </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#e6f6e9] p-6 rounded-xl border border-green-200">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-white rounded-lg border border-green-200">
-                <HiDocumentText className="w-5 h-5 text-green-600" />
+          <h1 className="font-semibold text-gray-800">
+            Pengajuan Saya
+          </h1>
+        </div>
+
+        <main className="p-4 md:p-6">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-800">
+                Sistem Informasi Clearing Online
+              </h1>
+
+              <p className="mt-1 text-gray-500">
+                Pengajuan Saya
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {error}
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-800">
-                  Surat Keterangan
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Preview dokumen clearing
+            )}
+
+            {pengajuanRevisi ? (
+              <Card className="mb-6">
+                <div className="mb-5">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Revisi Pengajuan
+                  </h2>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Silakan perbaiki dokumen yang diminta oleh admin.
+                  </p>
+                </div>
+
+                {pengajuanRevisi.catatan_revisi && (
+                  <div className="mb-5 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                    <p className="text-sm font-semibold text-yellow-800">
+                      Catatan Admin
+                    </p>
+
+                    <p className="mt-1 text-sm text-yellow-700">
+                      {pengajuanRevisi.catatan_revisi}
+                    </p>
+                  </div>
+                )}
+
+                {ajukanUlangError && (
+                  <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    {ajukanUlangError}
+                  </div>
+                )}
+
+                <form onSubmit={handleAjukanUlang}>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="revisi-nama">Nama</Label>
+
+                      <input
+                        id="revisi-nama"
+                        type="text"
+                        value={nama}
+                        readOnly
+                        className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-2.5 text-sm text-gray-700"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="revisi-nim">NIM</Label>
+
+                      <input
+                        id="revisi-nim"
+                        type="text"
+                        value={nim}
+                        readOnly
+                        className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-2.5 text-sm text-gray-700"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="revisi-file-ktm">
+                        1. Kartu Tanda Mahasiswa (KTM)
+                      </Label>
+
+                      {pengajuanRevisi.file_ktm && (
+                        <p className="mb-2 mt-2 text-sm text-gray-600">
+                          File saat ini:{" "}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePreview(
+                                pengajuanRevisi.id,
+                                "ktm"
+                              )
+                            }
+                            className="text-blue-600 underline hover:text-blue-800"
+                          >
+                            {getFileName(
+                              pengajuanRevisi.file_ktm
+                            )}
+                          </button>
+                        </p>
+                      )}
+
+                      <FileInput
+                        id="revisi-file-ktm"
+                        className="mt-2"
+                        onChange={(e) =>
+                          setRevisiFileKtm(
+                            e.target.files?.[0] || null
+                          )
+                        }
+                      />
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        Kosongkan jika tidak ingin mengganti file.
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="revisi-file-spp">
+                        2. Bukti Pembayaran SPP
+                      </Label>
+
+                      {pengajuanRevisi.file_bukti_spp && (
+                        <p className="mb-2 mt-2 text-sm text-gray-600">
+                          File saat ini:{" "}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePreview(
+                                pengajuanRevisi.id,
+                                "spp"
+                              )
+                            }
+                            className="text-blue-600 underline hover:text-blue-800"
+                          >
+                            {getFileName(
+                              pengajuanRevisi.file_bukti_spp
+                            )}
+                          </button>
+                        </p>
+                      )}
+
+                      <FileInput
+                        id="revisi-file-spp"
+                        className="mt-2"
+                        onChange={(e) =>
+                          setRevisiFileSpp(
+                            e.target.files?.[0] || null
+                          )
+                        }
+                      />
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        Kosongkan jika tidak ingin mengganti file.
+                      </p>
+                    </div>
+                  </div>
+
+                  {pengajuanRevisi.file_distribusi && (
+                    <p className="mb-2 mt-5 text-sm text-gray-600">
+                      File distribusi saat ini:{" "}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handlePreview(
+                            pengajuanRevisi.id,
+                            "distribusi"
+                          )
+                        }
+                        className="text-blue-600 underline hover:text-blue-800"
+                      >
+                        {getFileName(
+                          pengajuanRevisi.file_distribusi
+                        )}
+                      </button>
+                    </p>
+                  )}
+
+                  <div className="mt-6 flex justify-end">
+                    <Button
+                      type="submit"
+                      color="blue"
+                      disabled={ajukanUlangLoading}
+                    >
+                      {ajukanUlangLoading ? (
+                        <>
+                          <Spinner size="sm" className="mr-2" />
+                          Mengirim...
+                        </>
+                      ) : (
+                        "Kirim Ulang Pengajuan"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            ) : (
+              <Card className="mb-6">
+                <div className="mb-5">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Pengajuan Clearing
+                  </h2>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Upload dokumen untuk mengajukan clearing.
+                  </p>
+                </div>
+
+                <form onSubmit={handleUpload}>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="nama-mahasiswa">Nama</Label>
+
+                      <input
+                        id="nama-mahasiswa"
+                        type="text"
+                        value={nama}
+                        readOnly
+                        className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-2.5 text-sm text-gray-700"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="nim-mahasiswa">NIM</Label>
+
+                      <input
+                        id="nim-mahasiswa"
+                        type="text"
+                        value={nim}
+                        readOnly
+                        className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-100 p-2.5 text-sm text-gray-700"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="file-ktm">
+                        1. Kartu Tanda Mahasiswa (KTM)
+                      </Label>
+
+                      <FileInput
+                        id="file-ktm"
+                        className="mt-2"
+                        onChange={(e) =>
+                          setFileKtm(e.target.files?.[0] || null)
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="file-spp">
+                        2. Bukti Pembayaran SPP
+                      </Label>
+
+                      <FileInput
+                        id="file-spp"
+                        className="mt-2"
+                        onChange={(e) =>
+                          setFileSpp(e.target.files?.[0] || null)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <Button
+                      type="submit"
+                      color="blue"
+                      disabled={uploading}
+                    >
+                      {uploading ? (
+                        <>
+                          <Spinner size="sm" className="mr-2" />
+                          Mengirim...
+                        </>
+                      ) : (
+                        "Kirim Pengajuan"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            )}
+
+            <Card>
+              <div className="mb-5">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Dokumen Saya
+                </h2>
+
+                <p className="mt-1 text-sm text-gray-500">
+                  Daftar dokumen yang sudah Anda upload.
                 </p>
               </div>
-            </div>
 
-            <button
-              onClick={handleDownloadSurat}
-              disabled={!pdfUrl || loadingPdf}
-              className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Download
-            </button>
-          </div>
-
-          <div className="bg-gray-100 p-4 rounded-2xl border border-gray-200">
-            <div
-              ref={pdfContainerRef}
-              className="bg-white rounded-xl border border-gray-300 shadow-md overflow-hidden relative"
-            >
-              {loadingPdf ? (
-                <div
-                  className="flex flex-col justify-center items-center text-gray-500"
-                  style={{ aspectRatio: "208 / 295" }}
-                >
-                  <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-                  <span className="text-sm">Memuat surat...</span>
+              {loading ? (
+                <div className="flex justify-center py-10">
+                  <Spinner size="xl" />
                 </div>
-              ) : pdfUrl ? (
-                <div className="max-h-[850px] overflow-y-auto">
-                  <Document
-                    file={pdfUrl}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    loading={
-                      <div
-                        className="flex flex-col justify-center items-center text-gray-500"
-                        style={{ aspectRatio: "208 / 295" }}
-                      >
-                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-                        <span className="text-sm">Merender surat...</span>
-                      </div>
-                    }
-                    error={
-                      <div
-                        className="flex flex-col justify-center items-center text-gray-400"
-                        style={{ aspectRatio: "208 / 295" }}
-                      >
-                        <HiDocumentText className="w-12 h-12 mb-3" />
-                        <p className="text-sm">Gagal merender surat.</p>
-                      </div>
-                    }
-                  >
-                    {pdfWidth > 0 &&
-                      Array.from(new Array(numPages || 1), (_, index) => (
-                        <Page
-                          key={`page_${index + 1}`}
-                          pageNumber={index + 1}
-                          width={pdfWidth}
-                          renderAnnotationLayer={false}
-                          renderTextLayer={false}
-                        />
-                      ))}
-                  </Document>
+              ) : documentRows.length === 0 ? (
+                <div className="py-10 text-center text-gray-500">
+                  Belum ada dokumen pengajuan.
                 </div>
               ) : (
-                <div
-                  className="flex flex-col justify-center items-center text-gray-400"
-                  style={{ aspectRatio: "208 / 295" }}
-                >
-                  <HiDocumentText className="w-12 h-12 mb-3" />
-                  <p className="text-sm">Preview surat tidak tersedia.</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-600">
+                    <thead className="bg-gray-100 text-xs uppercase text-gray-700">
+                      <tr>
+                        <th className="px-6 py-3">Dokumen</th>
+                        <th className="px-6 py-3">Tanggal</th>
+                        <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3">Aksi</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {documentRows.map((doc) => (
+                        <tr
+                          key={doc.id}
+                          className="border-b bg-white"
+                        >
+                          <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900">
+                            {doc.nama}
+                          </td>
+
+                          <td className="whitespace-nowrap px-6 py-4">
+                            {formatDate(doc.tanggal)}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            {renderStatus(doc.status)}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2">
+                              <Button
+                                size="xs"
+                                color="light"
+                                onClick={() =>
+                                  handlePreview(
+                                    doc.pengajuanId,
+                                    doc.jenis
+                                  )
+                                }
+                              >
+                                Preview
+                              </Button>
+
+                              <Button
+                                size="xs"
+                                color="blue"
+                                onClick={() =>
+                                  handleDownload(
+                                    doc.pengajuanId,
+                                    doc.jenis,
+                                    doc.nama
+                                  )
+                                }
+                              >
+                                Unduh
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
+            </Card>
+
+            <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm text-blue-800">
+                Pastikan semua dokumen yang diupload dapat dibaca dengan
+                jelas. Jika pengajuan membutuhkan revisi, perbaiki dokumen
+                sesuai catatan admin lalu kirim ulang.
+              </p>
             </div>
           </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
-              Informasi Dokumen
-            </h3>
-
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">
-                  Jenis Pengajuan
-                </span>
-                <span className="text-gray-900">Clearing</span>
-              </div>
-
-              <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">Nama</span>
-                <span className="text-gray-900 text-right">
-                  {pengajuan?.user?.nama ||
-                    pengajuan?.mahasiswa?.nama ||
-                    pengajuan?.nama ||
-                    "-"}
-                </span>
-              </div>
-
-              <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">NIM</span>
-                <span className="text-gray-900">
-                  {pengajuan?.user?.nim ||
-                    pengajuan?.mahasiswa?.nim ||
-                    pengajuan?.nim ||
-                    "-"}
-                </span>
-              </div>
-
-              <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">
-                  Tanggal Pengajuan
-                </span>
-                <span className="text-gray-900 text-right">
-                  {pengajuan?.created_at
-                    ? new Date(pengajuan.created_at).toLocaleDateString(
-                        "id-ID",
-                        { day: "2-digit", month: "long", year: "numeric" },
-                      )
-                    : "-"}
-                </span>
-              </div>
-
-              <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">Departemen</span>
-                <span className="text-gray-900 text-right">
-                  {pengajuan?.departemen || "-"}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">Status</span>
-                <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
-                  {pengajuan?.status || "Menunggu TTD"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {!sudahDiproses && (
-            <button
-              onClick={() => setShowConfirm(true)}
-              disabled={processing}
-              className="w-full bg-[#2e1a7a] hover:bg-[#1e1260] text-white font-bold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {processing ? "Memproses..." : "Setujui & Tandatangani"}
-            </button>
-          )}
-
-          {/* Kalau sudah diproses, tampilkan status singkat sebagai gantinya */}
-
-          {/* KEMBALI */}
-          <div className="pt-2">
-            <Link to="/data-mahasiswa-atasan">
-              <button className="flex items-center bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg w-full lg:w-auto">
-                <HiArrowLeft className="mr-2 h-4 w-4" />
-                Kembali
-              </button>
-            </Link>
-          </div>
-        </div>
+        </main>
       </div>
 
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Setujui Pengajuan?
-            </h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Apakah Anda yakin ingin menyetujui pengajuan ini? Surat clearing
-              final akan diterbitkan setelah ini.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
-              >
-                Batal
-              </button>
-              <button
-                onClick={doSetujui}
-                className="flex-1 px-4 py-2 bg-[#2e1a7a] hover:bg-[#1e1260] text-white rounded-lg font-medium"
-              >
-                Ya, Setujui
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {toast && (
-        <div
-          className={`fixed top-6 right-6 z-50 max-w-sm px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white ${
-            toast.type === "success" ? "bg-green-600" : "bg-red-600"
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <AlertModal
+        open={modal.open}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={() =>
+          setModal((prev) => ({
+            ...prev,
+            open: false,
+          }))
+        }
+      />
     </div>
   );
-};
-
-export default TandaTanganAtasan;
+}
