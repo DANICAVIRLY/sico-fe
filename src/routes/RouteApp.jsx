@@ -19,6 +19,8 @@ import PustakawanDashboard from "../pages/PustakawanDashboard";
 import DataPengajuan from "../pages/DataPengajuan";
 import DetailVerifikasi from "../pages/DetailVerifikasi";
 import VerifikasiBerhasil from "../pages/VerifikasiBerhasil";
+import SuratBebasPustaka from "../pages/SuratBebasPustaka";
+
 
 // Layout pustakawan
 import PustakawanLayout from "../layouts/PustakawanLayout";
@@ -88,7 +90,12 @@ export default function RouteApp() {
             path="/verifikasi-berhasil"
             element={<VerifikasiBerhasil />}
           />
+                     <Route
+    path="/surat-bebas-pustaka/:id"
+    element={<SuratBebasPustaka />}
+  />
         </Route>
+        
 
         <Route element={<AtasanLayout />}>
           <Route
@@ -107,6 +114,7 @@ export default function RouteApp() {
             path="/verifikasi-qr/:id"
             element={<VerifikasiQR />}
           />
+       
         </Route>
       </Routes>
     </BrowserRouter>

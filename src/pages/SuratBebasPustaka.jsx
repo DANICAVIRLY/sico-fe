@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -14,7 +14,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 const API_BASE_URL = "http://172.18.160.91:8000";
 
-const TandaTanganAtasan = () => {
+// Halaman tujuan setelah klik "Kembali"
+const HALAMAN_KEMBALI = "/data-pengajuan";
+
+const SuratBebasPustaka = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -24,12 +27,12 @@ const TandaTanganAtasan = () => {
 
   const [loading, setLoading] = useState(true);
   const [loadingPdf, setLoadingPdf] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [pdfError, setPdfError] = useState("");
+  const [processing, setProcessing] = useState(false);
 
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const [toast, setToast] = useState(null);
+  // Toast notifikasi custom
+  const [toast, setToast] = useState(null); // { type: 'success' | 'error', message }
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 3500);
@@ -57,24 +60,42 @@ const TandaTanganAtasan = () => {
     return token;
   };
 
-  const fetchData = async () => {
+  // =========================================================
+  // DATA PENGAJUAN
+  // Backend tidak punya endpoint show untuk bebas-pustaka, jadi data
+  // diambil dari list (index) lalu dicari berdasarkan id.
+  // =========================================================
+  const fetchData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError("");
 
       const token = getToken();
 
-      const response = await axios.get(
-        `${API_BASE_URL}/api/pengajuan-clearing/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
+      const response = await axios.get(`${API_BASE_URL}/api/bebas-pustaka`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
         },
-      );
+        params: { per_page: 1000 },
+      });
 
-      setPengajuan(response.data.data || response.data);
+      const payload = response.data?.data;
+      const list = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+      const item = list.find((row) => String(row.id) === String(id));
+
+      if (!item) {
+        setError("Data pengajuan tidak ditemukan.");
+        setPengajuan(null);
+        return;
+      }
+
+      setPengajuan(item);
     } catch (err) {
       console.error("Error fetch data:", err);
 
@@ -82,8 +103,6 @@ const TandaTanganAtasan = () => {
         setError("Anda belum login atau token tidak valid.");
       } else if (err.response?.status === 403) {
         setError("Anda tidak memiliki akses untuk halaman ini.");
-      } else if (err.response?.status === 404) {
-        setError("Data pengajuan tidak ditemukan.");
       } else {
         setError(
           err.response?.data?.message ||
@@ -96,29 +115,25 @@ const TandaTanganAtasan = () => {
     }
   };
 
-<<<<<<< HEAD
+  // =========================================================
+  // PREVIEW SURAT
+  // =========================================================
   const fetchPreviewPdf = async () => {
     try {
       setLoadingPdf(true);
-=======
-  
-  // PREVIEW SURAT
- const fetchPreviewPdf = async () => {
-  try {
-    setLoadingPdf(true);
-    setError("");
->>>>>>> 34fab01 (update bebas pustaka dan pengajuan)
+      setPdfError("");
 
-    const token = getToken();
+      const token = getToken();
 
-    const response = await axios.get(
-      `${API_BASE_URL}/api/pengajuan-clearing/${id}/preview-surat`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/pdf",
+      const response = await axios.get(
+        `${API_BASE_URL}/api/bebas-pustaka/${id}/preview-surat`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/pdf",
+          },
+          responseType: "blob",
         },
-<<<<<<< HEAD
       );
 
       const blob = new Blob([response.data], { type: "application/pdf" });
@@ -127,85 +142,28 @@ const TandaTanganAtasan = () => {
       console.error("Error preview PDF:", err);
 
       if (err.response?.status === 401) {
-        showToast("error", "Token tidak valid atau sesi login telah berakhir.");
+        setPdfError("Token tidak valid atau sesi login telah berakhir.");
       } else if (err.response?.status === 403) {
-        showToast("error", "Anda tidak memiliki akses untuk melihat surat.");
+        setPdfError("Anda tidak memiliki akses untuk melihat surat.");
+      } else if (err.response?.status === 404) {
+        setPdfError("Surat belum tersedia.");
       } else {
-        showToast(
-          "error",
-          err.response?.data?.message || "Gagal menampilkan preview surat.",
-        );
-=======
-        responseType: "blob",
->>>>>>> 34fab01 (update bebas pustaka dan pengajuan)
+        setPdfError("Gagal menampilkan preview surat.");
       }
-    );
-
-    const contentType = response.headers["content-type"] || "";
-
-    // Kalau backend ternyata mengembalikan JSON error
-    if (contentType.includes("application/json")) {
-      const text = await response.data.text();
-
-      let message = "Gagal membuat preview surat.";
-
-      try {
-        const json = JSON.parse(text);
-        message =
-          json?.message ||
-          json?.error ||
-          "Gagal membuat preview surat.";
-      } catch {
-        message = text || message;
-      }
-
-      console.error("ERROR DARI BACKEND:", message);
-      setError(message);
-      return;
+    } finally {
+      setLoadingPdf(false);
     }
+  };
 
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
-
-    const url = window.URL.createObjectURL(blob);
-    setPdfUrl(url);
-  } catch (err) {
-    console.error("Error preview PDF:", err);
-
-    // Karena responseType blob, error Laravel juga berupa Blob
-    if (err.response?.data instanceof Blob) {
-      try {
-        const text = await err.response.data.text();
-        const json = JSON.parse(text);
-
-        console.error("DETAIL ERROR BACKEND:", json);
-
-        setError(
-          json?.message ||
-            "Backend gagal membuat preview surat."
-        );
-      } catch {
-        setError("Backend gagal membuat preview surat.");
-      }
-    } else {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Gagal menampilkan preview surat."
-      );
-    }
-  } finally {
-    setLoadingPdf(false);
-  }
-};
-
+  // =========================================================
+  // DOWNLOAD SURAT
+  // =========================================================
   const handleDownloadSurat = async () => {
     try {
       const token = getToken();
 
       const response = await axios.get(
-        `${API_BASE_URL}/api/pengajuan-clearing/${id}/download-surat`,
+        `${API_BASE_URL}/api/bebas-pustaka/${id}/download-surat`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -220,7 +178,7 @@ const TandaTanganAtasan = () => {
 
       const link = document.createElement("a");
       link.href = url;
-      link.download = `surat-clearing-${id}.pdf`;
+      link.download = `surat-bebas-pustaka-${id}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -233,28 +191,28 @@ const TandaTanganAtasan = () => {
         showToast("error", "Token tidak valid atau sesi login telah berakhir.");
       } else if (err.response?.status === 403) {
         showToast("error", "Anda tidak memiliki akses untuk mengunduh surat.");
+      } else if (err.response?.status === 404) {
+        showToast("error", "Surat belum tersedia.");
       } else {
-        showToast(
-          "error",
-          err.response?.data?.message || "Gagal mengunduh surat.",
-        );
+        showToast("error", "Gagal mengunduh surat.");
       }
     }
   };
 
-  const doSetujui = async () => {
-    setShowConfirm(false);
-
+  // =========================================================
+  // SETUJUI & TANDATANGANI
+  // =========================================================
+  const handleSetujui = async () => {
     try {
       setProcessing(true);
 
       const token = getToken();
 
       await axios.post(
-        `${API_BASE_URL}/api/pengajuan-clearing/${id}/review-atasan`,
+        `${API_BASE_URL}/api/bebas-pustaka/${id}/review`,
         {
           keputusan: "setuju",
-          catatan: "Disetujui oleh atasan",
+          catatan_revisi: "",
         },
         {
           headers: {
@@ -265,9 +223,15 @@ const TandaTanganAtasan = () => {
         },
       );
 
-      navigate(`/verifikasi-qr/${id}`);
+      showToast("success", "Pengajuan disetujui dan ditandatangani.");
+
+      // Muat ulang status dan surat tanpa layar loading penuh
+      await Promise.all([fetchData(true), fetchPreviewPdf()]);
     } catch (err) {
       console.error("Error approve:", err);
+
+      const errors = err.response?.data?.errors;
+      const detail = errors ? Object.values(errors).flat().join(" ") : null;
 
       if (err.response?.status === 401) {
         showToast("error", "Anda belum login atau token tidak valid.");
@@ -276,16 +240,10 @@ const TandaTanganAtasan = () => {
           "error",
           "Anda tidak memiliki izin untuk menyetujui pengajuan.",
         );
-      } else if (err.response?.status === 422) {
-        showToast(
-          "error",
-          err.response?.data?.message ||
-            "Pengajuan belum memenuhi syarat untuk disetujui.",
-        );
       } else {
         showToast(
           "error",
-          err.response?.data?.message || "Gagal menyetujui pengajuan.",
+          detail || err.response?.data?.message || "Gagal menyetujui pengajuan.",
         );
       }
     } finally {
@@ -306,17 +264,29 @@ const TandaTanganAtasan = () => {
 
     fetchData();
     fetchPreviewPdf();
-
-    return () => {
-      if (pdfUrl) {
-        window.URL.revokeObjectURL(pdfUrl);
-      }
-    };
   }, [id]);
 
-  const statusPengajuan = String(pengajuan?.status ?? "").toLowerCase();
-  const sudahDiproses = ["disetujui", "ditolak"].includes(statusPengajuan);
+  // Lepas memori blob saat PDF diganti atau halaman ditutup
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) window.URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
 
+  const statusLower = String(pengajuan?.status ?? "").toLowerCase();
+
+  // Tombol "Setujui & Tandatangani" hanya untuk pengajuan yang belum diproses
+  const bisaDisetujui = ["menunggu", "diajukan"].includes(statusLower);
+  const statusClass =
+    statusLower === "disetujui"
+      ? "bg-green-100 text-green-700 border-green-300"
+      : statusLower === "revisi" || statusLower === "ditolak"
+        ? "bg-red-100 text-red-700 border-red-300"
+        : "bg-yellow-100 text-yellow-700 border-yellow-300";
+
+  // =========================================================
+  // LOADING
+  // =========================================================
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-4">
@@ -328,15 +298,18 @@ const TandaTanganAtasan = () => {
     );
   }
 
+  // =========================================================
+  // ERROR (data gagal diambil sama sekali)
+  // =========================================================
   if (error && !pengajuan) {
     return (
       <div className="max-w-6xl mx-auto p-4">
         <div className="text-center py-12">
           <p className="text-gray-500">{error}</p>
           <Link
-            to="/data-mahasiswa-atasan"
+            to={HALAMAN_KEMBALI}
             className="text-indigo-600 hover:underline mt-2 inline-block"
-          >   
+          >
             Kembali
           </Link>
         </div>
@@ -344,25 +317,26 @@ const TandaTanganAtasan = () => {
     );
   }
 
+  // =========================================================
+  // UI
+  // =========================================================
   return (
     <div className="max-w-6xl mx-auto p-4">
+      {/* BREADCRUMB */}
       <div className="text-sm text-gray-500 mb-4 flex gap-2">
-        <Link to="/dashboard-atasan" className="hover:underline">
-          Dashboard
-        </Link>
-        <span>›</span>
-        <Link to="/data-mahasiswa-atasan" className="hover:underline">
-          Menunggu Tanda Tangan
+        <Link to={HALAMAN_KEMBALI} className="hover:underline">
+          Data Pengajuan
         </Link>
         <span>›</span>
         <span className="text-gray-900 font-medium">Tanda Tangan</span>
       </div>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        Tanda Tangan Kepala Bagian Tata Usaha
+        Tanda Tangan Pustakawan
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* KIRI - PREVIEW SURAT */}
         <div className="bg-[#e6f6e9] p-6 rounded-xl border border-green-200">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
@@ -371,10 +345,10 @@ const TandaTanganAtasan = () => {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gray-800">
-                  Surat Keterangan
+                  Surat Keterangan Bebas Pustaka
                 </h3>
                 <p className="text-xs text-gray-500">
-                  Preview dokumen clearing
+                  Preview dokumen bebas pustaka
                 </p>
               </div>
             </div>
@@ -443,14 +417,18 @@ const TandaTanganAtasan = () => {
                   style={{ aspectRatio: "208 / 295" }}
                 >
                   <HiDocumentText className="w-12 h-12 mb-3" />
-                  <p className="text-sm">Preview surat tidak tersedia.</p>
+                  <p className="text-sm">
+                    {pdfError || "Preview surat tidak tersedia."}
+                  </p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* KANAN */}
         <div className="space-y-6">
+          {/* INFORMASI DOKUMEN */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
               Informasi Dokumen
@@ -461,7 +439,7 @@ const TandaTanganAtasan = () => {
                 <span className="text-gray-500 font-medium">
                   Jenis Pengajuan
                 </span>
-                <span className="text-gray-900">Clearing</span>
+                <span className="text-gray-900">Bebas Pustaka</span>
               </div>
 
               <div className="flex justify-between border-b pb-2 gap-4">
@@ -501,37 +479,54 @@ const TandaTanganAtasan = () => {
               <div className="flex justify-between border-b pb-2 gap-4">
                 <span className="text-gray-500 font-medium">Departemen</span>
                 <span className="text-gray-900 text-right">
-                  {pengajuan?.departemen || "-"}
+                  {pengajuan?.user?.departemen ||
+                    pengajuan?.departemen ||
+                    pengajuan?.mahasiswa?.departemen ||
+                    "-"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center border-b pb-2 gap-4">
                 <span className="text-gray-500 font-medium">Status</span>
-                <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
-                  {pengajuan?.status || "Menunggu TTD"}
+                <span
+                  className={`inline-block px-3 py-1 text-xs font-medium rounded-full border ${statusClass}`}
+                >
+                  {pengajuan?.status || "-"}
                 </span>
               </div>
             </div>
           </div>
 
-          {!sudahDiproses && (
+          {/* TINDAKAN */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Tindakan</h3>
+
+            <p className="text-sm text-gray-500 mb-4">
+              {bisaDisetujui
+                ? "Dengan menandatangani dokumen ini, Anda menyetujui dokumen tersebut."
+                : "Pengajuan ini sudah diproses. Klik tombol di bawah untuk kembali ke Data Pengajuan."}
+            </p>
+
             <button
-              onClick={() => setShowConfirm(true)}
+              onClick={
+                bisaDisetujui ? handleSetujui : () => navigate(HALAMAN_KEMBALI)
+              }
               disabled={processing}
               className="w-full bg-[#2e1a7a] hover:bg-[#1e1260] text-white font-bold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {processing ? "Memproses..." : "Setujui & Tandatangani"}
+              {processing
+                ? "Memproses..."
+                : bisaDisetujui
+                  ? "Setujui & Tandatangani"
+                  : statusLower === "disetujui"
+                    ? "Sudah Disetujui & Ditandatangani"
+                    : "Sudah Diproses"}
             </button>
-          )}
-
-<<<<<<< HEAD
-=======
-          {/* Kalau sudah diproses, tampilkan status singkat sebagai gantinya */}
+          </div>
 
           {/* KEMBALI */}
->>>>>>> 34fab01 (update bebas pustaka dan pengajuan)
           <div className="pt-2">
-            <Link to="/data-mahasiswa-atasan">
+            <Link to={HALAMAN_KEMBALI}>
               <button className="flex items-center bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg w-full lg:w-auto">
                 <HiArrowLeft className="mr-2 h-4 w-4" />
                 Kembali
@@ -541,34 +536,7 @@ const TandaTanganAtasan = () => {
         </div>
       </div>
 
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Setujui Pengajuan?
-            </h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Apakah Anda yakin ingin menyetujui pengajuan ini? Surat clearing
-              final akan diterbitkan setelah ini.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
-              >
-                Batal
-              </button>
-              <button
-                onClick={doSetujui}
-                className="flex-1 px-4 py-2 bg-[#2e1a7a] hover:bg-[#1e1260] text-white rounded-lg font-medium"
-              >
-                Ya, Setujui
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* TOAST NOTIFIKASI CUSTOM */}
       {toast && (
         <div
           className={`fixed top-6 right-6 z-50 max-w-sm px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white ${
@@ -582,4 +550,4 @@ const TandaTanganAtasan = () => {
   );
 };
 
-export default TandaTanganAtasan;
+export default SuratBebasPustaka;

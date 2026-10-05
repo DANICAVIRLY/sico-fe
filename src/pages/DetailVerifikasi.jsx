@@ -11,13 +11,8 @@ import {
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-
 const API_BASE_URL = "http://172.18.160.91:8000";
 
-// Daftar dokumen yang bisa dilihat pustakawan.
-// Samakan `preview` dan `download` dengan route di backend.
-// Cek dengan: php artisan route:list --path=bebas-pustaka
-// URL akhirnya: {API_BASE_URL}/api/bebas-pustaka/{id}/{preview|download}
 const DOKUMEN = {
   skripsi: {
     judul: "Dokumen Skripsi",
@@ -37,7 +32,6 @@ const DOKUMEN = {
   },
 };
 
-// Satu kotak dokumen PDF dengan tombol Preview dan Download.
 function BoxDokumen({
   namaFile,
   keterangan,
@@ -99,16 +93,30 @@ export default function DetailVerifikasi() {
   const [errorMsg, setErrorMsg] = useState("");
   const [proses, setProses] = useState("");
   const [confirmModal, setConfirmModal] = useState(false);
+
   const [modal, setModal] = useState({
     open: false,
     type: "warning",
     title: "",
     message: "",
   });
+
   const showAlert = (message, type = "warning", title = "") => {
-    setModal({ open: true, type, title, message });
+    setModal({
+      open: true,
+      type,
+      title,
+      message,
+    });
   };
-  const closeAlert = () => setModal((m) => ({ ...m, open: false }));
+
+  const closeAlert = () => {
+    setModal((m) => ({
+      ...m,
+      open: false,
+    }));
+  };
+
   const extractArray = (payload) => {
     if (Array.isArray(payload)) return payload;
     if (!payload || typeof payload !== "object") return null;
@@ -158,15 +166,19 @@ export default function DetailVerifikasi() {
       setErrorMsg("");
 
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE_URL}/api/bebas-pustaka`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-        params: {
-          per_page: 1000,
-        },
-      });
+
+      const response = await axios.get(
+        `${API_BASE_URL}/api/bebas-pustaka`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          params: {
+            per_page: 1000,
+          },
+        }
+      );
 
       const list = extractArray(response.data?.data);
 
@@ -177,10 +189,18 @@ export default function DetailVerifikasi() {
         return;
       }
 
-      const item = list.find((row) => String(row.id) === String(id));
+      const item = list.find(
+        (row) => String(row.id) === String(id)
+      );
 
       if (!item) {
-        console.error("Item dengan id", id, "tidak ditemukan:", list);
+        console.error(
+          "Item dengan id",
+          id,
+          "tidak ditemukan:",
+          list
+        );
+
         setErrorMsg("Data pengajuan tidak ditemukan.");
         setDetail(null);
         return;
@@ -190,8 +210,16 @@ export default function DetailVerifikasi() {
 
       const mapped = {
         id: item.id,
-        nama: item.user?.nama || item.nama || item.mahasiswa?.nama || "-",
-        nim: item.user?.nim || item.nim || item.mahasiswa?.nim || "-",
+        nama:
+          item.user?.nama ||
+          item.nama ||
+          item.mahasiswa?.nama ||
+          "-",
+        nim:
+          item.user?.nim ||
+          item.nim ||
+          item.mahasiswa?.nim ||
+          "-",
         departemen:
           item.user?.departemen ||
           item.departemen ||
@@ -199,17 +227,25 @@ export default function DetailVerifikasi() {
           "-",
         status: item.status || "menunggu",
         tanggal: item.created_at
-          ? new Date(item.created_at).toLocaleDateString("id-ID", {
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+          ? new Date(item.created_at).toLocaleDateString(
+              "id-ID",
+              {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }
+            )
           : "-",
         peminjamanBuku:
-          item.status_peminjaman || item.peminjaman_buku || "Tidak ada",
-        denda: item.status_denda || item.denda || "Tidak ada",
+          item.status_peminjaman ||
+          item.peminjaman_buku ||
+          "Tidak ada",
+        denda:
+          item.status_denda ||
+          item.denda ||
+          "Tidak ada",
         catatanAwal: item.catatan_revisi || "",
         diverifikasiOleh:
           item.reviewer?.nama ||
@@ -239,9 +275,10 @@ export default function DetailVerifikasi() {
     }
   };
 
-
   const flagAda = (jenis) =>
-    jenis === "distribusi" ? detail?.fileDistribusi : detail?.fileSkripsi;
+    jenis === "distribusi"
+      ? detail?.fileDistribusi
+      : detail?.fileSkripsi;
 
   const handlePreview = async (jenis) => {
     const cfg = DOKUMEN[jenis];
@@ -264,15 +301,21 @@ export default function DetailVerifikasi() {
             Accept: "application/pdf",
           },
           responseType: "blob",
-        },
+        }
       );
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = new Blob([response.data], {
+        type: "application/pdf",
+      });
+
       const url = window.URL.createObjectURL(blob);
 
       window.open(url, "_blank", "noopener,noreferrer");
 
-      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+      setTimeout(
+        () => window.URL.revokeObjectURL(url),
+        60000
+      );
     } catch (error) {
       console.error(`Gagal preview ${jenis}:`, error);
       console.error("Response:", error.response?.data);
@@ -282,7 +325,7 @@ export default function DetailVerifikasi() {
           ? `${cfg.judul} tidak ditemukan. Cek route ${cfg.preview} di backend.`
           : `Gagal membuka ${cfg.judul.toLowerCase()}.`,
         "error",
-        "Gagal",
+        "Gagal"
       );
     } finally {
       setProses("");
@@ -310,13 +353,17 @@ export default function DetailVerifikasi() {
             Accept: "application/pdf",
           },
           responseType: "blob",
-        },
+        }
       );
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = new Blob([response.data], {
+        type: "application/pdf",
+      });
+
       const url = window.URL.createObjectURL(blob);
 
       const link = document.createElement("a");
+
       link.href = url;
       link.download = `${cfg.prefixNama}-${detail?.nim || id}.pdf`;
 
@@ -334,7 +381,7 @@ export default function DetailVerifikasi() {
           ? `${cfg.judul} tidak ditemukan. Cek route ${cfg.download} di backend.`
           : `Gagal mengunduh ${cfg.judul.toLowerCase()}.`,
         "error",
-        "Gagal",
+        "Gagal"
       );
     } finally {
       setProses("");
@@ -355,12 +402,13 @@ export default function DetailVerifikasi() {
       />
     );
   };
+
   const kirimKeputusan = async (keputusan) => {
     if (keputusan === "revisi" && !catatan.trim()) {
       showAlert(
         "Catatan wajib diisi jika memberikan status revisi.",
         "warning",
-        "Catatan Kosong",
+        "Catatan Kosong"
       );
       return;
     }
@@ -381,25 +429,11 @@ export default function DetailVerifikasi() {
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
           },
-        },
+        }
       );
 
       if (keputusan === "setuju") {
-        const userData = JSON.parse(localStorage.getItem("user") || "null");
-
-        navigate("/verifikasi-berhasil", {
-          state: {
-            id: detail.id,
-            nama: detail.nama,
-            nim: detail.nim,
-            tanggal: detail.tanggal,
-            departemen: detail.departemen,
-            diverifikasiOleh: userData?.nama || "-",
-            catatanPustakawan: catatan,
-            fileSkripsi: detail.fileSkripsi,
-            fileDistribusi: detail.fileDistribusi,
-          },
-        });
+        navigate(`/surat-bebas-pustaka/${id}`);
       } else {
         navigate("/data-pengajuan");
       }
@@ -429,7 +463,8 @@ export default function DetailVerifikasi() {
   const statusFinal = ["disetujui", "revisi"];
 
   const sudahDiproses =
-    detail && statusFinal.includes(String(detail.status).toLowerCase());
+    detail &&
+    statusFinal.includes(String(detail.status).toLowerCase());
 
   if (loading) {
     return (
@@ -480,7 +515,10 @@ export default function DetailVerifikasi() {
       { label: "Nama", value: detail.nama },
       { label: "NIM", value: detail.nim },
       { label: "Tanggal", value: detail.tanggal },
-      { label: "Diverifikasi Oleh", value: detail.diverifikasiOleh },
+      {
+        label: "Diverifikasi Oleh",
+        value: detail.diverifikasiOleh,
+      },
       { label: "Departemen", value: detail.departemen },
       { label: "Catatan", value: detail.catatanAwal || "-" },
     ];
@@ -513,13 +551,14 @@ export default function DetailVerifikasi() {
               {tampilan.sub}
             </p>
 
-            {/* DATA MAHASISWA */}
             <div className="w-full border border-gray-200 rounded-lg overflow-hidden mb-6">
               {rows.map((row, index) => (
                 <div
                   key={row.label}
                   className={`grid grid-cols-1 sm:grid-cols-2 ${
-                    index !== rows.length - 1 ? "border-b border-gray-200" : ""
+                    index !== rows.length - 1
+                      ? "border-b border-gray-200"
+                      : ""
                   }`}
                 >
                   <div className="p-3 sm:p-4 bg-gray-50 font-bold text-gray-700 border-b sm:border-b-0 sm:border-r border-gray-200 text-sm sm:text-base">
@@ -533,15 +572,20 @@ export default function DetailVerifikasi() {
               ))}
             </div>
 
-            {/* DOKUMEN PDF */}
             {(detail.fileSkripsi || detail.fileDistribusi) && (
               <div className="w-full flex flex-col gap-3 mb-6">
-                {detail.fileSkripsi && renderBoxDokumen("skripsi")}
-                {detail.fileDistribusi && renderBoxDokumen("distribusi")}
+                {detail.fileSkripsi &&
+                  renderBoxDokumen("skripsi")}
+
+                {detail.fileDistribusi &&
+                  renderBoxDokumen("distribusi")}
               </div>
             )}
 
-            <Link to="/data-pengajuan" className="w-full sm:w-auto">
+            <Link
+              to="/data-pengajuan"
+              className="w-full sm:w-auto"
+            >
               <Button
                 color="light"
                 className="w-full sm:w-auto border border-gray-300 text-blue-600 font-medium hover:bg-gray-50"
@@ -577,11 +621,12 @@ export default function DetailVerifikasi() {
       </div>
 
       <div className="flex flex-col gap-4 sm:gap-6">
-        {/* DATA MAHASISWA */}
         <Card>
           <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">{detail.nama}</h2>
+              <h2 className="text-lg font-bold text-gray-900">
+                {detail.nama}
+              </h2>
 
               <div className="flex flex-wrap gap-2 mt-2">
                 <Badge color="success" className="text-xs">
@@ -601,7 +646,6 @@ export default function DetailVerifikasi() {
           </div>
         </Card>
 
-        {/* SYARAT */}
         <Card>
           <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">
             Syarat Bebas Pustaka
@@ -609,21 +653,18 @@ export default function DetailVerifikasi() {
 
           <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700">
             <li>Tidak memiliki buku yang masih dipinjam.</li>
-
             <li>Tidak memiliki tanggungan denda perpustakaan.</li>
-
             <li>
-              Jika persyaratan belum terpenuhi, silakan lengkapi sesuai catatan
-              syarat yang belum terpenuhi.
+              Jika persyaratan belum terpenuhi, silakan lengkapi
+              sesuai catatan syarat yang belum terpenuhi.
             </li>
-
             <li>
-              Jika ingin memberikan status revisi, wajib memberikan catatan.
+              Jika ingin memberikan status revisi, wajib memberikan
+              catatan.
             </li>
           </ol>
         </Card>
 
-        {/* DOKUMEN PDF MAHASISWA (skripsi + form distribusi) */}
         {["skripsi", "distribusi"].map((jenis) => (
           <Card key={jenis}>
             <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">
@@ -634,15 +675,18 @@ export default function DetailVerifikasi() {
               renderBoxDokumen(jenis)
             ) : (
               <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <p className="text-sm text-gray-400">{DOKUMEN[jenis].kosong}</p>
+                <p className="text-sm text-gray-400">
+                  {DOKUMEN[jenis].kosong}
+                </p>
               </div>
             )}
           </Card>
         ))}
 
-        {/* CATATAN */}
         <Card>
-          <h3 className="font-bold text-gray-800 mb-2">Catatan Pustakawan</h3>
+          <h3 className="font-bold text-gray-800 mb-2">
+            Catatan Pustakawan
+          </h3>
 
           <Textarea
             id="catatan"
@@ -654,11 +698,15 @@ export default function DetailVerifikasi() {
           />
         </Card>
 
-        {errorMsg && <p className="text-red-500 text-sm">{errorMsg}</p>}
+        {errorMsg && (
+          <p className="text-red-500 text-sm">{errorMsg}</p>
+        )}
 
-        {/* TOMBOL */}
         <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-2">
-          <Link to="/data-pengajuan" className="w-full sm:w-auto">
+          <Link
+            to="/data-pengajuan"
+            className="w-full sm:w-auto"
+          >
             <Button
               color="gray"
               className="w-full sm:w-auto bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -687,7 +735,6 @@ export default function DetailVerifikasi() {
         </div>
       </div>
 
-      {/* MODAL KONFIRMASI */}
       {confirmModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
@@ -696,8 +743,8 @@ export default function DetailVerifikasi() {
             </h3>
 
             <p className="text-sm text-gray-600 mb-6">
-              Apakah Anda yakin ingin meluluskan verifikasi bebas pustaka
-              mahasiswa ini?
+              Apakah Anda yakin ingin meluluskan verifikasi bebas
+              pustaka mahasiswa ini?
             </p>
 
             <div className="flex gap-3">
