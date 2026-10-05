@@ -12,11 +12,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-<<<<<<< HEAD
-const API_BASE_URL = "http://172.18.160.76:8000";
-=======
-const API_BASE_URL = "http://172.18.160.73:8000";
->>>>>>> 41e0e9891f29c21ac856e3076fb7b7991575082d
+const API_BASE_URL = "http://172.18.160.91:8000";
 
 const TandaTanganAtasan = () => {
   const { id } = useParams();

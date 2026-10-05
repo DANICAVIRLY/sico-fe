@@ -5,28 +5,15 @@ import { Label, TextInput, Button, FileInput } from "flowbite-react";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-<<<<<<< HEAD
-const API_BASE = "http://172.18.160.76:8000/api/bebas-pustaka";
-=======
-const API_BASE = "http://172.18.160.73:8000/api/bebas-pustaka";
->>>>>>> 41e0e9891f29c21ac856e3076fb7b7991575082d
 
-// Bagian akhir URL untuk melihat PDF skripsi.
-// HARUS sama dengan route yang mengarah ke previewSkripsi di routes/api.php.
+const API_BASE = "http://172.18.160.91:8000/api/bebas-pustaka";
 const PREVIEW_SKRIPSI_PATH = "preview-skripsi";
-
-// Bagian akhir URL untuk melihat PDF distribusi.
 const PREVIEW_DISTRIBUSI_PATH = "preview-distribusi";
-
-// Nama field file yang dikirim ke backend.
 const FIELD_SKRIPSI = "file_skripsi";
 const FIELD_DISTRIBUSI = "file_distribusi";
-
-// Batas ukuran file (MB).
 const MAX_FILE_MB_SKRIPSI = 5;
 const MAX_FILE_MB_DISTRIBUSI = 1;
 
-// Kembalikan pesan error kalau file tidak valid, atau null kalau aman.
 const validasiFile = (file, namaFile, maxFileMb) => {
   if (!file) return `${namaFile} wajib diupload.`;
 
@@ -41,9 +28,6 @@ const validasiFile = (file, namaFile, maxFileMb) => {
   return null;
 };
 
-// ======================================================
-// KOTAK UPLOAD
-// ======================================================
 
 function KotakUpload({
   id,
@@ -105,60 +89,32 @@ function KotakUpload({
   );
 }
 
-// ======================================================
-// HALAMAN BUAT PENGAJUAN
-// ======================================================
-
 export default function BuatPengajuan() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const userData = JSON.parse(localStorage.getItem("user") || "null");
-
   const nama = userData?.nama || "";
   const nim = userData?.nim || "";
-
   const [loading, setLoading] = useState(false);
-
-  // Jenis file yang sedang dibuka:
-  // "" | "skripsi" | "distribusi"
   const [sedangMembuka, setSedangMembuka] = useState("");
-
-  // Status:
-  // null | "pending" | "verified" | "revisi"
   const [status, setStatus] = useState(null);
-
   const [catatanRevisi, setCatatanRevisi] = useState("");
   const [pengajuanId, setPengajuanId] = useState(null);
-
   const [fileSkripsi, setFileSkripsi] = useState(null);
   const [fileDistribusi, setFileDistribusi] = useState(null);
-
-  // ======================================================
-  // NAMA FILE YANG SUDAH TERKIRIM
-  // ======================================================
-
   const kunciSkripsi = `namaFileSkripsi_${nim}`;
   const kunciDistribusi = `namaFileDistribusi_${nim}`;
-
   const [namaSkripsiTerkirim, setNamaSkripsiTerkirim] = useState(
     () => localStorage.getItem(kunciSkripsi) || ""
   );
-
   const [namaDistribusiTerkirim, setNamaDistribusiTerkirim] = useState(
     () => localStorage.getItem(kunciDistribusi) || ""
   );
-
-  // ======================================================
-  // MODAL
-  // ======================================================
-
   const [modal, setModal] = useState({
     open: false,
     type: "warning",
     title: "",
     message: "",
   });
-
   const showAlert = (message, type = "warning", title = "") => {
     setModal({
       open: true,
@@ -167,27 +123,15 @@ export default function BuatPengajuan() {
       message,
     });
   };
-
   const closeAlert = () =>
     setModal((m) => ({
       ...m,
       open: false,
     }));
-
-  // ======================================================
-  // NAMA FILE TAMPIL
-  // ======================================================
-
   const namaSkripsiTampil =
     namaSkripsiTerkirim || `skripsi-${nim}.pdf`;
 
-  const namaDistribusiTampil =
-    namaDistribusiTerkirim || `distribusi-${nim}.pdf`;
-
-  // ======================================================
-  // CEK STATUS PENGAJUAN
-  // ======================================================
-
+  const namaDistribusiTampil = namaDistribusiTerkirim || `distribusi-${nim}.pdf`;
   const cekStatusPengajuan = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -248,37 +192,19 @@ export default function BuatPengajuan() {
     }
   };
 
-  // ======================================================
-  // LOAD STATUS SAAT HALAMAN DIBUKA
-  // ======================================================
-
   useEffect(() => {
     if (nim || userData) {
       cekStatusPengajuan();
     }
   }, [nim]);
 
-  // ======================================================
-  // STATUS
-  // ======================================================
-
   const isVerified = status === "verified";
   const isPending = status === "pending";
   const isRevisi = status === "revisi";
-
-  // Mahasiswa boleh upload ulang ketika revisi
-  // atau ketika sudah disetujui.
   const bisaUploadUlang = isRevisi || isVerified;
-
-  // Tombol disable ketika loading atau masih pending.
   const tombolDisabled = loading || isPending;
-
-  // Saat pending, tampilkan file yang sudah terkirim.
   const sudahTerkirim = isPending;
 
-  // ======================================================
-  // LIHAT FILE PDF
-  // ======================================================
 
   const handleLihatFile = async (jenis) => {
     if (!pengajuanId || sedangMembuka) return;

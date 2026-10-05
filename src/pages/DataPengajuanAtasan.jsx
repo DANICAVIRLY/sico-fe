@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TextInput, Select, Badge } from "flowbite-react";
 import { HiSearch, HiCalendar, HiX, HiMenu } from "react-icons/hi";
 import AtasanSidebar from "../components/AtasanSidebar";
@@ -6,17 +6,66 @@ import AtasanSidebar from "../components/AtasanSidebar";
 export default function DataPengajuanAtasan() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Data dummy — nanti tinggal diganti fetch dari API seperti halaman admin/pustakawan
-  const dataDummy = [
-    { id: 1, nama: "Rizki Maulana", nim: "1234567890", tanggal: "20 Mei 2026", tanggalRaw: "2026-05-20", departemen: "Hasil Hutan", status: "Menunggu Verifikasi" },
-    { id: 2, nama: "Sodikmomoko", nim: "2345678901", tanggal: "20 Apr 2026", tanggalRaw: "2026-04-20", departemen: "Hasil Hutan", status: "Selesai" },
-    { id: 3, nama: "Mursalino Abroho", nim: "3456789012", tanggal: "20 Mei 2026", tanggalRaw: "2026-05-20", departemen: "Hasil Hutan", status: "Perlu Perbaikan" },
-    { id: 4, nama: "Peter Kounaloy", nim: "4567890123", tanggal: "20 Apr 2026", tanggalRaw: "2026-04-20", departemen: "Hasil Hutan", status: "Selesai" },
-  ];
+  const [dataPengajuan, setDataPengajuan] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [statusFilter, setStatusFilter] = useState("Semua status");
   const [tanggal, setTanggal] = useState("");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        // SESUAIKAN 1: cara ambil token (hapus kalau API tidak pakai auth)
+        const token = localStorage.getItem("token");
+
+        // SESUAIKAN 2: URL endpoint
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/pengajuan`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Gagal mengambil data pengajuan");
+
+        const json = await res.json();
+        const list = Array.isArray(json) ? json : json.data ?? [];
+
+        // SESUAIKAN 3: nama field dari API (kiri = field API, kanan = yang dipakai tabel)
+        const hasil = list.map((item) => {
+          const tglAsli = item.created_at; // mis. "2026-05-20T08:00:00Z"
+          return {
+            id: item.id,
+            nama: item.nama ?? "",
+            nim: String(item.nim ?? ""),
+            departemen: item.departemen ?? "",
+            status: item.status ?? "",
+            tanggalRaw: tglAsli ? String(tglAsli).slice(0, 10) : "",
+            tanggal: tglAsli
+              ? new Date(tglAsli).toLocaleDateString("id-ID", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "-",
+          };
+        });
+
+        setDataPengajuan(hasil);
+      } catch (err) {
+        setError(err.message || "Terjadi kesalahan");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const getStatusColor = (status) => {
     if (status === "Menunggu Verifikasi") return "warning";
@@ -35,7 +84,7 @@ export default function DataPengajuanAtasan() {
     return "bg-yellow-100 text-yellow-700 border border-yellow-300";
   };
 
-  const filteredData = dataDummy.filter((data) => {
+  const filteredData = dataPengajuan.filter((data) => {
     const cocokStatus = statusFilter === "Semua status" || data.status === statusFilter;
 
     const cocokSearch =
@@ -49,6 +98,12 @@ export default function DataPengajuanAtasan() {
   });
 
   const hasActiveFilter = search || tanggal || statusFilter !== "Semua status";
+
+  const pesanKosong = loading
+    ? "Memuat data..."
+    : error
+    ? error
+    : "Data pengajuan tidak ditemukan.";
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -147,8 +202,12 @@ export default function DataPengajuanAtasan() {
                   </div>
                 ))
               ) : (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-12 text-center text-gray-400">
-                  Data pengajuan tidak ditemukan.
+                <div
+                  className={`bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-12 text-center ${
+                    error ? "text-red-500" : "text-gray-400"
+                  }`}
+                >
+                  {pesanKosong}
                 </div>
               )}
             </div>
@@ -183,8 +242,13 @@ export default function DataPengajuanAtasan() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
-                          Data pengajuan tidak ditemukan.
+                        <td
+                          colSpan="6"
+                          className={`px-6 py-12 text-center ${
+                            error ? "text-red-500" : "text-gray-400"
+                          }`}
+                        >
+                          {pesanKosong}
                         </td>
                       </tr>
                     )}
