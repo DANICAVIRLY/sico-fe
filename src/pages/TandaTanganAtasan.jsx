@@ -96,109 +96,74 @@ const TandaTanganAtasan = () => {
     }
   };
 
-<<<<<<< HEAD
   const fetchPreviewPdf = async () => {
     try {
       setLoadingPdf(true);
-=======
-  
-  // PREVIEW SURAT
- const fetchPreviewPdf = async () => {
-  try {
-    setLoadingPdf(true);
-    setError("");
->>>>>>> 34fab01 (update bebas pustaka dan pengajuan)
 
-    const token = getToken();
+      const token = getToken();
 
-    const response = await axios.get(
-      `${API_BASE_URL}/api/pengajuan-clearing/${id}/preview-surat`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/pdf",
+      const response = await axios.get(
+        `${API_BASE_URL}/api/pengajuan-clearing/${id}/preview-surat`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/pdf",
+          },
+          responseType: "blob",
         },
-<<<<<<< HEAD
       );
+
+      const contentType = response.headers["content-type"] || "";
+
+      if (contentType.includes("application/json")) {
+        const text = await response.data.text();
+        let message = "Gagal membuat preview surat.";
+
+        try {
+          const json = JSON.parse(text);
+          message = json?.message || json?.error || message;
+        } catch {
+          message = text || message;
+        }
+
+        console.error("ERROR DARI BACKEND:", message);
+        showToast("error", message);
+        return;
+      }
 
       const blob = new Blob([response.data], { type: "application/pdf" });
       setPdfUrl(window.URL.createObjectURL(blob));
     } catch (err) {
       console.error("Error preview PDF:", err);
 
-      if (err.response?.status === 401) {
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          console.error("DETAIL ERROR BACKEND:", json);
+          showToast(
+            "error",
+            json?.message || "Backend gagal membuat preview surat.",
+          );
+        } catch {
+          showToast("error", "Backend gagal membuat preview surat.");
+        }
+      } else if (err.response?.status === 401) {
         showToast("error", "Token tidak valid atau sesi login telah berakhir.");
       } else if (err.response?.status === 403) {
         showToast("error", "Anda tidak memiliki akses untuk melihat surat.");
       } else {
         showToast(
           "error",
-          err.response?.data?.message || "Gagal menampilkan preview surat.",
+          err.response?.data?.message ||
+            err.message ||
+            "Gagal menampilkan preview surat.",
         );
-=======
-        responseType: "blob",
->>>>>>> 34fab01 (update bebas pustaka dan pengajuan)
       }
-    );
-
-    const contentType = response.headers["content-type"] || "";
-
-    // Kalau backend ternyata mengembalikan JSON error
-    if (contentType.includes("application/json")) {
-      const text = await response.data.text();
-
-      let message = "Gagal membuat preview surat.";
-
-      try {
-        const json = JSON.parse(text);
-        message =
-          json?.message ||
-          json?.error ||
-          "Gagal membuat preview surat.";
-      } catch {
-        message = text || message;
-      }
-
-      console.error("ERROR DARI BACKEND:", message);
-      setError(message);
-      return;
+    } finally {
+      setLoadingPdf(false);
     }
-
-    const blob = new Blob([response.data], {
-      type: "application/pdf",
-    });
-
-    const url = window.URL.createObjectURL(blob);
-    setPdfUrl(url);
-  } catch (err) {
-    console.error("Error preview PDF:", err);
-
-    // Karena responseType blob, error Laravel juga berupa Blob
-    if (err.response?.data instanceof Blob) {
-      try {
-        const text = await err.response.data.text();
-        const json = JSON.parse(text);
-
-        console.error("DETAIL ERROR BACKEND:", json);
-
-        setError(
-          json?.message ||
-            "Backend gagal membuat preview surat."
-        );
-      } catch {
-        setError("Backend gagal membuat preview surat.");
-      }
-    } else {
-      setError(
-        err.response?.data?.message ||
-          err.message ||
-          "Gagal menampilkan preview surat."
-      );
-    }
-  } finally {
-    setLoadingPdf(false);
-  }
-};
+  };
 
   const handleDownloadSurat = async () => {
     try {
@@ -336,7 +301,7 @@ const TandaTanganAtasan = () => {
           <Link
             to="/data-mahasiswa-atasan"
             className="text-indigo-600 hover:underline mt-2 inline-block"
-          >   
+          >
             Kembali
           </Link>
         </div>
@@ -524,12 +489,6 @@ const TandaTanganAtasan = () => {
             </button>
           )}
 
-<<<<<<< HEAD
-=======
-          {/* Kalau sudah diproses, tampilkan status singkat sebagai gantinya */}
-
-          {/* KEMBALI */}
->>>>>>> 34fab01 (update bebas pustaka dan pengajuan)
           <div className="pt-2">
             <Link to="/data-mahasiswa-atasan">
               <button className="flex items-center bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg w-full lg:w-auto">
