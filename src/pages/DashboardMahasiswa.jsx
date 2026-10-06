@@ -12,7 +12,7 @@ import {
 } from 'react-icons/hi';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://172.18.160.91:8000';
+const API_BASE_URL = 'http://10.6.65.165:8000';
 
 const STEPPER_ITEMS = [
   { label: 'Surat Bebas Pustaka' },

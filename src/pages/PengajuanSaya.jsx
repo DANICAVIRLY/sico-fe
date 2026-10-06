@@ -12,7 +12,7 @@ import AlertModal from "../components/AlertModal";
 import { HiMenu } from "react-icons/hi";
 import axios from "axios";
 
-const API_URL = "http://172.18.160.91:8000";
+const API_URL = "http:// 10.6.65.165:8000";
 
 export default function PengajuanSaya() {
   const [sidebarOpen, setSidebarOpen] = useState(false);

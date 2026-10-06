@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 
-const API_BASE_URL = "http://172.18.160.91:8000";
+const API_BASE_URL = "http://10.6.65.165:8000";
 
 export default function VerifikasiQR() {
   const { id } = useParams();
@@ -191,7 +191,7 @@ export default function VerifikasiQR() {
                 <span className="text-gray-500 text-sm font-medium">QR Code</span>
                 <span className="text-gray-900 text-sm">
                   {data.qr_token ? (
-                    <span className="text-green-600">✅ Tersedia</span>
+                    <span className="text-green-600">Tersedia</span>
                   ) : (
                     <span className="text-gray-400">-</span>
                   )}
