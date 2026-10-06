@@ -3,7 +3,6 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Document, Page, pdfjs } from "react-pdf";
 import { HiArrowLeft, HiDocumentText } from "react-icons/hi";
-
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -21,42 +20,59 @@ const TandaTanganAtasan = () => {
   const [pengajuan, setPengajuan] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [numPages, setNumPages] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
-
   const [showConfirm, setShowConfirm] = useState(false);
-
   const [toast, setToast] = useState(null);
-  const showToast = (type, message) => {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3500);
-  };
 
   const pdfContainerRef = useRef(null);
   const [pdfWidth, setPdfWidth] = useState(0);
 
+  const showToast = (type, message) => {
+    setToast({ type, message });
+
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
+  // =========================================================
+  // UPDATE WIDTH PDF
+  // =========================================================
   useEffect(() => {
     const updateWidth = () => {
       if (pdfContainerRef.current) {
         setPdfWidth(pdfContainerRef.current.clientWidth);
       }
     };
+
     updateWidth();
+
     window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
+
+    return () => {
+      window.removeEventListener("resize", updateWidth);
+    };
   }, [pdfUrl]);
 
+  // =========================================================
+  // TOKEN
+  // =========================================================
   const getToken = () => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       throw new Error("Anda belum login atau token tidak ditemukan.");
     }
+
     return token;
   };
 
+  // =========================================================
+  // DATA PENGAJUAN
+  // =========================================================
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -96,7 +112,9 @@ const TandaTanganAtasan = () => {
     }
   };
 
+  // =========================================================
   // PREVIEW SURAT
+  // =========================================================
   const fetchPreviewPdf = async () => {
     try {
       setLoadingPdf(true);
@@ -125,14 +143,18 @@ const TandaTanganAtasan = () => {
 
         try {
           const json = JSON.parse(text);
+
           message =
-            json?.message || json?.error || "Gagal membuat preview surat.";
+            json?.message ||
+            json?.error ||
+            "Gagal membuat preview surat.";
         } catch {
           message = text || message;
         }
 
         console.error("ERROR DARI BACKEND:", message);
         setError(message);
+
         return;
       }
 
@@ -141,6 +163,7 @@ const TandaTanganAtasan = () => {
       });
 
       const url = window.URL.createObjectURL(blob);
+
       setPdfUrl(url);
     } catch (err) {
       console.error("Error preview PDF:", err);
@@ -153,7 +176,9 @@ const TandaTanganAtasan = () => {
 
           console.error("DETAIL ERROR BACKEND:", json);
 
-          setError(json?.message || "Backend gagal membuat preview surat.");
+          setError(
+            json?.message || "Backend gagal membuat preview surat.",
+          );
         } catch {
           setError("Backend gagal membuat preview surat.");
         }
@@ -169,6 +194,9 @@ const TandaTanganAtasan = () => {
     }
   };
 
+  // =========================================================
+  // DOWNLOAD SURAT
+  // =========================================================
   const handleDownloadSurat = async () => {
     try {
       const token = getToken();
@@ -184,12 +212,17 @@ const TandaTanganAtasan = () => {
         },
       );
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = new Blob([response.data], {
+        type: "application/pdf",
+      });
+
       const url = window.URL.createObjectURL(blob);
 
       const link = document.createElement("a");
+
       link.href = url;
       link.download = `surat-clearing-${id}.pdf`;
+
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -199,18 +232,28 @@ const TandaTanganAtasan = () => {
       console.error("Error download surat:", err);
 
       if (err.response?.status === 401) {
-        showToast("error", "Token tidak valid atau sesi login telah berakhir.");
+        showToast(
+          "error",
+          "Token tidak valid atau sesi login telah berakhir.",
+        );
       } else if (err.response?.status === 403) {
-        showToast("error", "Anda tidak memiliki akses untuk mengunduh surat.");
+        showToast(
+          "error",
+          "Anda tidak memiliki akses untuk mengunduh surat.",
+        );
       } else {
         showToast(
           "error",
-          err.response?.data?.message || "Gagal mengunduh surat.",
+          err.response?.data?.message ||
+            "Gagal mengunduh surat.",
         );
       }
     }
   };
 
+  // =========================================================
+  // SETUJUI PENGAJUAN
+  // =========================================================
   const doSetujui = async () => {
     setShowConfirm(false);
 
@@ -239,7 +282,10 @@ const TandaTanganAtasan = () => {
       console.error("Error approve:", err);
 
       if (err.response?.status === 401) {
-        showToast("error", "Anda belum login atau token tidak valid.");
+        showToast(
+          "error",
+          "Anda belum login atau token tidak valid.",
+        );
       } else if (err.response?.status === 403) {
         showToast(
           "error",
@@ -254,7 +300,8 @@ const TandaTanganAtasan = () => {
       } else {
         showToast(
           "error",
-          err.response?.data?.message || "Gagal menyetujui pengajuan.",
+          err.response?.data?.message ||
+            "Gagal menyetujui pengajuan.",
         );
       }
     } finally {
@@ -262,14 +309,21 @@ const TandaTanganAtasan = () => {
     }
   };
 
+  // =========================================================
+  // PDF LOAD
+  // =========================================================
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
   };
 
+  // =========================================================
+  // INITIAL LOAD
+  // =========================================================
   useEffect(() => {
     if (!id) {
       setError("ID pengajuan tidak ditemukan.");
       setLoading(false);
+
       return;
     }
 
@@ -283,25 +337,43 @@ const TandaTanganAtasan = () => {
     };
   }, [id]);
 
-  const statusPengajuan = String(pengajuan?.status ?? "").toLowerCase();
-  const sudahDiproses = ["disetujui", "ditolak"].includes(statusPengajuan);
+  // =========================================================
+  // STATUS
+  // =========================================================
+  const statusPengajuan = String(
+    pengajuan?.status ?? "",
+  ).toLowerCase();
 
+  const sudahDiproses = ["disetujui", "ditolak"].includes(
+    statusPengajuan,
+  );
+
+  // =========================================================
+  // LOADING
+  // =========================================================
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-4">
         <div className="flex justify-center items-center h-64">
           <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <span className="ml-3 text-gray-500">Loading...</span>
+
+          <span className="ml-3 text-gray-500">
+            Loading...
+          </span>
         </div>
       </div>
     );
   }
 
+  // =========================================================
+  // ERROR
+  // =========================================================
   if (error && !pengajuan) {
     return (
       <div className="max-w-6xl mx-auto p-4">
         <div className="text-center py-12">
           <p className="text-gray-500">{error}</p>
+
           <Link
             to="/data-mahasiswa-atasan"
             className="text-indigo-600 hover:underline mt-2 inline-block"
@@ -313,18 +385,34 @@ const TandaTanganAtasan = () => {
     );
   }
 
+  // =========================================================
+  // UI
+  // =========================================================
   return (
     <div className="max-w-6xl mx-auto p-4">
+      {/* BREADCRUMB */}
       <div className="text-sm text-gray-500 mb-4 flex gap-2">
-        <Link to="/dashboard-atasan" className="hover:underline">
+        <Link
+          to="/dashboard-atasan"
+          className="hover:underline"
+        >
           Dashboard
         </Link>
+
         <span>›</span>
-        <Link to="/data-mahasiswa-atasan" className="hover:underline">
+
+        <Link
+          to="/data-mahasiswa-atasan"
+          className="hover:underline"
+        >
           Menunggu Tanda Tangan
         </Link>
+
         <span>›</span>
-        <span className="text-gray-900 font-medium">Tanda Tangan</span>
+
+        <span className="text-gray-900 font-medium">
+          Tanda Tangan
+        </span>
       </div>
 
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
@@ -332,16 +420,21 @@ const TandaTanganAtasan = () => {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* =====================================================
+            KIRI - PREVIEW SURAT
+        ====================================================== */}
         <div className="bg-[#e6f6e9] p-6 rounded-xl border border-green-200">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-white rounded-lg border border-green-200">
                 <HiDocumentText className="w-5 h-5 text-green-600" />
               </div>
+
               <div>
                 <h3 className="text-lg font-bold text-gray-800">
                   Surat Keterangan
                 </h3>
+
                 <p className="text-xs text-gray-500">
                   Preview dokumen clearing
                 </p>
@@ -368,7 +461,10 @@ const TandaTanganAtasan = () => {
                   style={{ aspectRatio: "208 / 295" }}
                 >
                   <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-                  <span className="text-sm">Memuat surat...</span>
+
+                  <span className="text-sm">
+                    Memuat surat...
+                  </span>
                 </div>
               ) : pdfUrl ? (
                 <div className="max-h-[850px] overflow-y-auto">
@@ -381,7 +477,10 @@ const TandaTanganAtasan = () => {
                         style={{ aspectRatio: "208 / 295" }}
                       >
                         <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-                        <span className="text-sm">Merender surat...</span>
+
+                        <span className="text-sm">
+                          Merender surat...
+                        </span>
                       </div>
                     }
                     error={
@@ -390,20 +489,26 @@ const TandaTanganAtasan = () => {
                         style={{ aspectRatio: "208 / 295" }}
                       >
                         <HiDocumentText className="w-12 h-12 mb-3" />
-                        <p className="text-sm">Gagal merender surat.</p>
+
+                        <p className="text-sm">
+                          Gagal merender surat.
+                        </p>
                       </div>
                     }
                   >
                     {pdfWidth > 0 &&
-                      Array.from(new Array(numPages || 1), (_, index) => (
-                        <Page
-                          key={`page_${index + 1}`}
-                          pageNumber={index + 1}
-                          width={pdfWidth}
-                          renderAnnotationLayer={false}
-                          renderTextLayer={false}
-                        />
-                      ))}
+                      Array.from(
+                        new Array(numPages || 1),
+                        (_, index) => (
+                          <Page
+                            key={`page_${index + 1}`}
+                            pageNumber={index + 1}
+                            width={pdfWidth}
+                            renderAnnotationLayer={false}
+                            renderTextLayer={false}
+                          />
+                        ),
+                      )}
                   </Document>
                 </div>
               ) : (
@@ -412,14 +517,21 @@ const TandaTanganAtasan = () => {
                   style={{ aspectRatio: "208 / 295" }}
                 >
                   <HiDocumentText className="w-12 h-12 mb-3" />
-                  <p className="text-sm">Preview surat tidak tersedia.</p>
+
+                  <p className="text-sm">
+                    Preview surat tidak tersedia.
+                  </p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* =====================================================
+            KANAN
+        ====================================================== */}
         <div className="space-y-6">
+          {/* INFORMASI DOKUMEN */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
               Informasi Dokumen
@@ -430,11 +542,17 @@ const TandaTanganAtasan = () => {
                 <span className="text-gray-500 font-medium">
                   Jenis Pengajuan
                 </span>
-                <span className="text-gray-900">Clearing</span>
+
+                <span className="text-gray-900">
+                  Clearing
+                </span>
               </div>
 
               <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">Nama</span>
+                <span className="text-gray-500 font-medium">
+                  Nama
+                </span>
+
                 <span className="text-gray-900 text-right">
                   {pengajuan?.user?.nama ||
                     pengajuan?.mahasiswa?.nama ||
@@ -444,7 +562,10 @@ const TandaTanganAtasan = () => {
               </div>
 
               <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">NIM</span>
+                <span className="text-gray-500 font-medium">
+                  NIM
+                </span>
+
                 <span className="text-gray-900">
                   {pengajuan?.user?.nim ||
                     pengajuan?.mahasiswa?.nim ||
@@ -457,25 +578,35 @@ const TandaTanganAtasan = () => {
                 <span className="text-gray-500 font-medium">
                   Tanggal Pengajuan
                 </span>
+
                 <span className="text-gray-900 text-right">
                   {pengajuan?.created_at
-                    ? new Date(pengajuan.created_at).toLocaleDateString(
-                        "id-ID",
-                        { day: "2-digit", month: "long", year: "numeric" },
-                      )
+                    ? new Date(
+                        pengajuan.created_at,
+                      ).toLocaleDateString("id-ID", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })
                     : "-"}
                 </span>
               </div>
 
               <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">Departemen</span>
+                <span className="text-gray-500 font-medium">
+                  Departemen
+                </span>
+
                 <span className="text-gray-900 text-right">
                   {pengajuan?.departemen || "-"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">Status</span>
+                <span className="text-gray-500 font-medium">
+                  Status
+                </span>
+
                 <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
                   {pengajuan?.status || "Menunggu TTD"}
                 </span>
@@ -483,17 +614,18 @@ const TandaTanganAtasan = () => {
             </div>
           </div>
 
+          {/* TOMBOL SETUJUI */}
           {!sudahDiproses && (
             <button
               onClick={() => setShowConfirm(true)}
               disabled={processing}
               className="w-full bg-[#2e1a7a] hover:bg-[#1e1260] text-white font-bold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {processing ? "Memproses..." : "Setujui & Tandatangani"}
+              {processing
+                ? "Memproses..."
+                : "Setujui & Tandatangani"}
             </button>
           )}
-
-          {/* Kalau sudah diproses, tampilkan status singkat sebagai gantinya */}
 
           {/* KEMBALI */}
           <div className="pt-2">
@@ -507,16 +639,21 @@ const TandaTanganAtasan = () => {
         </div>
       </div>
 
+      {/* =====================================================
+          MODAL KONFIRMASI
+      ====================================================== */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Setujui Pengajuan?
             </h3>
+
             <p className="text-sm text-gray-600 mb-6">
-              Apakah Anda yakin ingin menyetujui pengajuan ini? Surat clearing
-              final akan diterbitkan setelah ini.
+              Apakah Anda yakin ingin menyetujui pengajuan ini.
+              Surat clearing final akan diterbitkan setelah ini.
             </p>
+
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
@@ -524,6 +661,7 @@ const TandaTanganAtasan = () => {
               >
                 Batal
               </button>
+
               <button
                 onClick={doSetujui}
                 className="flex-1 px-4 py-2 bg-[#2e1a7a] hover:bg-[#1e1260] text-white rounded-lg font-medium"
@@ -535,10 +673,15 @@ const TandaTanganAtasan = () => {
         </div>
       )}
 
+      {/* =====================================================
+          TOAST
+      ====================================================== */}
       {toast && (
         <div
           className={`fixed top-6 right-6 z-50 max-w-sm px-4 py-3 rounded-lg shadow-lg text-sm font-medium text-white ${
-            toast.type === "success" ? "bg-green-600" : "bg-red-600"
+            toast.type === "success"
+              ? "bg-green-600"
+              : "bg-red-600"
           }`}
         >
           {toast.message}
