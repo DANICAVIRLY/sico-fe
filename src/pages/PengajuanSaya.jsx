@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import {
   Badge,
   Button,
@@ -18,10 +19,8 @@ export default function PengajuanSaya() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [nama, setNama] = useState("");
   const [nim, setNim] = useState("");
-
   const [fileKtm, setFileKtm] = useState(null);
   const [fileSpp, setFileSpp] = useState(null);
-
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -39,7 +38,6 @@ export default function PengajuanSaya() {
   const [revisiDepartemen, setRevisiDepartemen] = useState("");
   const [ajukanUlangLoading, setAjukanUlangLoading] = useState(false);
   const [ajukanUlangError, setAjukanUlangError] = useState("");
-
   const [pengajuanList, setPengajuanList] = useState([]);
 
   const getToken = () =>
@@ -74,13 +72,13 @@ export default function PengajuanSaya() {
       );
 
       const data = response.data?.data ?? response.data ?? [];
-
       const list = Array.isArray(data) ? data : [data];
 
       setDocuments(list);
       setPengajuanList(list);
     } catch (err) {
       console.error(err);
+
       setError(
         err.response?.data?.message ||
           "Gagal mengambil data pengajuan clearing."
@@ -108,6 +106,7 @@ export default function PengajuanSaya() {
         title: "File Terlalu Besar",
         message: "Maksimal ukuran file adalah 1 MB.",
       });
+
       return false;
     }
 
@@ -122,8 +121,10 @@ export default function PengajuanSaya() {
         open: true,
         type: "warning",
         title: "Data Belum Lengkap",
-        message: "Silakan upload file KTM dan bukti pembayaran SPP.",
+        message:
+          "Silakan upload file KTM dan bukti pembayaran SPP.",
       });
+
       return;
     }
 
@@ -263,7 +264,11 @@ export default function PengajuanSaya() {
     }
   };
 
-  const handleDownload = async (pengajuanId, jenis, fileName) => {
+  const handleDownload = async (
+    pengajuanId,
+    jenis,
+    fileName
+  ) => {
     try {
       const response = await axios.get(
         `${API_URL}/api/pengajuan-clearing/${pengajuanId}/dokumen/${jenis}`,
@@ -278,10 +283,11 @@ export default function PengajuanSaya() {
 
       link.href = url;
       link.download = fileName || "dokumen";
+
       document.body.appendChild(link);
       link.click();
-
       link.remove();
+
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
@@ -299,9 +305,12 @@ export default function PengajuanSaya() {
     const value = String(status || "").toLowerCase();
 
     if (
-      ["verified", "disetujui", "approved", "diverifikasi_admin"].includes(
-        value
-      )
+      [
+        "verified",
+        "disetujui",
+        "approved",
+        "diverifikasi_admin",
+      ].includes(value)
     ) {
       return <Badge color="success">Verified</Badge>;
     }
@@ -434,7 +443,9 @@ export default function PengajuanSaya() {
                 <form onSubmit={handleAjukanUlang}>
                   <div className="grid gap-5 md:grid-cols-2">
                     <div>
-                      <Label htmlFor="revisi-nama">Nama</Label>
+                      <Label htmlFor="revisi-nama">
+                        Nama
+                      </Label>
 
                       <input
                         id="revisi-nama"
@@ -446,7 +457,9 @@ export default function PengajuanSaya() {
                     </div>
 
                     <div>
-                      <Label htmlFor="revisi-nim">NIM</Label>
+                      <Label htmlFor="revisi-nim">
+                        NIM
+                      </Label>
 
                       <input
                         id="revisi-nim"
@@ -580,18 +593,20 @@ export default function PengajuanSaya() {
               <Card className="mb-6">
                 <div className="mb-5">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    Pengajuan Clearing
+                    Unggah Dokumen Baru
                   </h2>
 
                   <p className="mt-1 text-sm text-gray-500">
-                    Upload dokumen untuk mengajukan clearing.
+                    Lengkapi dokumen persyaratan clearing Anda.
                   </p>
                 </div>
 
                 <form onSubmit={handleUpload}>
-                  <div className="grid gap-5 md:grid-cols-2">
+                  <div className="mb-6 grid gap-5 md:grid-cols-2">
                     <div>
-                      <Label htmlFor="nama-mahasiswa">Nama</Label>
+                      <Label htmlFor="nama-mahasiswa">
+                        Nama
+                      </Label>
 
                       <input
                         id="nama-mahasiswa"
@@ -603,7 +618,9 @@ export default function PengajuanSaya() {
                     </div>
 
                     <div>
-                      <Label htmlFor="nim-mahasiswa">NIM</Label>
+                      <Label htmlFor="nim-mahasiswa">
+                        NIM
+                      </Label>
 
                       <input
                         id="nim-mahasiswa"
@@ -623,7 +640,9 @@ export default function PengajuanSaya() {
                         id="file-ktm"
                         className="mt-2"
                         onChange={(e) =>
-                          setFileKtm(e.target.files?.[0] || null)
+                          setFileKtm(
+                            e.target.files?.[0] || null
+                          )
                         }
                       />
                     </div>
@@ -637,7 +656,9 @@ export default function PengajuanSaya() {
                         id="file-spp"
                         className="mt-2"
                         onChange={(e) =>
-                          setFileSpp(e.target.files?.[0] || null)
+                          setFileSpp(
+                            e.target.files?.[0] || null
+                          )
                         }
                       />
                     </div>
@@ -655,7 +676,7 @@ export default function PengajuanSaya() {
                           Mengirim...
                         </>
                       ) : (
-                        "Kirim Pengajuan"
+                        "Ajukan Clearing"
                       )}
                     </Button>
                   </div>
@@ -752,9 +773,10 @@ export default function PengajuanSaya() {
 
             <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
               <p className="text-sm text-blue-800">
-                Pastikan semua dokumen yang diupload dapat dibaca dengan
-                jelas. Jika pengajuan membutuhkan revisi, perbaiki dokumen
-                sesuai catatan admin lalu kirim ulang.
+                Pastikan semua dokumen yang diupload dapat dibaca
+                dengan jelas. Jika pengajuan membutuhkan revisi,
+                perbaiki dokumen sesuai catatan admin lalu kirim
+                ulang.
               </p>
             </div>
           </div>
