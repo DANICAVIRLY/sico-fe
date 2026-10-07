@@ -666,6 +666,7 @@ export default function DashboardMahasiswa() {
                             >
                               Download
                             </Button>
+                            
                           </div>
                         </div>
                       </div>
@@ -684,7 +685,13 @@ export default function DashboardMahasiswa() {
                                 Barcode belum tersedia
                               </span>
                             </div>
+                            
                           )}
+                           <div className="w-30">
+                              <p className="text-xs font-bold text-gray-900 leading-tight">
+                                Scan untuk verifikasi dokumen ini
+                              </p>
+                            </div>
                         </div>
                       )}
                     </div>
