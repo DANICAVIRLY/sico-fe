@@ -12,7 +12,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-const API_BASE_URL = "http://10.6.65.165:8000";
+const API_BASE_URL = "http://172.18.160.95:8000";
 
 // Halaman tujuan setelah klik "Kembali"
 const HALAMAN_KEMBALI = "/data-pengajuan";
