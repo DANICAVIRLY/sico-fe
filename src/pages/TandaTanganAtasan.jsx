@@ -533,12 +533,12 @@ const TandaTanganAtasan = () => {
         <div className="space-y-6">
           {/* INFORMASI DOKUMEN */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2">
               Informasi Dokumen
             </h3>
 
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between border-b pb-2 gap-4">
+              <div className="flex justify-between pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   Jenis Pengajuan
                 </span>
@@ -547,12 +547,8 @@ const TandaTanganAtasan = () => {
                   Clearing
                 </span>
               </div>
-
-              <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">
-                  Nama
-                </span>
-
+              <div className="flex justify-between pb-2 gap-4">
+                <span className="text-gray-500 font-medium">Nama</span>
                 <span className="text-gray-900 text-right">
                   {pengajuan?.user?.nama ||
                     pengajuan?.mahasiswa?.nama ||
@@ -560,11 +556,8 @@ const TandaTanganAtasan = () => {
                     "-"}
                 </span>
               </div>
-
-              <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">
-                  NIM
-                </span>
+              <div className="flex justify-between pb-2 gap-4">
+                <span className="text-gray-500 font-medium">NIM</span>
 
                 <span className="text-gray-900">
                   {pengajuan?.user?.nim ||
@@ -574,7 +567,7 @@ const TandaTanganAtasan = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2 gap-4">
+              <div className="flex justify-between pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   Tanggal Pengajuan
                 </span>
@@ -591,23 +584,15 @@ const TandaTanganAtasan = () => {
                     : "-"}
                 </span>
               </div>
-
-              <div className="flex justify-between border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">
-                  Departemen
-                </span>
-
+              <div className="flex justify-between pb-2 gap-4">
+                <span className="text-gray-500 font-medium">Departemen</span>
                 <span className="text-gray-900 text-right">
                   {pengajuan?.departemen || "-"}
                 </span>
               </div>
-
-              <div className="flex justify-between items-center border-b pb-2 gap-4">
-                <span className="text-gray-500 font-medium">
-                  Status
-                </span>
-
-                <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 border border-yellow-300">
+              <div className="flex justify-between items-center pb-2 gap-4">
+                <span className="text-gray-500 font-medium">Status</span>
+                <span className="inline-block px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 border border-green-300">
                   {pengajuan?.status || "Menunggu TTD"}
                 </span>
               </div>

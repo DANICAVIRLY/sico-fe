@@ -17,6 +17,41 @@ const API_BASE_URL = "http://172.18.160.95:8000";
 // Halaman tujuan setelah klik "Kembali"
 const HALAMAN_KEMBALI = "/data-pengajuan";
 
+// Membaca pesan error dari server. Karena PDF diambil dengan
+// responseType "blob", isi error juga berupa blob dan harus dibaca dulu.
+// Kalau isinya bukan JSON (misalnya halaman error HTML), tampilkan ringkasannya.
+const bacaPesanError = async (err) => {
+  const data = err.response?.data;
+  let teks = "";
+  let json = null;
+
+  try {
+    if (data instanceof Blob) {
+      teks = await data.text();
+    } else if (typeof data === "string") {
+      teks = data;
+    } else if (data && typeof data === "object") {
+      json = data;
+    }
+
+    if (!json && teks) json = JSON.parse(teks);
+  } catch {
+    json = null; // bukan JSON
+  }
+
+  if (json?.errors) return Object.values(json.errors).flat().join(" ");
+  if (json?.message) return json.message;
+
+  const ringkas = teks
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return ringkas ? ringkas.slice(0, 200) : null;
+};
+
 const SuratBebasPustaka = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -30,6 +65,11 @@ const SuratBebasPustaka = () => {
   const [error, setError] = useState("");
   const [pdfError, setPdfError] = useState("");
   const [processing, setProcessing] = useState(false);
+
+  // Penandatangan surat (wajib dipilih pustakawan)
+  const [daftarPenandatangan, setDaftarPenandatangan] = useState([]);
+  const [penandatangan, setPenandatangan] = useState("");
+  const [savingPenandatangan, setSavingPenandatangan] = useState(false);
 
   // Toast notifikasi custom
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message }
@@ -96,6 +136,11 @@ const SuratBebasPustaka = () => {
       }
 
       setPengajuan(item);
+
+      // Sinkronkan penandatangan dari data (kalau field-nya dikirim backend)
+      setPenandatangan((prev) =>
+        item.penandatangan !== undefined ? item.penandatangan || "" : prev,
+      );
     } catch (err) {
       console.error("Error fetch data:", err);
 
@@ -116,12 +161,37 @@ const SuratBebasPustaka = () => {
   };
 
   // =========================================================
+  // DAFTAR PENANDATANGAN (untuk dropdown)
+  // =========================================================
+  const fetchDaftarPenandatangan = async () => {
+    try {
+      const token = getToken();
+
+      const response = await axios.get(
+        `${API_BASE_URL}/api/bebas-pustaka/penandatangan`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        },
+      );
+
+      setDaftarPenandatangan(response.data?.data || []);
+    } catch (err) {
+      console.error("Error fetch penandatangan:", err);
+      showToast("error", "Daftar penandatangan tidak dapat dimuat.");
+    }
+  };
+
+  // =========================================================
   // PREVIEW SURAT
   // =========================================================
   const fetchPreviewPdf = async () => {
     try {
       setLoadingPdf(true);
       setPdfError("");
+      setPdfUrl(null);
 
       const token = getToken();
 
@@ -141,17 +211,74 @@ const SuratBebasPustaka = () => {
     } catch (err) {
       console.error("Error preview PDF:", err);
 
-      if (err.response?.status === 401) {
+      const pesanServer = await bacaPesanError(err);
+
+      if (!err.response) {
+        setPdfError(
+          `Server tidak dapat dijangkau (${API_BASE_URL}). Pastikan backend berjalan dan alamatnya benar.`,
+        );
+      } else if (err.response.status === 401) {
         setPdfError("Token tidak valid atau sesi login telah berakhir.");
       } else if (err.response?.status === 403) {
         setPdfError("Anda tidak memiliki akses untuk melihat surat.");
       } else if (err.response?.status === 404) {
         setPdfError("Surat belum tersedia.");
+      } else if (err.response?.status === 422) {
+        // contoh: "Penandatangan surat belum dipilih..." atau "belum disetujui"
+        setPdfError(pesanServer || "Surat belum dapat ditampilkan.");
       } else {
-        setPdfError("Gagal menampilkan preview surat.");
+        setPdfError(
+          `${pesanServer || "Gagal menampilkan preview surat."} (status ${err.response?.status})`,
+        );
       }
     } finally {
       setLoadingPdf(false);
+    }
+  };
+
+  // =========================================================
+  // PILIH PENANDATANGAN
+  // =========================================================
+  const handlePilihPenandatangan = async (kode) => {
+    setPenandatangan(kode);
+
+    if (!kode) return;
+
+    try {
+      setSavingPenandatangan(true);
+
+      const token = getToken();
+
+      await axios.post(
+        `${API_BASE_URL}/api/bebas-pustaka/${id}/penandatangan`,
+        { penandatangan: kode },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      showToast("success", "Penandatangan surat disimpan.");
+
+      // Muat ulang surat dengan penandatangan yang baru
+      await Promise.all([fetchData(true), fetchPreviewPdf()]);
+    } catch (err) {
+      console.error("Error simpan penandatangan:", err);
+
+      const errors = err.response?.data?.errors;
+      const detail = errors ? Object.values(errors).flat().join(" ") : null;
+
+      showToast(
+        "error",
+        detail ||
+          err.response?.data?.message ||
+          "Gagal menyimpan penandatangan.",
+      );
+    } finally {
+      setSavingPenandatangan(false);
     }
   };
 
@@ -187,6 +314,8 @@ const SuratBebasPustaka = () => {
     } catch (err) {
       console.error("Error download surat:", err);
 
+      const pesanServer = await bacaPesanError(err);
+
       if (err.response?.status === 401) {
         showToast("error", "Token tidak valid atau sesi login telah berakhir.");
       } else if (err.response?.status === 403) {
@@ -194,7 +323,7 @@ const SuratBebasPustaka = () => {
       } else if (err.response?.status === 404) {
         showToast("error", "Surat belum tersedia.");
       } else {
-        showToast("error", "Gagal mengunduh surat.");
+        showToast("error", pesanServer || "Gagal mengunduh surat.");
       }
     }
   };
@@ -203,6 +332,11 @@ const SuratBebasPustaka = () => {
   // SETUJUI & TANDATANGANI
   // =========================================================
   const handleSetujui = async () => {
+    if (!penandatangan) {
+      showToast("error", "Pilih penandatangan surat terlebih dahulu.");
+      return;
+    }
+
     try {
       setProcessing(true);
 
@@ -263,6 +397,7 @@ const SuratBebasPustaka = () => {
     }
 
     fetchData();
+    fetchDaftarPenandatangan();
     fetchPreviewPdf();
   }, [id]);
 
@@ -283,6 +418,9 @@ const SuratBebasPustaka = () => {
       : statusLower === "revisi" || statusLower === "ditolak"
         ? "bg-red-100 text-red-700 border-red-300"
         : "bg-yellow-100 text-yellow-700 border-yellow-300";
+
+  // Tombol setujui nonaktif selama penandatangan belum dipilih
+  const tombolNonaktif = processing || (bisaDisetujui && !penandatangan);
 
   // =========================================================
   // LOADING
@@ -413,7 +551,7 @@ const SuratBebasPustaka = () => {
                 </div>
               ) : (
                 <div
-                  className="flex flex-col justify-center items-center text-gray-400"
+                  className="flex flex-col justify-center items-center text-gray-400 px-6 text-center"
                   style={{ aspectRatio: "208 / 295" }}
                 >
                   <HiDocumentText className="w-12 h-12 mb-3" />
@@ -430,19 +568,19 @@ const SuratBebasPustaka = () => {
         <div className="space-y-6">
           {/* INFORMASI DOKUMEN */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2">
               Informasi Dokumen
             </h3>
 
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between border-b pb-2 gap-4">
+              <div className="flex justify-between pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   Jenis Pengajuan
                 </span>
                 <span className="text-gray-900">Bebas Pustaka</span>
               </div>
 
-              <div className="flex justify-between border-b pb-2 gap-4">
+              <div className="flex justify-between pb-2 gap-4">
                 <span className="text-gray-500 font-medium">Nama</span>
                 <span className="text-gray-900 text-right">
                   {pengajuan?.user?.nama ||
@@ -452,7 +590,7 @@ const SuratBebasPustaka = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2 gap-4">
+              <div className="flex justify-between pb-2 gap-4">
                 <span className="text-gray-500 font-medium">NIM</span>
                 <span className="text-gray-900">
                   {pengajuan?.user?.nim ||
@@ -462,7 +600,7 @@ const SuratBebasPustaka = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2 gap-4">
+              <div className="flex justify-between pb-2 gap-4">
                 <span className="text-gray-500 font-medium">
                   Tanggal Pengajuan
                 </span>
@@ -476,7 +614,7 @@ const SuratBebasPustaka = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between border-b pb-2 gap-4">
+              <div className="flex justify-between pb-2 gap-4">
                 <span className="text-gray-500 font-medium">Departemen</span>
                 <span className="text-gray-900 text-right">
                   {pengajuan?.user?.departemen ||
@@ -486,7 +624,7 @@ const SuratBebasPustaka = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between items-center border-b pb-2 gap-4">
+              <div className="flex justify-between items-center pb-2 gap-4">
                 <span className="text-gray-500 font-medium">Status</span>
                 <span
                   className={`inline-block px-3 py-1 text-xs font-medium rounded-full border ${statusClass}`}
@@ -495,6 +633,36 @@ const SuratBebasPustaka = () => {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* PENANDATANGAN SURAT */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-2">
+              Penandatangan Surat <span className="text-red-600">*</span>
+            </h3>
+
+            <select
+              value={penandatangan}
+              onChange={(e) => handlePilihPenandatangan(e.target.value)}
+              disabled={savingPenandatangan || daftarPenandatangan.length === 0}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              <option value="">-- Pilih penandatangan --</option>
+              {daftarPenandatangan.map((p) => (
+                <option key={p.kode} value={p.kode}>
+                  {p.nama} (NIP. {p.nip})
+                </option>
+              ))}
+            </select>
+
+            {savingPenandatangan ? (
+              <p className="text-xs text-gray-500 mt-2">Menyimpan...</p>
+            ) : !penandatangan ? (
+              <p className="text-xs text-amber-600 mt-2">
+                Pilih penandatangan terlebih dahulu. Surat belum dapat
+                ditampilkan atau disetujui sebelum dipilih.
+              </p>
+            ) : null}
           </div>
 
           {/* TINDAKAN */}
@@ -511,7 +679,7 @@ const SuratBebasPustaka = () => {
               onClick={
                 bisaDisetujui ? handleSetujui : () => navigate(HALAMAN_KEMBALI)
               }
-              disabled={processing}
+              disabled={tombolNonaktif}
               className="w-full bg-[#2e1a7a] hover:bg-[#1e1260] text-white font-bold py-2.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {processing

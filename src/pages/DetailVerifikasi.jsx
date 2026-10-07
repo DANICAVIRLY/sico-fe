@@ -167,18 +167,15 @@ export default function DetailVerifikasi() {
 
       const token = localStorage.getItem("token");
 
-      const response = await axios.get(
-        `${API_BASE_URL}/api/bebas-pustaka`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-          params: {
-            per_page: 1000,
-          },
-        }
-      );
+      const response = await axios.get(`${API_BASE_URL}/api/bebas-pustaka`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+        params: {
+          per_page: 1000,
+        },
+      });
 
       const list = extractArray(response.data?.data);
 
@@ -189,37 +186,20 @@ export default function DetailVerifikasi() {
         return;
       }
 
-      const item = list.find(
-        (row) => String(row.id) === String(id)
-      );
+      const item = list.find((row) => String(row.id) === String(id));
 
       if (!item) {
-        console.error(
-          "Item dengan id",
-          id,
-          "tidak ditemukan:",
-          list
-        );
+        console.error("Item dengan id", id, "tidak ditemukan:", list);
 
         setErrorMsg("Data pengajuan tidak ditemukan.");
         setDetail(null);
         return;
       }
 
-      console.log("DATA MAHASISWA TERPILIH:", item);
-
       const mapped = {
         id: item.id,
-        nama:
-          item.user?.nama ||
-          item.nama ||
-          item.mahasiswa?.nama ||
-          "-",
-        nim:
-          item.user?.nim ||
-          item.nim ||
-          item.mahasiswa?.nim ||
-          "-",
+        nama: item.user?.nama || item.nama || item.mahasiswa?.nama || "-",
+        nim: item.user?.nim || item.nim || item.mahasiswa?.nim || "-",
         departemen:
           item.user?.departemen ||
           item.departemen ||
@@ -227,25 +207,17 @@ export default function DetailVerifikasi() {
           "-",
         status: item.status || "menunggu",
         tanggal: item.created_at
-          ? new Date(item.created_at).toLocaleDateString(
-              "id-ID",
-              {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              }
-            )
+          ? new Date(item.created_at).toLocaleDateString("id-ID", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
           : "-",
         peminjamanBuku:
-          item.status_peminjaman ||
-          item.peminjaman_buku ||
-          "Tidak ada",
-        denda:
-          item.status_denda ||
-          item.denda ||
-          "Tidak ada",
+          item.status_peminjaman || item.peminjaman_buku || "Tidak ada",
+        denda: item.status_denda || item.denda || "Tidak ada",
         catatanAwal: item.catatan_revisi || "",
         diverifikasiOleh:
           item.reviewer?.nama ||
@@ -276,9 +248,7 @@ export default function DetailVerifikasi() {
   };
 
   const flagAda = (jenis) =>
-    jenis === "distribusi"
-      ? detail?.fileDistribusi
-      : detail?.fileSkripsi;
+    jenis === "distribusi" ? detail?.fileDistribusi : detail?.fileSkripsi;
 
   const handlePreview = async (jenis) => {
     const cfg = DOKUMEN[jenis];
@@ -301,7 +271,7 @@ export default function DetailVerifikasi() {
             Accept: "application/pdf",
           },
           responseType: "blob",
-        }
+        },
       );
 
       const blob = new Blob([response.data], {
@@ -312,10 +282,7 @@ export default function DetailVerifikasi() {
 
       window.open(url, "_blank", "noopener,noreferrer");
 
-      setTimeout(
-        () => window.URL.revokeObjectURL(url),
-        60000
-      );
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
     } catch (error) {
       console.error(`Gagal preview ${jenis}:`, error);
       console.error("Response:", error.response?.data);
@@ -325,7 +292,7 @@ export default function DetailVerifikasi() {
           ? `${cfg.judul} tidak ditemukan. Cek route ${cfg.preview} di backend.`
           : `Gagal membuka ${cfg.judul.toLowerCase()}.`,
         "error",
-        "Gagal"
+        "Gagal",
       );
     } finally {
       setProses("");
@@ -353,7 +320,7 @@ export default function DetailVerifikasi() {
             Accept: "application/pdf",
           },
           responseType: "blob",
-        }
+        },
       );
 
       const blob = new Blob([response.data], {
@@ -381,7 +348,7 @@ export default function DetailVerifikasi() {
           ? `${cfg.judul} tidak ditemukan. Cek route ${cfg.download} di backend.`
           : `Gagal mengunduh ${cfg.judul.toLowerCase()}.`,
         "error",
-        "Gagal"
+        "Gagal",
       );
     } finally {
       setProses("");
@@ -403,25 +370,31 @@ export default function DetailVerifikasi() {
     );
   };
 
-  const kirimKeputusan = async (keputusan) => {
-    if (keputusan === "revisi" && !catatan.trim()) {
+  // =========================================================
+  // KEPUTUSAN REVISI
+  // Persetujuan ("setuju") TIDAK dikirim dari halaman ini, karena
+  // penandatangan harus dipilih dulu di halaman tanda tangan.
+  // =========================================================
+  const kirimRevisi = async () => {
+    if (!catatan.trim()) {
       showAlert(
         "Catatan wajib diisi jika memberikan status revisi.",
         "warning",
-        "Catatan Kosong"
+        "Catatan Kosong",
       );
       return;
     }
 
     try {
       setSubmitting(true);
+      setErrorMsg("");
 
       const token = localStorage.getItem("token");
 
       await axios.post(
         `${API_BASE_URL}/api/bebas-pustaka/${id}/review`,
         {
-          keputusan,
+          keputusan: "revisi",
           catatan_revisi: catatan,
         },
         {
@@ -429,23 +402,26 @@ export default function DetailVerifikasi() {
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
           },
-        }
+        },
       );
 
-      if (keputusan === "setuju") {
-        navigate(`/surat-bebas-pustaka/${id}`);
-      } else {
-        navigate("/data-pengajuan");
-      }
+      navigate("/data-pengajuan");
     } catch (error) {
-      console.error("Error submit keputusan:", error);
+      console.error("Error submit revisi:", error);
 
       if (error.response) {
         console.error("STATUS:", error.response.status);
         console.error("RESPONSE:", error.response.data);
       }
 
-      setErrorMsg("Gagal mengirim keputusan verifikasi.");
+      const errors = error.response?.data?.errors;
+      const detailError = errors ? Object.values(errors).flat().join(" ") : null;
+
+      setErrorMsg(
+        detailError ||
+          error.response?.data?.message ||
+          "Gagal mengirim keputusan verifikasi.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -455,16 +431,17 @@ export default function DetailVerifikasi() {
     setConfirmModal(true);
   };
 
+  // Lanjut ke halaman tanda tangan: di sana pustakawan memilih
+  // penandatangan, melihat preview surat, lalu menyetujui.
   const doVerifikasiLulus = () => {
     setConfirmModal(false);
-    kirimKeputusan("setuju");
+    navigate(`/surat-bebas-pustaka/${id}`);
   };
 
   const statusFinal = ["disetujui", "revisi"];
 
   const sudahDiproses =
-    detail &&
-    statusFinal.includes(String(detail.status).toLowerCase());
+    detail && statusFinal.includes(String(detail.status).toLowerCase());
 
   if (loading) {
     return (
@@ -474,7 +451,7 @@ export default function DetailVerifikasi() {
     );
   }
 
-  if (errorMsg || !detail) {
+  if (!detail) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-0">
         <p className="text-red-500 mb-4">
@@ -556,9 +533,7 @@ export default function DetailVerifikasi() {
                 <div
                   key={row.label}
                   className={`grid grid-cols-1 sm:grid-cols-2 ${
-                    index !== rows.length - 1
-                      ? "border-b border-gray-200"
-                      : ""
+                    index !== rows.length - 1 ? "border-b border-gray-200" : ""
                   }`}
                 >
                   <div className="p-3 sm:p-4 bg-gray-50 font-bold text-gray-700 border-b sm:border-b-0 sm:border-r border-gray-200 text-sm sm:text-base">
@@ -574,18 +549,13 @@ export default function DetailVerifikasi() {
 
             {(detail.fileSkripsi || detail.fileDistribusi) && (
               <div className="w-full flex flex-col gap-3 mb-6">
-                {detail.fileSkripsi &&
-                  renderBoxDokumen("skripsi")}
+                {detail.fileSkripsi && renderBoxDokumen("skripsi")}
 
-                {detail.fileDistribusi &&
-                  renderBoxDokumen("distribusi")}
+                {detail.fileDistribusi && renderBoxDokumen("distribusi")}
               </div>
             )}
 
-            <Link
-              to="/data-pengajuan"
-              className="w-full sm:w-auto"
-            >
+            <Link to="/data-pengajuan" className="w-full sm:w-auto">
               <Button
                 color="light"
                 className="w-full sm:w-auto border border-gray-300 text-blue-600 font-medium hover:bg-gray-50"
@@ -624,9 +594,7 @@ export default function DetailVerifikasi() {
         <Card>
           <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                {detail.nama}
-              </h2>
+              <h2 className="text-lg font-bold text-gray-900">{detail.nama}</h2>
 
               <div className="flex flex-wrap gap-2 mt-2">
                 <Badge color="success" className="text-xs">
@@ -655,12 +623,11 @@ export default function DetailVerifikasi() {
             <li>Tidak memiliki buku yang masih dipinjam.</li>
             <li>Tidak memiliki tanggungan denda perpustakaan.</li>
             <li>
-              Jika persyaratan belum terpenuhi, silakan lengkapi
-              sesuai catatan syarat yang belum terpenuhi.
+              Jika persyaratan belum terpenuhi, silakan lengkapi sesuai catatan
+              syarat yang belum terpenuhi.
             </li>
             <li>
-              Jika ingin memberikan status revisi, wajib memberikan
-              catatan.
+              Jika ingin memberikan status revisi, wajib memberikan catatan.
             </li>
           </ol>
         </Card>
@@ -675,18 +642,14 @@ export default function DetailVerifikasi() {
               renderBoxDokumen(jenis)
             ) : (
               <div className="border border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <p className="text-sm text-gray-400">
-                  {DOKUMEN[jenis].kosong}
-                </p>
+                <p className="text-sm text-gray-400">{DOKUMEN[jenis].kosong}</p>
               </div>
             )}
           </Card>
         ))}
 
         <Card>
-          <h3 className="font-bold text-gray-800 mb-2">
-            Catatan Pustakawan
-          </h3>
+          <h3 className="font-bold text-gray-800 mb-2">Catatan Pustakawan</h3>
 
           <Textarea
             id="catatan"
@@ -698,15 +661,10 @@ export default function DetailVerifikasi() {
           />
         </Card>
 
-        {errorMsg && (
-          <p className="text-red-500 text-sm">{errorMsg}</p>
-        )}
+        {errorMsg && <p className="text-red-500 text-sm">{errorMsg}</p>}
 
         <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-2">
-          <Link
-            to="/data-pengajuan"
-            className="w-full sm:w-auto"
-          >
+          <Link to="/data-pengajuan" className="w-full sm:w-auto">
             <Button
               color="gray"
               className="w-full sm:w-auto bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -720,9 +678,9 @@ export default function DetailVerifikasi() {
             color="warning"
             className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white"
             disabled={submitting}
-            onClick={() => kirimKeputusan("revisi")}
+            onClick={kirimRevisi}
           >
-            Revisi
+            {submitting ? "Memproses..." : "Revisi"}
           </Button>
 
           <Button
@@ -743,8 +701,8 @@ export default function DetailVerifikasi() {
             </h3>
 
             <p className="text-sm text-gray-600 mb-6">
-              Apakah Anda yakin ingin meluluskan verifikasi bebas
-              pustaka mahasiswa ini?
+              Anda akan diarahkan ke halaman tanda tangan untuk memilih
+              penandatangan dan menyetujui surat bebas pustaka mahasiswa ini.
             </p>
 
             <div className="flex gap-3">
@@ -759,7 +717,7 @@ export default function DetailVerifikasi() {
                 onClick={doVerifikasiLulus}
                 className="flex-1 px-4 py-2 bg-blue-800 hover:bg-blue-900 text-white rounded-lg font-medium"
               >
-                Ya, Setujui
+                Ya, Lanjut
               </button>
             </div>
           </div>
