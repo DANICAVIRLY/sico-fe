@@ -25,7 +25,7 @@ export default function Login() {
       };
 
       const response = await axios.post(
-        "http://172.18.160.91:8000/api/auth/login",
+        "http://172.18.160.95:8000/api/auth/login",
         payload,
         {
           headers: {

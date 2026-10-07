@@ -12,7 +12,7 @@ import {
 } from 'react-icons/hi';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://172.18.160.91:8000';
+const API_BASE_URL = 'http://172.18.160.95:8000';
 
 const STEPPER_ITEMS = [
   { label: 'Surat Bebas Pustaka' },
@@ -470,11 +470,11 @@ export default function DashboardMahasiswa() {
               <div className="mb-6">
                 <Card className="border border-gray-200 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-indigo-700">
+                    <h3 className="font-bold text-blue-700">
                       Tahapan Proses Clearing
                     </h3>
 
-                    <span className="text-sm font-semibold text-indigo-600 whitespace-nowrap">
+                    <span className="text-sm font-semibold text-blue-600 whitespace-nowrap">
                       {tahapan}/{totalTahapan}
                     </span>
                   </div>
@@ -499,7 +499,7 @@ export default function DashboardMahasiswa() {
                             <div
                               className={`absolute top-4 right-1/2 w-full h-0.5 ${
                                 isLineFilled
-                                  ? 'bg-indigo-600'
+                                  ? 'bg-green-600'
                                   : 'bg-gray-200'
                               }`}
                             />
@@ -510,9 +510,9 @@ export default function DashboardMahasiswa() {
                               isRevisi
                                 ? 'bg-red-100 border-2 border-red-500 text-red-600'
                                 : isDone
-                                ? 'bg-indigo-600 text-white'
+                                ? 'bg-green-600 text-white'
                                 : isActive
-                                ? 'bg-white border-2 border-indigo-600 text-indigo-600'
+                                ? 'bg-white border-2 border-blue-600 text-blue-600'
                                 : 'bg-gray-100 border border-gray-300 text-gray-400'
                             }`}
                           >
@@ -533,8 +533,10 @@ export default function DashboardMahasiswa() {
                             className={`text-[11px] mt-0.5 ${
                               isRevisi
                                 ? 'text-red-600 font-semibold'
-                                : isDone || isActive
-                                ? 'text-indigo-600'
+                                : isDone
+                                ? 'text-green-600'
+                                : isActive
+                                ? 'text-blue-600'
                                 : 'text-gray-400'
                             }`}
                           >
@@ -627,15 +629,15 @@ export default function DashboardMahasiswa() {
                     Dokumen Anda
                   </h3>
 
-                  <Card className="rounded-lg shadow-sm border border-indigo-200 bg-indigo-50">
+                  <Card className="rounded-lg shadow-sm border border-green-200 bg-green-50">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
                       <div className="flex items-start gap-4 flex-1">
-                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 shrink-0">
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 shrink-0">
                           <HiCheckCircle className="w-6 h-6" />
                         </div>
 
                         <div className="flex-1">
-                          <h3 className="font-bold text-indigo-700">
+                          <h3 className="font-bold text-blue-700">
                             Bebas Pustaka Selesai!
                           </h3>
 
@@ -699,7 +701,7 @@ export default function DashboardMahasiswa() {
                               </div>
 
                               <div className="flex-1">
-                                <h3 className="text-base font-bold text-gray-900">
+                                <h3 className="text-base font-bold text-blue-700">
                                   Clearing Selesai!
                                 </h3>
 
