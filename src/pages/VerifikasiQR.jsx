@@ -191,7 +191,7 @@ export default function VerifikasiQR() {
                 <span className="text-gray-500 text-sm font-medium">QR Code</span>
                 <span className="text-gray-900 text-sm">
                   {data.qr_token ? (
-                    <span className="text-green-600">✅ Tersedia</span>
+                    <span className="text-green-600">Tersedia</span>
                   ) : (
                     <span className="text-gray-400">-</span>
                   )}
