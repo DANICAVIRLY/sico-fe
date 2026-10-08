@@ -5,7 +5,7 @@ import axios from 'axios';
 import AtasanSidebar from '../components/AtasanSidebar';
 
 
-const API_BASE_URL = 'http://172.18.160.95:8000';
+const API_BASE_URL = 'http://172.18.160.97:8000';
 const READ_NOTIF_KEY = 'atasan_read_notif_ids';
 
 export default function DashboardAtasan() {

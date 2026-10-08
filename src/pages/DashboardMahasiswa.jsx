@@ -12,7 +12,7 @@ import {
 } from 'react-icons/hi';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://172.18.160.95:8000';
+const API_BASE_URL = 'http://172.18.160.97:8000';
 
 const STEPPER_ITEMS = [
   { label: 'Surat Bebas Pustaka' },
@@ -499,7 +499,7 @@ export default function DashboardMahasiswa() {
                             <div
                               className={`absolute top-4 right-1/2 w-full h-0.5 ${
                                 isLineFilled
-                                  ? 'bg-green-600'
+                                  ? 'bg-green-400'
                                   : 'bg-gray-200'
                               }`}
                             />
@@ -510,7 +510,7 @@ export default function DashboardMahasiswa() {
                               isRevisi
                                 ? 'bg-red-100 border-2 border-red-500 text-red-600'
                                 : isDone
-                                ? 'bg-green-600 text-white'
+                                ? 'bg-green-400 text-white'
                                 : isActive
                                 ? 'bg-white border-2 border-blue-600 text-blue-600'
                                 : 'bg-gray-100 border border-gray-300 text-gray-400'
@@ -534,7 +534,7 @@ export default function DashboardMahasiswa() {
                               isRevisi
                                 ? 'text-red-600 font-semibold'
                                 : isDone
-                                ? 'text-green-600'
+                                ? 'text-green-500'
                                 : isActive
                                 ? 'text-blue-600'
                                 : 'text-gray-400'
@@ -687,7 +687,7 @@ export default function DashboardMahasiswa() {
                             </div>
                             
                           )}
-                           <div className="w-30">
+                           <div className="w-28">
                               <p className="text-xs font-bold text-gray-900 leading-tight">
                                 Scan untuk verifikasi dokumen ini
                               </p>
