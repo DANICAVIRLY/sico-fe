@@ -371,25 +371,26 @@ export default function PengajuanSaya() {
   const documentRows = getDocumentRows();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+      {/* SIDEBAR */}
       <SidebarMahaComp
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="lg:ml-64">
-        <div className="sticky top-0 z-30 flex items-center gap-3 border-b bg-white px-4 py-3 shadow-sm lg:hidden">
-          <Button
-            color="light"
-            size="sm"
+      <div className="flex-1 lg:ml-64 min-w-0">
+        {/* MOBILE HEADER */}
+        <div className="lg:hidden sticky top-0 z-30 bg-[#1e2678] text-white p-4 flex items-center justify-between shadow-md">
+          <button
             onClick={() => setSidebarOpen(true)}
+            className="p-1 focus:outline-none"
           >
-            <HiMenu className="h-5 w-5" />
-          </Button>
+            <HiMenu className="w-6 h-6" />
+          </button>
 
-          <h1 className="font-semibold text-gray-800">
-            Pengajuan Saya
-          </h1>
+          <span className="font-bold">Clearing Online</span>
+
+          <div className="w-6" />
         </div>
 
         <main className="p-4 md:p-6">
