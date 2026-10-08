@@ -11,12 +11,19 @@ import {
 import SidebarMahaComp from "../components/SidebarMahaComp";
 import AlertModal from "../components/AlertModal";
 import { HiMenu } from "react-icons/hi";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const API_URL = "http://172.18.160.97:8000";
+const API_BEBAS_PUSTAKA = `${API_URL}/api/bebas-pustaka`;
+// Ganti sesuai route halaman Buat Pengajuan (bebas pustaka) di App.jsx kamu
+const ROUTE_BEBAS_PUSTAKA = "/bebas-pustaka";
 
 export default function PengajuanSaya() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loadingBP, setLoadingBP] = useState(true);
+  const [statusBP, setStatusBP] = useState(null); // null | "pending" | "revisi" | "verified"
   const [nama, setNama] = useState("");
   const [nim, setNim] = useState("");
   const [fileKtm, setFileKtm] = useState(null);
@@ -37,7 +44,6 @@ export default function PengajuanSaya() {
   const [revisiFileSpp, setRevisiFileSpp] = useState(null);
   const [revisiDepartemen, setRevisiDepartemen] = useState("");
   const [ajukanUlangLoading, setAjukanUlangLoading] = useState(false);
-  const [ajukanUlangError, setAjukanUlangError] = useState("");
   const [pengajuanList, setPengajuanList] = useState([]);
 
   const getToken = () =>
@@ -58,8 +64,64 @@ export default function PengajuanSaya() {
     setNama(user?.nama || user?.name || "");
     setNim(user?.nim || "");
 
-    getPengajuan();
+    cekBebasPustaka(user);
   }, []);
+
+  const cekBebasPustaka = async (user) => {
+    setLoadingBP(true);
+
+    try {
+      const response = await axios.get(API_BEBAS_PUSTAKA, getConfig());
+
+      const listData =
+        response.data?.data?.data || response.data?.data || [];
+
+      const namaUser = String(user?.nama || user?.name || "").toLowerCase();
+
+      const milikSaya = Array.isArray(listData)
+        ? listData.filter(
+            (item) =>
+              String(item.nim) === String(user?.nim) ||
+              String(item.user_id) === String(user?.id) ||
+              String(item.nama || "").toLowerCase() === namaUser
+          )
+        : [];
+
+      if (milikSaya.length === 0) {
+        setStatusBP(null);
+        return;
+      }
+
+      const terbaru = milikSaya.reduce((a, b) => (b.id > a.id ? b : a));
+      const raw = String(terbaru.status ?? "").toLowerCase();
+
+      if (raw === "disetujui") {
+        setStatusBP("verified");
+        getPengajuan();
+      } else if (raw === "revisi") {
+        setStatusBP("revisi");
+      } else {
+        setStatusBP("pending");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatusBP(null);
+    } finally {
+      setLoadingBP(false);
+    }
+  };
+
+  const pesanBlokir = () => {
+    if (statusBP === "pending") {
+      return "Pengajuan bebas pustaka kamu masih menunggu verifikasi pustakawan. Halaman ini baru bisa dibuka setelah bebas pustaka disetujui.";
+    }
+
+    if (statusBP === "revisi") {
+      return "Pengajuan bebas pustaka kamu perlu direvisi. Perbaiki dulu dan ajukan ulang sampai disetujui pustakawan.";
+    }
+
+    return "Kamu belum memiliki surat bebas pustaka. Ajukan bebas pustaka dan tunggu sampai diverifikasi (ditandatangani) pustakawan.";
+  };
 
   const getPengajuan = async () => {
     setLoading(true);
@@ -86,6 +148,27 @@ export default function PengajuanSaya() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Ambil detail error validasi Laravel (errors) kalau ada, kalau tidak pakai message
+  const getErrorMessage = (err, fallback) => {
+    const errors = err.response?.data?.errors;
+
+    if (errors && typeof errors === "object") {
+      const detail = Object.values(errors).flat().join("\n");
+      if (detail) return detail;
+    }
+
+    return err.response?.data?.message || fallback;
+  };
+
+  const showErrorModal = (err, title, fallback) => {
+    setModal({
+      open: true,
+      type: "warning",
+      title,
+      message: getErrorMessage(err, fallback),
+    });
   };
 
   const pengajuanRevisi =
@@ -173,9 +256,10 @@ export default function PengajuanSaya() {
     } catch (err) {
       console.error(err);
 
-      setError(
-        err.response?.data?.message ||
-          "Gagal mengirim pengajuan clearing."
+      showErrorModal(
+        err,
+        "Pengajuan Gagal",
+        "Gagal mengirim pengajuan clearing."
       );
     } finally {
       setUploading(false);
@@ -191,7 +275,6 @@ export default function PengajuanSaya() {
     if (revisiFileSpp && !validateFile(revisiFileSpp)) return;
 
     setAjukanUlangLoading(true);
-    setAjukanUlangError("");
 
     try {
       const formData = new FormData();
@@ -231,9 +314,10 @@ export default function PengajuanSaya() {
     } catch (err) {
       console.error(err);
 
-      setAjukanUlangError(
-        err.response?.data?.message ||
-          "Gagal mengajukan ulang pengajuan."
+      showErrorModal(
+        err,
+        "Pengajuan Ulang Gagal",
+        "Gagal mengajukan ulang pengajuan."
       );
     } finally {
       setAjukanUlangLoading(false);
@@ -394,6 +478,48 @@ export default function PengajuanSaya() {
         </div>
 
         <main className="p-4 md:p-6">
+          {loadingBP ? (
+            <div className="flex justify-center py-20">
+              <Spinner size="xl" />
+            </div>
+          ) : statusBP !== "verified" ? (
+            <div className="mx-auto max-w-xl pt-6 md:pt-16">
+              <Card>
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100">
+                    <svg
+                      className="h-9 w-9 text-yellow-600"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 9v4m0 4h.01M10.29 3.86l-8.18 14.14A1 1 0 003 19h18a1 1 0 00.89-1.45L13.71 3.86a1 1 0 00-1.72 0z"
+                      />
+                    </svg>
+                  </div>
+
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Halaman Belum Dapat Diakses
+                  </h2>
+
+                  <p className="mt-2 text-sm text-gray-600">
+                    {pesanBlokir()}
+                  </p>
+
+                  <Button
+                    className="mt-6 bg-[#35279A] hover:bg-[#281d79]"
+                    onClick={() => navigate(ROUTE_BEBAS_PUSTAKA)}
+                  >
+                    Ke Halaman Bebas Pustaka
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          ) : (
           <div className="mx-auto max-w-7xl">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-800">
@@ -432,12 +558,6 @@ export default function PengajuanSaya() {
                     <p className="mt-1 text-sm text-yellow-700">
                       {pengajuanRevisi.catatan_revisi}
                     </p>
-                  </div>
-                )}
-
-                {ajukanUlangError && (
-                  <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    {ajukanUlangError}
                   </div>
                 )}
 
@@ -781,6 +901,7 @@ export default function PengajuanSaya() {
               </p>
             </div>
           </div>
+          )}
         </main>
       </div>
 

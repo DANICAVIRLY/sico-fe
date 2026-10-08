@@ -20,8 +20,8 @@ const capitalizeFirstLetter = (str) => {
 
 // Aturan NIM: 1 huruf + 10 angka = 11 karakter, awalan E441-E444
 const NIM_LENGTH = 11;
-const NIM_PREFIX_REGEX = /^E44[1-4]/;
-const NIM_FULL_REGEX = /^E44[1-4][0-9]{7}$/;
+const NIM_PREFIX_REGEX = /^E[1-4]41/;
+const NIM_FULL_REGEX = /^E[1-4]41[0-9]{7}$/;
 
 const FormField = ({ id, label, error, ...props }) => (
   <div>
@@ -73,7 +73,7 @@ export default function Signup() {
       newErrors.nim = "NIM wajib diisi.";
     } else if (!NIM_PREFIX_REGEX.test(nim)) {
       newErrors.nim =
-        "NIM harus diawali E dan menggunakan kode departemen yang valid (E441, E442, E443, atau E444).";
+        "NIM harus diawali E dan menggunakan kode departemen yang valid (E141, E241, E341, atau E441).";
     } else if (!NIM_FULL_REGEX.test(nim)) {
       newErrors.nim = "NIM harus 11 karakter: 1 huruf diikuti 10 angka.";
     }
